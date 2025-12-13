@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 1 – Foundation
-- Current Step: Step 1.1 – Project initialization
+- Current Step: Step 1.2 – Configuration management
 - Blockers: none
 
 ---
@@ -21,12 +21,12 @@ Rules:
 # Phase 1 – FastAPI + PostgreSQL Foundation
 
 ## Step 1.1 – Project initialization
-- [ ] Create project folder structure
-- [ ] Initialize Python virtual environment
-- [ ] Install core dependencies
-- [ ] Create FastAPI app instance
-- [ ] Add `/health` endpoint
-- [ ] Run app locally
+- [x] Create project folder structure
+- [x] Initialize Python virtual environment
+- [x] Install core dependencies
+- [x] Create FastAPI app instance
+- [x] Add `/health` endpoint
+- [x] Run app locally
 
 **Definition of Done**
 - `/health` returns HTTP 200
