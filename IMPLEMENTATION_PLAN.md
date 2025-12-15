@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 1 – Foundation
-- Current Step: Step 1.3 – PostgreSQL integration
+- Current Step: Step 1.4 – Database models
 - Blockers: none
 
 ---
@@ -48,10 +48,10 @@ Rules:
 ---
 
 ## Step 1.3 – PostgreSQL integration
-- [ ] Create SQLAlchemy engine
-- [ ] Create session factory
-- [ ] Implement `get_db` dependency
-- [ ] Add DB connectivity test endpoint
+- [x] Create SQLAlchemy engine
+- [x] Create session factory
+- [x] Implement `get_db` dependency
+- [x] Add DB connectivity test endpoint
 
 **Definition of Done**
 - DB connection succeeds
