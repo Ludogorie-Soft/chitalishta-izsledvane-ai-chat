@@ -2,10 +2,14 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api.chitalishte import router as chitalishte_router
 from app.core.config import settings
 from app.db.database import get_db
 
 app = FastAPI(title="Chitalishta RAG System", version="0.1.0")
+
+# Register routers
+app.include_router(chitalishte_router)
 
 
 @app.on_event("startup")

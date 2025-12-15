@@ -12,8 +12,8 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 1 – Foundation
-- Current Step: Step 1.6 – Public data API endpoints
+- Phase: Phase 2 – Ingestion & Semantic Preparation
+- Current Step: Step 2.1 – Data extraction service
 - Blockers: none
 
 ---
@@ -83,10 +83,10 @@ Rules:
 ---
 
 ## Step 1.6 – Public data API endpoints
-- [ ] `GET /chitalishte/{id}`
-- [ ] `GET /chitalishte`
-- [ ] `GET /chitalishte/{id}/cards`
-- [ ] Pydantic response schemas
+- [x] `GET /chitalishte/{id}`
+- [x] `GET /chitalishte`
+- [x] `GET /chitalishte/{id}/cards`
+- [x] Pydantic response schemas
 
 **Definition of Done**
 - Endpoints work and are documented in `/docs`
