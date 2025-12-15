@@ -24,7 +24,15 @@ RAG (Retrieval-Augmented Generation) system for Bulgarian Chitalishta research d
 poetry install
 ```
 
-2. Run the application (Poetry 2.0+):
+2. Configure environment variables:
+   - Copy `.env.example` to `.env` (if it doesn't exist)
+   - Update `.env` with your database configuration:
+     ```
+     DATABASE_URL=postgresql://root:root@localhost:5434/chitalishta_db
+     ```
+   - Make sure your PostgreSQL database is running (see docker-compose.yml)
+
+3. Run the application (Poetry 2.0+):
 ```bash
 poetry run uvicorn app.main:app --reload
 ```

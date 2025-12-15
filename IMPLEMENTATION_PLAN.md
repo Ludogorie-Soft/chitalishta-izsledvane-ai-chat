@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 1 – Foundation
-- Current Step: Step 1.2 – Configuration management
+- Current Step: Step 1.3 – PostgreSQL integration
 - Blockers: none
 
 ---
@@ -36,10 +36,10 @@ Rules:
 ---
 
 ## Step 1.2 – Configuration management
-- [ ] Create `.env` file
-- [ ] Implement Pydantic Settings
-- [ ] Load DATABASE_URL from environment
-- [ ] Remove hardcoded configuration
+- [x] Create `.env` file
+- [x] Implement Pydantic Settings
+- [x] Load DATABASE_URL from environment
+- [x] Remove hardcoded configuration
 
 **Definition of Done**
 - App starts using env-based configuration
