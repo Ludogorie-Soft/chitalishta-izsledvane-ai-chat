@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 1 – Foundation
-- Current Step: Step 1.4 – Database models
+- Current Step: Step 1.5 – Data access layer (repositories)
 - Blockers: none
 
 ---
@@ -60,10 +60,10 @@ Rules:
 ---
 
 ## Step 1.4 – Database models
-- [ ] Implement `Chitalishte` model
-- [ ] Implement `InformationCard` model
-- [ ] Configure relationships
-- [ ] Match existing schema exactly
+- [x] Implement `Chitalishte` model
+- [x] Implement `InformationCard` model
+- [x] Configure relationships
+- [x] Match existing schema exactly
 
 **Definition of Done**
 - Query Chitalishte with related InformationCards
