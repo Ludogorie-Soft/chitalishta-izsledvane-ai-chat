@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 1 – Foundation
-- Current Step: Step 1.5 – Data access layer (repositories)
+- Current Step: Step 1.6 – Public data API endpoints
 - Blockers: none
 
 ---
@@ -72,9 +72,9 @@ Rules:
 ---
 
 ## Step 1.5 – Data access layer (repositories)
-- [ ] Create repository structure
-- [ ] Implement read-only queries
-- [ ] Add filtering by region, town, status, year
+- [x] Create repository structure
+- [x] Implement read-only queries
+- [x] Add filtering by region, town, status, year
 
 **Definition of Done**
 - Repositories return correct data
