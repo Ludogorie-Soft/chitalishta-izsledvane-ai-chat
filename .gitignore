@@ -34,7 +34,10 @@ poetry.lock
 .env.local
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/settings.json
+.cursor/*
+!.cursor/settings.json
 .idea/
 *.swp
 *.swo
@@ -49,5 +52,6 @@ chroma_db/
 
 # Logs
 *.log
+
 
 
