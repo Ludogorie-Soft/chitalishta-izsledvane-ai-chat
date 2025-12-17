@@ -35,5 +35,3 @@ async def db_ping(db: Session = Depends(get_db)):
         return {"status": "success", "message": "Database connection successful"}
     except Exception as e:
         return {"status": "error", "message": f"Database connection failed: {str(e)}"}
-
-

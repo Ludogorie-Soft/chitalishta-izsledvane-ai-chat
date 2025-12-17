@@ -1,4 +1,5 @@
 """API endpoints for Chitalishte."""
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -137,4 +138,3 @@ async def get_chitalishte_cards(
         limit=limit,
         offset=offset,
     )
-

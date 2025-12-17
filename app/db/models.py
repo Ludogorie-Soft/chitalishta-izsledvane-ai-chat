@@ -53,9 +53,7 @@ class InformationCard(Base):
     disabilities_and_volunteers: Mapped[int | None] = mapped_column(Integer, nullable=True)
     employees_count: Mapped[float | None] = mapped_column(Double, nullable=True)
     employees_specialized: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    employees_with_higher_education: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    employees_with_higher_education: Mapped[int | None] = mapped_column(Integer, nullable=True)
     folklore_formations: Mapped[int | None] = mapped_column(Integer, nullable=True)
     kraeznanie_clubs: Mapped[int | None] = mapped_column(Integer, nullable=True)
     language_courses: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -74,12 +72,8 @@ class InformationCard(Base):
         Integer, nullable=True
     )
     participation_in_trainings: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    projects_participation_leading: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
-    projects_participation_partner: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    projects_participation_leading: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    projects_participation_partner: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reg_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     registration_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     rejected_members: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -112,4 +106,3 @@ class InformationCard(Base):
     chitalishte: Mapped["Chitalishte"] = relationship(
         "Chitalishte", back_populates="information_cards"
     )
-

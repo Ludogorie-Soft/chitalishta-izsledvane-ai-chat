@@ -1,4 +1,5 @@
 """Repository pattern for data access layer - read-only queries."""
+
 from typing import Optional
 
 from sqlalchemy.orm import Session, joinedload
@@ -49,7 +50,7 @@ class ChitalishteRepository:
     ) -> list[Chitalishte]:
         """
         Get all Chitalishte records with optional filters.
-        
+
         Args:
             region: Filter by region name
             town: Filter by town name
@@ -70,11 +71,7 @@ class ChitalishteRepository:
 
         # Year filter requires join with InformationCard
         if year is not None:
-            query = (
-                query.join(InformationCard)
-                .filter(InformationCard.year == year)
-                .distinct()
-            )
+            query = query.join(InformationCard).filter(InformationCard.year == year).distinct()
 
         # Apply pagination
         if offset > 0:
@@ -102,11 +99,7 @@ class ChitalishteRepository:
             query = query.filter(Chitalishte.status == status)
 
         if year is not None:
-            query = (
-                query.join(InformationCard)
-                .filter(InformationCard.year == year)
-                .distinct()
-            )
+            query = query.join(InformationCard).filter(InformationCard.year == year).distinct()
 
         return query.count()
 
@@ -139,7 +132,7 @@ class InformationCardRepository:
     ) -> list[InformationCard]:
         """
         Get all InformationCards for a specific Chitalishte.
-        
+
         Args:
             chitalishte_id: The Chitalishte ID
             year: Optional filter by year
@@ -169,7 +162,7 @@ class InformationCardRepository:
     ) -> list[InformationCard]:
         """
         Get all InformationCard records with optional filters.
-        
+
         Args:
             year: Filter by year
             chitalishte_id: Filter by Chitalishte ID
@@ -204,4 +197,3 @@ class InformationCardRepository:
             query = query.filter(InformationCard.chitalishte_id == chitalishte_id)
 
         return query.count()
-

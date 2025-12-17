@@ -138,6 +138,34 @@ Rules:
 
 ---
 
+## Step 2.5 – Analysis document ingestion
+- [ ] Load DOCX analysis document (Chitalishta_demo_ver2.docx)
+- [ ] Extract structured sections and paragraphs
+- [ ] Implement hierarchical chunking:
+  - Step 1: Split by headings/sections
+  - Step 2: Split long sections by paragraphs (keep chunks under 700-900 tokens)
+  - Step 3: Apply light overlap (10-15% overlap between chunks)
+- [ ] Add document-specific metadata:
+  - `source: "analysis_document"`
+  - `document_type: "main_analysis"`
+  - `document_name: "Chitalishta_demo_ver2"`
+  - `author: "ИПИ"`
+  - `document_date: "2025-12-09"`
+  - `language: "bg"`
+  - `scope: "national"`
+  - `version: "v2"`
+- [ ] Ensure chunks are distinguishable from DB content
+- [ ] Support manual re-ingestion via `POST /ingest/analysis-document` endpoint
+
+**Definition of Done**
+- Document is chunked and ready for embedding
+- All chunks have proper metadata identifying them as analysis document
+- Chunking preserves semantic structure
+- `POST /ingest/analysis-document` endpoint triggers re-ingestion
+- Endpoint returns ingestion status and chunk count
+
+---
+
 # Phase 3 – Vector Store & Embeddings (Chroma)
 
 ## Step 3.1 – Chroma initialization
@@ -161,12 +189,15 @@ Rules:
 ---
 
 ## Step 3.3 – Indexing pipeline
-- [ ] Batch document ingestion
-- [ ] Metadata indexing
+- [ ] Batch document ingestion (DB content)
+- [ ] Analysis document ingestion (Step 2.5 output)
+- [ ] Metadata indexing (support both source types)
 - [ ] Idempotent re-indexing
+- [ ] Support manual re-ingestion of analysis document
 
 **Definition of Done**
-- Documents are searchable via Chroma
+- All documents (DB + analysis) are searchable via Chroma
+- Metadata properly distinguishes source types
 
 ---
 
@@ -206,11 +237,18 @@ Rules:
 
 ## Step 5.1 – RAG retrieval chain
 - [ ] Chroma retriever
-- [ ] Metadata filtering
+- [ ] Metadata filtering (support both DB content and analysis document)
+- [ ] Retrieval priority logic:
+  - Retrieve analysis document only when relevant
+  - Do not let analysis document override DB facts
+  - Prefer DB content for factual queries
 - [ ] Prompt templates (Bulgarian)
+- [ ] Context assembly from multiple sources
 
 **Definition of Done**
 - RAG answers are grounded in context
+- System distinguishes between DB facts and analysis document content
+- Retrieval prioritizes DB content for factual queries
 
 ---
 

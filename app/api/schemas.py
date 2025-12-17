@@ -1,4 +1,5 @@
 """Pydantic schemas for API responses."""
+
 from datetime import datetime
 from typing import Optional
 
@@ -105,4 +106,3 @@ class InformationCardListResponse(BaseModel):
     total: int
     limit: Optional[int] = None
     offset: int = 0
-
