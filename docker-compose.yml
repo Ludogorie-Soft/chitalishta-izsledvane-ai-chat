@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: chitalishta_db_ai_chat
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: chitalishta_db
+    ports:
+      - "5434:5432"
+    volumes:
+      # Use the original volume from the crawler project
+      - chitalishta-crawler_pg_data_chitalishta:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  test_db:
+    image: postgres:latest
+    container_name: chitalishta_test_db
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: chitalishta_test_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - pg_data_chitalishta_test:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  # Reference the existing volume from the crawler project
+  chitalishta-crawler_pg_data_chitalishta:
+    external: true
+  pg_data_chitalishta_test:
+

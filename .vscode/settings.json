@@ -7,7 +7,9 @@
   "[python]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "ms-python.black-formatter",
-    "editor.rulers": [100]
+    "editor.rulers": [
+      100
+    ]
   },
   "[json]": {
     "editor.formatOnSave": true,
@@ -28,5 +30,3 @@
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true
 }
-
-
