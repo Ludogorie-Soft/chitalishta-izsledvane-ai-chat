@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 2 – Ingestion & Semantic Preparation
-- Current Step: Step 2.2 – Semantic transformation
+- Current Step: Step 2.3 – Document assembly
 - Blockers: none
 
 ---
@@ -107,9 +107,9 @@ Rules:
 ---
 
 ## Step 2.2 – Semantic transformation
-- [ ] Convert DB rows to Bulgarian narrative text
-- [ ] Generate numeric summaries (no raw tables)
-- [ ] Normalize text encoding
+- [x] Convert DB rows to Bulgarian narrative text
+- [x] Generate numeric summaries (no raw tables)
+- [x] Normalize text encoding
 
 **Definition of Done**
 - Output text is human-readable Bulgarian
