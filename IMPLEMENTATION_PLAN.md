@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 2 – Ingestion & Semantic Preparation
-- Current Step: Step 2.1 – Data extraction service
+- Current Step: Step 2.2 – Semantic transformation
 - Blockers: none
 
 ---
@@ -97,9 +97,9 @@ Rules:
 # Phase 2 – Ingestion & Semantic Preparation
 
 ## Step 2.1 – Data extraction service
-- [ ] Extract Chitalishte data
-- [ ] Extract InformationCard data
-- [ ] Support optional year filtering
+- [x] Extract Chitalishte data
+- [x] Extract InformationCard data
+- [x] Support optional year filtering
 
 **Definition of Done**
 - Raw data extraction works without errors
