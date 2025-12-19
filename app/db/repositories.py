@@ -197,3 +197,4 @@ class InformationCardRepository:
             query = query.filter(InformationCard.chitalishte_id == chitalishte_id)
 
         return query.count()
+

@@ -106,3 +106,4 @@ class InformationCardListResponse(BaseModel):
     total: int
     limit: Optional[int] = None
     offset: int = 0
+
