@@ -122,7 +122,8 @@ class DocumentMetadata(BaseModel):
     """Metadata schema for a document."""
 
     source: str
-    chitalishte_id: int
+    # Database document fields
+    chitalishte_id: Optional[int] = None
     chitalishte_name: Optional[str] = None
     registration_number: Optional[int] = None
     region: Optional[str] = None
@@ -132,6 +133,17 @@ class DocumentMetadata(BaseModel):
     year: Optional[int] = None
     information_card_id: Optional[int] = None
     counts: dict = {}
+    # Analysis document fields
+    document_type: Optional[str] = None
+    document_name: Optional[str] = None
+    author: Optional[str] = None
+    document_date: Optional[str] = None
+    language: Optional[str] = None
+    scope: Optional[str] = None
+    version: Optional[str] = None
+    section_heading: Optional[str] = None
+    section_index: Optional[int] = None
+    chunk_index: Optional[int] = None
 
 
 class DocumentSizeInfo(BaseModel):
@@ -157,4 +169,14 @@ class IngestionPreviewResponse(BaseModel):
     documents: list[DocumentPreview]
     statistics: dict
     total_available: Optional[int] = None
+
+
+class AnalysisDocumentIngestionResponse(BaseModel):
+    """Response schema for analysis document ingestion."""
+
+    status: str
+    message: str
+    chunks_created: int
+    chunks: list[DocumentPreview]
+    statistics: dict
 

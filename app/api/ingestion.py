@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.schemas import (
+    AnalysisDocumentIngestionResponse,
     DocumentPreview,
     DocumentMetadata,
     DocumentSizeInfo,
@@ -13,6 +14,7 @@ from app.api.schemas import (
 )
 from app.db.database import get_db
 from app.services.assembly import DocumentAssemblyService
+from app.services.document_processor import DocumentProcessor
 
 router = APIRouter(prefix="/ingest", tags=["ingestion"])
 
@@ -69,4 +71,75 @@ async def preview_ingestion(
         statistics=statistics,
         total_available=None,  # Could calculate total if needed
     )
+
+
+@router.post("/analysis-document", response_model=AnalysisDocumentIngestionResponse)
+async def ingest_analysis_document():
+    """
+    Ingest the analysis document (Chitalishta_demo_ver2.docx) into the system.
+
+    This endpoint processes the DOCX document, chunks it, and prepares it for embedding.
+    The document is chunked using hierarchical strategy:
+    - Step 1: Split by headings/sections
+    - Step 2: Split long sections by paragraphs (keep chunks under 700-900 tokens)
+    - Step 3: Apply light overlap (10-15% overlap between chunks)
+
+    Returns:
+        Ingestion status, chunk count, and preview of created chunks
+    """
+    try:
+        processor = DocumentProcessor()
+        chunks = processor.chunk_document()
+
+        # Convert to Pydantic models
+        chunk_previews = []
+        for chunk in chunks:
+            chunk_previews.append(
+                DocumentPreview(
+                    content=chunk["content"],
+                    metadata=DocumentMetadata(**chunk["metadata"]),
+                    size_info=DocumentSizeInfo(**chunk["size_info"]),
+                    is_valid=chunk["is_valid"],
+                )
+            )
+
+        # Calculate statistics
+        valid_chunks = sum(1 for chunk in chunks if chunk["is_valid"])
+        invalid_chunks = len(chunks) - valid_chunks
+        sizes = [chunk["size_info"]["estimated_tokens"] for chunk in chunks]
+        avg_size = int(sum(sizes) / len(sizes)) if sizes else 0
+
+        statistics = {
+            "total_chunks": len(chunks),
+            "valid_chunks": valid_chunks,
+            "invalid_chunks": invalid_chunks,
+            "average_size": avg_size,
+            "min_size": min(sizes) if sizes else 0,
+            "max_size": max(sizes) if sizes else 0,
+        }
+
+        return AnalysisDocumentIngestionResponse(
+            status="success",
+            message=f"Analysis document processed successfully. Created {len(chunks)} chunks.",
+            chunks_created=len(chunks),
+            chunks=chunk_previews,
+            statistics=statistics,
+        )
+
+    except FileNotFoundError as e:
+        return AnalysisDocumentIngestionResponse(
+            status="error",
+            message=f"Document file not found: {str(e)}",
+            chunks_created=0,
+            chunks=[],
+            statistics={},
+        )
+    except Exception as e:
+        return AnalysisDocumentIngestionResponse(
+            status="error",
+            message=f"Error processing document: {str(e)}",
+            chunks_created=0,
+            chunks=[],
+            statistics={},
+        )
 

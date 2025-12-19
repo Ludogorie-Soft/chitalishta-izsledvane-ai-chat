@@ -139,13 +139,13 @@ Rules:
 ---
 
 ## Step 2.5 – Analysis document ingestion
-- [ ] Load DOCX analysis document (Chitalishta_demo_ver2.docx)
-- [ ] Extract structured sections and paragraphs
-- [ ] Implement hierarchical chunking:
+- [x] Load DOCX analysis document (Chitalishta_demo_ver2.docx)
+- [x] Extract structured sections and paragraphs
+- [x] Implement hierarchical chunking:
   - Step 1: Split by headings/sections
   - Step 2: Split long sections by paragraphs (keep chunks under 700-900 tokens)
   - Step 3: Apply light overlap (10-15% overlap between chunks)
-- [ ] Add document-specific metadata:
+- [x] Add document-specific metadata:
   - `source: "analysis_document"`
   - `document_type: "main_analysis"`
   - `document_name: "Chitalishta_demo_ver2"`
@@ -154,8 +154,8 @@ Rules:
   - `language: "bg"`
   - `scope: "national"`
   - `version: "v2"`
-- [ ] Ensure chunks are distinguishable from DB content
-- [ ] Support manual re-ingestion via `POST /ingest/analysis-document` endpoint
+- [x] Ensure chunks are distinguishable from DB content
+- [x] Support manual re-ingestion via `POST /ingest/analysis-document` endpoint
 
 **Definition of Done**
 - Document is chunked and ready for embedding
