@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 2 – Ingestion & Semantic Preparation
-- Current Step: Step 2.3 – Document assembly
+- Current Step: Step 2.4 – Ingestion preview endpoint
 - Blockers: none
 
 ---
@@ -118,9 +118,9 @@ Rules:
 ---
 
 ## Step 2.3 – Document assembly
-- [ ] One document per Chitalishte per year
-- [ ] Attach metadata (region, year, status, counts)
-- [ ] Validate document size
+- [x] One document per Chitalishte per year
+- [x] Attach metadata (region, year, status, counts)
+- [x] Validate document size
 
 **Definition of Done**
 - Documents are ready for embedding
