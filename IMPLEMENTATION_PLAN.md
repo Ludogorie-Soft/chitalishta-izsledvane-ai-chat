@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 2 – Ingestion & Semantic Preparation
-- Current Step: Step 2.4 – Ingestion preview endpoint
+- Current Step: Step 2.5 – Analysis document ingestion
 - Blockers: none
 
 ---
@@ -129,9 +129,9 @@ Rules:
 ---
 
 ## Step 2.4 – Ingestion preview endpoint
-- [ ] `POST /ingest/preview`
-- [ ] Limit number of documents
-- [ ] Return JSON preview
+- [x] `POST /ingest/preview`
+- [x] Limit number of documents
+- [x] Return JSON preview
 
 **Definition of Done**
 - Preview output matches intended RAG input

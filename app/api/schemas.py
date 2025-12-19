@@ -107,3 +107,54 @@ class InformationCardListResponse(BaseModel):
     limit: Optional[int] = None
     offset: int = 0
 
+
+class IngestionPreviewRequest(BaseModel):
+    """Request schema for ingestion preview."""
+
+    region: Optional[str] = None
+    town: Optional[str] = None
+    status: Optional[str] = None
+    year: Optional[int] = None
+    limit: Optional[int] = 10
+
+
+class DocumentMetadata(BaseModel):
+    """Metadata schema for a document."""
+
+    source: str
+    chitalishte_id: int
+    chitalishte_name: Optional[str] = None
+    registration_number: Optional[int] = None
+    region: Optional[str] = None
+    municipality: Optional[str] = None
+    town: Optional[str] = None
+    status: Optional[str] = None
+    year: Optional[int] = None
+    information_card_id: Optional[int] = None
+    counts: dict = {}
+
+
+class DocumentSizeInfo(BaseModel):
+    """Size information schema for a document."""
+
+    characters: int
+    words: int
+    estimated_tokens: int
+
+
+class DocumentPreview(BaseModel):
+    """Preview schema for a single document."""
+
+    content: str
+    metadata: DocumentMetadata
+    size_info: DocumentSizeInfo
+    is_valid: bool
+
+
+class IngestionPreviewResponse(BaseModel):
+    """Response schema for ingestion preview."""
+
+    documents: list[DocumentPreview]
+    statistics: dict
+    total_available: Optional[int] = None
+
