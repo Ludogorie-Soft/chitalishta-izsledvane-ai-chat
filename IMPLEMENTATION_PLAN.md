@@ -202,12 +202,12 @@ Rules:
 ---
 
 ## Step 3.4 – LangChain integration
-- [ ] Install LangChain dependencies (`langchain`, `langchain-openai`, `langchain-community`, `langchain-chroma`)
-- [ ] Integrate LangChain with existing Chroma vector store
-- [ ] Create LangChain Chroma retriever wrapper (using existing ChromaVectorStore)
-- [ ] Integrate LangChain with existing embedding service (custom EmbeddingService)
-- [ ] Test LangChain retriever with existing indexed documents
-- [ ] Verify compatibility with existing custom abstractions
+- [x] Install LangChain dependencies (`langchain`, `langchain-openai`, `langchain-community`, `langchain-chroma`)
+- [x] Integrate LangChain with existing Chroma vector store
+- [x] Create LangChain Chroma retriever wrapper (using existing ChromaVectorStore)
+- [x] Integrate LangChain with existing embedding service (custom EmbeddingService)
+- [x] Test LangChain retriever with existing indexed documents
+- [x] Verify compatibility with existing custom abstractions
 
 **Definition of Done**
 - LangChain is installed and configured
