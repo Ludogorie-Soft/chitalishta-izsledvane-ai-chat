@@ -417,17 +417,112 @@ Rules:
 
 # Phase 10 – Quality & Observability
 
-## Step 10.1 – Logging & metrics
-- [ ] Query logs
-- [ ] Routing logs
-- [ ] Error tracking
+## Step 10.1 – Structured logging foundation
+- [ ] Install structured logging library (`structlog` or `loguru`)
+- [ ] Configure JSON-formatted logs with timestamps
+- [ ] Set up log levels (DEBUG, INFO, WARNING, ERROR)
+- [ ] Create log rotation strategy (file size/time-based)
+- [ ] Add request ID generation (UUID) for trace correlation
+- [ ] Implement FastAPI middleware for request/response logging
+- [ ] Log all API endpoints (query, routing, errors)
 
 **Definition of Done**
-- System behavior is observable
+- All application events are logged in structured JSON format
+- Request tracing works end-to-end with trace IDs
+- Logs are searchable and parseable
 
 ---
 
-## Step 10.2 – Evaluation
+## Step 10.2 – LangChain observability (callbacks)
+- [ ] Create custom LangChain callback handler (`LocalTraceCallbackHandler`)
+- [ ] Implement callback methods:
+  - `on_llm_start` / `on_llm_end` (log LLM calls, token usage, latency)
+  - `on_retriever_start` / `on_retriever_end` (log retrieval queries and results)
+  - `on_chain_start` / `on_chain_end` (log chain execution flow)
+  - `on_chain_error` (log chain failures with context)
+- [ ] Store trace data (inputs, outputs, intermediate steps) in structured logs
+- [ ] Include trace IDs in all callback logs for correlation
+- [ ] Log metadata (model used, retrieval count, document sources)
+- [ ] Integrate callbacks into all LangChain chains (RAG, SQL agent, hybrid)
+
+**Definition of Done**
+- All LangChain operations are traceable via callbacks
+- Full execution flow is logged (retrieval → LLM → response)
+- Token usage and latency are captured for each operation
+- Traces can be correlated with API requests via trace IDs
+
+---
+
+## Step 10.3 – Performance monitoring
+- [ ] Install metrics library (`prometheus-client`)
+- [ ] Define key metrics:
+  - Request counters (total queries, by endpoint, by status)
+  - Latency histograms (RAG queries, SQL queries, LLM calls, retrieval)
+  - Token usage counters (input tokens, output tokens, by model)
+  - Error rates (by error type, by endpoint)
+- [ ] Create timing decorators for critical operations
+- [ ] Expose Prometheus metrics endpoint (`/metrics`)
+- [ ] Track system metrics (CPU, memory, database connection pool)
+- [ ] Log performance metrics to structured logs
+
+**Definition of Done**
+- Performance metrics are collected and exposed
+- Latency tracking works for all critical paths
+- System health metrics are monitored
+- Metrics endpoint is accessible for scraping
+
+---
+
+## Step 10.4 – Cost tracking
+- [ ] Create cost tracking service (`CostTracker`)
+- [ ] Define pricing models for all LLM providers:
+  - OpenAI models (GPT-4, GPT-3.5-turbo, embeddings)
+  - Hugging Face models (if using API)
+- [ ] Track costs per LLM call:
+  - Input tokens × input price
+  - Output tokens × output price
+  - Embedding tokens × embedding price
+- [ ] Store cost data (PostgreSQL table or structured logs)
+- [ ] Calculate costs per:
+  - Request/query
+  - User (if applicable)
+  - Endpoint
+  - Model
+- [ ] Generate cost summaries (daily, monthly totals)
+- [ ] Log cost information in structured logs
+
+**Definition of Done**
+- All LLM API costs are tracked and calculated
+- Cost data is stored and queryable
+- Cost summaries can be generated
+- Cost information is included in request logs
+
+---
+
+## Step 10.5 – Production monitoring setup
+- [ ] Set up log aggregation (optional: ELK stack or simple log viewer)
+- [ ] Configure Grafana dashboards (optional: Docker setup):
+  - Request rate and latency graphs
+  - Error rate trends
+  - Token usage over time
+  - Cost trends
+  - System resource usage
+- [ ] Create alerting rules (optional):
+  - High error rate alerts
+  - High latency alerts
+  - Cost threshold alerts
+- [ ] Set up log retention policy
+- [ ] Document observability setup and usage
+
+**Definition of Done**
+- Production monitoring is operational
+- Dashboards provide visibility into system health
+- Alerts notify on critical issues (if configured)
+- Observability tools are documented
+
+---
+
+## Step 10.6 – Evaluation
 - [ ] Bulgarian test queries
 - [ ] Groundedness checks
 - [ ] Regression safety
