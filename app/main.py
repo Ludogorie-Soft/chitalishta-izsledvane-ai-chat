@@ -3,6 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.chitalishte import router as chitalishte_router
+from app.api.indexing import router as indexing_router
 from app.api.ingestion import router as ingestion_router
 from app.api.vector_store import router as vector_store_router
 from app.core.config import settings
@@ -13,6 +14,7 @@ app = FastAPI(title="Chitalishta RAG System", version="0.1.0")
 # Register routers
 app.include_router(chitalishte_router)
 app.include_router(ingestion_router)
+app.include_router(indexing_router)
 app.include_router(vector_store_router)
 
 

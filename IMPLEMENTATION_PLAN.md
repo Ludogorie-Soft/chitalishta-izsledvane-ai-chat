@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 3 – Vector Store & Embeddings (Chroma)
-- Current Step: Step 3.2 – Embedding layer
+- Current Step: Phase 3 Complete - Ready for Phase 4
 - Blockers: none
 
 ---
@@ -189,11 +189,11 @@ Rules:
 ---
 
 ## Step 3.3 – Indexing pipeline
-- [ ] Batch document ingestion (DB content)
-- [ ] Analysis document ingestion (Step 2.5 output)
-- [ ] Metadata indexing (support both source types)
-- [ ] Idempotent re-indexing
-- [ ] Support manual re-ingestion of analysis document
+- [x] Batch document ingestion (DB content)
+- [x] Analysis document ingestion (Step 2.5 output)
+- [x] Metadata indexing (support both source types)
+- [x] Idempotent re-indexing
+- [x] Support manual re-ingestion of analysis document
 
 **Definition of Done**
 - All documents (DB + analysis) are searchable via Chroma
