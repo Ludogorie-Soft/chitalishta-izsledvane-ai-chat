@@ -220,9 +220,9 @@ Rules:
 # Phase 4 – Query Understanding & Routing
 
 ## Step 4.1 – Rule-based intent classification
-- [ ] Define Bulgarian keyword rules
-- [ ] Compute rule confidence
-- [ ] Return intent + confidence
+- [x] Define Bulgarian keyword rules
+- [x] Compute rule confidence
+- [x] Return intent + confidence
 
 **Definition of Done**
 - Simple queries are correctly classified
