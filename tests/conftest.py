@@ -163,6 +163,26 @@ def seeded_test_data(test_db_session: Session):
 
 
 @pytest.fixture
+def test_chroma_vector_store():
+    """Create test Chroma vector store with separate persistence directory."""
+    from app.rag.vector_store import ChromaVectorStore
+
+    # Use test-specific directory
+    vector_store = ChromaVectorStore(
+        persist_directory="chroma_db_test",
+        collection_name="chitalishta_documents_test",
+    )
+
+    # Clear collection before each test
+    vector_store.clear_collection()
+
+    yield vector_store
+
+    # Cleanup: clear collection after test
+    vector_store.clear_collection()
+
+
+@pytest.fixture
 def test_app(test_db_session: Session):
     """Create test FastAPI app with overridden database dependency."""
     from fastapi import FastAPI
@@ -179,6 +199,44 @@ def test_app(test_db_session: Session):
     app = FastAPI()
     app.include_router(ingestion_router)
     app.dependency_overrides[get_db] = override_get_db
+
+    return TestClient(app)
+
+
+@pytest.fixture
+def test_indexing_app(test_db_session: Session, test_chroma_vector_store):
+    """Create test FastAPI app for indexing endpoints with test Chroma."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.api.indexing import router as indexing_router
+    from app.rag.embeddings import HuggingFaceEmbeddingService
+    from app.rag.indexing import IndexingService
+
+    def override_get_db():
+        try:
+            yield test_db_session
+        finally:
+            pass  # Session cleanup handled by fixture
+
+    # Create indexing service with test vector store and Hugging Face embeddings
+    embedding_service = HuggingFaceEmbeddingService()
+    indexing_service = IndexingService(
+        vector_store=test_chroma_vector_store,
+        embedding_service=embedding_service,
+    )
+
+    def get_indexing_service():
+        return indexing_service
+
+    app = FastAPI()
+    app.include_router(indexing_router)
+    app.dependency_overrides[get_db] = override_get_db
+
+    # Override IndexingService dependency
+    from app.api.indexing import IndexingService as IndexingServiceType
+
+    app.dependency_overrides[IndexingServiceType] = get_indexing_service
 
     return TestClient(app)
 

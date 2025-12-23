@@ -255,6 +255,8 @@ class IndexingService:
     def clear_index(self):
         """Clear all documents from the index."""
         self.vector_store.clear_collection()
+        # Refresh collection reference after clearing
+        self.collection = self.vector_store.get_collection()
 
     def get_index_stats(self) -> dict:
         """

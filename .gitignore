@@ -49,6 +49,7 @@ Thumbs.db
 
 # Chroma (will be added later)
 chroma_db/
+chroma_db_test/
 
 # Logs
 *.log

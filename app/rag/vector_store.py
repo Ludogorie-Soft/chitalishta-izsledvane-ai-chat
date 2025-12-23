@@ -76,7 +76,7 @@ class ChromaVectorStore:
             # Collection might not exist, which is fine
             pass
 
-        # Recreate the collection
+        # Recreate the collection and update reference
         self.collection = self.client.create_collection(
             name=self.collection_name,
             metadata={"description": "Chitalishta RAG documents collection"},
