@@ -230,11 +230,11 @@ Rules:
 ---
 
 ## Step 4.2 – LLM-based intent classification
-- [ ] Implement LLM classifier using LangChain
-- [ ] Use LangChain's structured output support (Pydantic models)
-- [ ] Configure LLM abstraction (OpenAI/HuggingFace via LangChain)
-- [ ] Confidence score returned
-- [ ] Bulgarian prompt templates for intent classification
+- [x] Implement LLM classifier using LangChain
+- [x] Use LangChain's structured output support (Pydantic models)
+- [x] Configure LLM abstraction (OpenAI/HuggingFace via LangChain)
+- [x] Confidence score returned
+- [x] Bulgarian prompt templates for intent classification
 
 **Definition of Done**
 - Ambiguous queries are handled correctly

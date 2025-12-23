@@ -408,3 +408,4 @@ def get_intent_classifier() -> RuleBasedIntentClassifier:
     """
     return RuleBasedIntentClassifier()
 
+

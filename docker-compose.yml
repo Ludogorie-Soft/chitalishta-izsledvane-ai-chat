@@ -36,9 +36,42 @@ services:
       timeout: 5s
       retries: 5
 
+  tgi:
+    image: ghcr.io/huggingface/text-generation-inference:latest
+    container_name: chitalishta_tgi
+    shm_size: 1g  # Shared memory for model loading
+    ports:
+      - "8080:80"  # TGI OpenAI-compatible API endpoint
+    volumes:
+      - tgi_model_cache:/data
+    command:
+      - --model-id
+      - google/gemma-2b-it
+      - --port
+      - "80"
+      - --max-input-length
+      - "2048"
+      - --max-total-tokens
+      - "2048"
+      - --disable-custom-kernels  # Required for CPU-only inference
+    deploy:
+      resources:
+        limits:
+          memory: 6G  # Allocate 6GB RAM for Gemma-2b (smaller model)
+        reservations:
+          memory: 4G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s  # Give TGI time to download and load model on first start (3 minutes for smaller model)
+    restart: unless-stopped
+
 volumes:
   # Reference the existing volume from the crawler project
   chitalishta-crawler_pg_data_chitalishta:
     external: true
   pg_data_chitalishta_test:
+  tgi_model_cache:
 
