@@ -179,9 +179,9 @@ Rules:
 ---
 
 ## Step 3.2 – Embedding layer
-- [ ] Abstract embedding interface
-- [ ] OpenAI embedding implementation
-- [ ] Hugging Face embedding implementation
+- [x] Abstract embedding interface
+- [x] OpenAI embedding implementation
+- [x] Hugging Face embedding implementation
 
 **Definition of Done**
 - Embeddings can be switched via config

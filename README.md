@@ -40,10 +40,36 @@ poetry install
 
 4. Configure environment variables:
    - Copy `.env.example` to `.env` (if it doesn't exist)
-   - Update `.env` with your database configuration:
-     ```
-     DATABASE_URL=postgresql://root:root@localhost:5434/chitalishta_db
-     ```
+   - Update `.env` with your configuration:
+
+   **Database Configuration:**
+   ```
+   DATABASE_URL=postgresql://root:root@localhost:5434/chitalishta_db
+   ```
+
+   **Embedding Model Configuration:**
+
+   Choose one of the following options:
+
+   **Option 1: OpenAI Embeddings (Recommended for production)**
+   ```
+   EMBEDDING_PROVIDER=openai
+   OPENAI_API_KEY=your_openai_api_key_here
+   OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+   ```
+   - Requires an OpenAI API key (get one at https://platform.openai.com/api-keys)
+   - `text-embedding-3-small` is the default model (cost-effective, 1536 dimensions)
+   - Alternative models: `text-embedding-3-large` (3072 dimensions, higher quality)
+
+   **Option 2: Hugging Face Embeddings (No API key required)**
+   ```
+   EMBEDDING_PROVIDER=huggingface
+   HUGGINGFACE_MODEL_NAME=intfloat/multilingual-e5-base
+   ```
+   - No API key required (runs locally)
+   - `intfloat/multilingual-e5-base` is optimized for multilingual text including Bulgarian
+   - 768 dimensions, good quality for Bulgarian language
+   - Alternative models: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (faster, smaller)
 
 5. Run the application (Poetry 2.0+):
 ```bash
