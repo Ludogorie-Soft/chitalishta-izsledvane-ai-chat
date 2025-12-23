@@ -1,9 +1,13 @@
 """Integration tests for /ingest/analysis-document endpoint."""
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.ingestion import router as ingestion_router
+
+# Default document name for tests
+DEFAULT_DOCUMENT_NAME = "Chitalishta_demo_ver2.docx"
 
 
 @pytest.fixture
@@ -19,7 +23,10 @@ class TestAnalysisDocumentIngestionBasic:
 
     def test_endpoint_returns_success(self, test_app: TestClient):
         """Test that endpoint returns success status when document exists."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -32,7 +39,10 @@ class TestAnalysisDocumentIngestionBasic:
 
     def test_chunks_are_created(self, test_app: TestClient):
         """Test that chunks are created from the document."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -43,7 +53,10 @@ class TestAnalysisDocumentIngestionBasic:
 
     def test_message_contains_chunk_count(self, test_app: TestClient):
         """Test that success message contains the chunk count."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -57,7 +70,10 @@ class TestAnalysisDocumentIngestionResponseStructure:
 
     def test_response_schema(self, test_app: TestClient):
         """Test that response matches expected schema."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -78,7 +94,10 @@ class TestAnalysisDocumentIngestionResponseStructure:
 
     def test_chunk_structure(self, test_app: TestClient):
         """Test that each chunk has required fields."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -101,7 +120,10 @@ class TestAnalysisDocumentIngestionResponseStructure:
 
     def test_metadata_structure(self, test_app: TestClient):
         """Test that metadata has required fields for analysis documents."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -134,7 +156,10 @@ class TestAnalysisDocumentIngestionResponseStructure:
 
     def test_size_info_structure(self, test_app: TestClient):
         """Test that size_info has required fields."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -151,7 +176,10 @@ class TestAnalysisDocumentIngestionResponseStructure:
 
     def test_statistics_structure(self, test_app: TestClient):
         """Test that statistics have required fields."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -178,7 +206,10 @@ class TestAnalysisDocumentIngestionMetadataValidation:
 
     def test_all_chunks_have_analysis_document_source(self, test_app: TestClient):
         """Test that all chunks have source set to 'analysis_document'."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -188,14 +219,17 @@ class TestAnalysisDocumentIngestionMetadataValidation:
 
     def test_all_chunks_have_document_metadata(self, test_app: TestClient):
         """Test that all chunks have document-specific metadata."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
 
         expected_metadata = {
             "document_type": "main_analysis",
-            "document_name": "Chitalishta_demo_ver2",
+            "document_name": "Chitalishta_demo_ver2",  # Without .docx extension
             "author": "ИПИ",
             "document_date": "2025-12-09",
             "language": "bg",
@@ -213,7 +247,10 @@ class TestAnalysisDocumentIngestionMetadataValidation:
 
     def test_all_chunks_have_section_info(self, test_app: TestClient):
         """Test that all chunks have section heading and index."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -233,7 +270,10 @@ class TestAnalysisDocumentIngestionMetadataValidation:
 
     def test_chunks_have_no_database_fields(self, test_app: TestClient):
         """Test that chunks don't have database-specific fields set."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -269,11 +309,12 @@ class TestAnalysisDocumentIngestionMetadataValidation:
             ("section_index", int),
         ],
     )
-    def test_metadata_field_types(
-        self, test_app: TestClient, metadata_field, expected_type
-    ):
+    def test_metadata_field_types(self, test_app: TestClient, metadata_field, expected_type):
         """Test that metadata fields have correct types."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -289,7 +330,10 @@ class TestAnalysisDocumentIngestionDataIntegrity:
 
     def test_statistics_match_chunks(self, test_app: TestClient):
         """Test that statistics accurately reflect the chunk list."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -320,7 +364,10 @@ class TestAnalysisDocumentIngestionDataIntegrity:
 
     def test_chunk_content_not_empty(self, test_app: TestClient):
         """Test that all chunks have non-empty content."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -330,7 +377,10 @@ class TestAnalysisDocumentIngestionDataIntegrity:
 
     def test_chunk_size_info_consistency(self, test_app: TestClient):
         """Test that size_info fields are consistent with actual content."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -352,7 +402,10 @@ class TestAnalysisDocumentIngestionDataIntegrity:
 
     def test_no_duplicate_chunks(self, test_app: TestClient):
         """Test that no duplicate chunks are returned."""
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -370,27 +423,12 @@ class TestAnalysisDocumentIngestionDataIntegrity:
 class TestAnalysisDocumentIngestionEdgeCases:
     """Tests for edge cases and error handling."""
 
-    def test_endpoint_handles_missing_document(self, test_app: TestClient, monkeypatch):
+    def test_endpoint_handles_missing_document(self, test_app: TestClient):
         """Test that endpoint handles missing document file gracefully."""
-        from app.services import document_processor
-
-        # Mock DocumentProcessor to raise FileNotFoundError
-        original_init = document_processor.DocumentProcessor.__init__
-
-        def mock_init(self, document_path=None):
-            # Set a non-existent path
-            from pathlib import Path
-
-            if document_path is None:
-                document_path = Path("/non/existent/document.docx")
-            self.document_path = Path(document_path)
-            self.document = None
-
-        monkeypatch.setattr(
-            document_processor.DocumentProcessor, "__init__", mock_init
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": "non_existent_document.docx"},
         )
-
-        response = test_app.post("/ingest/analysis-document")
 
         assert response.status_code == 200
         data = response.json()
@@ -417,7 +455,10 @@ class TestAnalysisDocumentIngestionEdgeCases:
             mock_chunk_document,
         )
 
-        response = test_app.post("/ingest/analysis-document")
+        response = test_app.post(
+            "/ingest/analysis-document",
+            json={"document_name": DEFAULT_DOCUMENT_NAME},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -427,4 +468,3 @@ class TestAnalysisDocumentIngestionEdgeCases:
         assert data["chunks_created"] == 0
         assert len(data["chunks"]) == 0
         assert data["statistics"] == {}
-

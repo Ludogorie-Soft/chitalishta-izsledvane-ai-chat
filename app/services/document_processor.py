@@ -1,4 +1,5 @@
 """Service for processing DOCX analysis documents."""
+
 import re
 from pathlib import Path
 from typing import Optional
@@ -22,19 +23,20 @@ class DocumentProcessor:
     # Overlap percentage
     OVERLAP_PERCENTAGE = 0.12  # 12% overlap
 
-    def __init__(self, document_path: Optional[str] = None):
+    def __init__(self, document_name: str):
         """
         Initialize the document processor.
 
         Args:
-            document_path: Path to the DOCX file. If None, uses default.
+            document_name: Name of the DOCX file (e.g., "Chitalishta_demo_ver2.docx")
         """
-        if document_path is None:
-            # Default to project root
-            project_root = Path(__file__).parent.parent.parent
-            document_path = project_root / "Chitalishta_demo_ver2.docx"
+        # Documents are stored in the documents/ directory
+        project_root = Path(__file__).parent.parent.parent
+        documents_dir = project_root / "documents"
+        document_path = documents_dir / document_name
 
         self.document_path = Path(document_path)
+        self.document_name = document_name
         self.document: Optional[DocumentType] = None
 
     def load_document(self) -> DocumentType:
@@ -245,9 +247,7 @@ class DocumentProcessor:
                     if overlap_count >= overlap_tokens:
                         break
                     overlap_paragraphs.insert(0, current_chunk_paragraphs[para_idx])
-                    overlap_count += para_tokens[
-                        i - len(current_chunk_paragraphs) + para_idx
-                    ]
+                    overlap_count += para_tokens[i - len(current_chunk_paragraphs) + para_idx]
 
                 # Start new chunk with overlap
                 current_chunk_paragraphs = overlap_paragraphs
@@ -292,15 +292,18 @@ class DocumentProcessor:
         """
         estimated_tokens = self._estimate_tokens(content)
 
+        # Extract document name without extension for metadata
+        doc_name_without_ext = Path(self.document_name).stem
+
         metadata = {
             "source": "analysis_document",
             "document_type": "main_analysis",
-            "document_name": "Chitalishta_demo_ver2",
+            "document_name": doc_name_without_ext,
             "author": "ИПИ",
             "document_date": "2025-12-09",
             "language": "bg",
             "scope": "national",
-            "version": "v2",
+            "version": "v2",  # Could be extracted from filename in future
             "section_heading": heading,
             "section_index": section_index,
         }
@@ -320,4 +323,3 @@ class DocumentProcessor:
             "size_info": size_info,
             "is_valid": estimated_tokens <= 8000,  # Same max as DB documents
         }
-

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.schemas import (
+    AnalysisDocumentIngestionRequest,
     AnalysisDocumentIngestionResponse,
     DocumentPreview,
     DocumentMetadata,
@@ -74,21 +75,25 @@ async def preview_ingestion(
 
 
 @router.post("/analysis-document", response_model=AnalysisDocumentIngestionResponse)
-async def ingest_analysis_document():
+async def ingest_analysis_document(request: AnalysisDocumentIngestionRequest):
     """
-    Ingest the analysis document (Chitalishta_demo_ver2.docx) into the system.
+    Ingest an analysis document into the system.
 
-    This endpoint processes the DOCX document, chunks it, and prepares it for embedding.
-    The document is chunked using hierarchical strategy:
+    This endpoint processes a DOCX document from the documents/ directory,
+    chunks it, and prepares it for embedding. The document is chunked using
+    hierarchical strategy:
     - Step 1: Split by headings/sections
     - Step 2: Split long sections by paragraphs (keep chunks under 700-900 tokens)
     - Step 3: Apply light overlap (10-15% overlap between chunks)
+
+    Args:
+        request: Request containing the document name (e.g., "Chitalishta_demo_ver2.docx")
 
     Returns:
         Ingestion status, chunk count, and preview of created chunks
     """
     try:
-        processor = DocumentProcessor()
+        processor = DocumentProcessor(document_name=request.document_name)
         chunks = processor.chunk_document()
 
         # Convert to Pydantic models

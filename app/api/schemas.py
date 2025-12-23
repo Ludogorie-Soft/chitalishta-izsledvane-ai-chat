@@ -171,6 +171,12 @@ class IngestionPreviewResponse(BaseModel):
     total_available: Optional[int] = None
 
 
+class AnalysisDocumentIngestionRequest(BaseModel):
+    """Request schema for analysis document ingestion."""
+
+    document_name: str
+
+
 class AnalysisDocumentIngestionResponse(BaseModel):
     """Response schema for analysis document ingestion."""
 
