@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 3 – Vector Store & Embeddings (Chroma)
-- Current Step: Phase 3 Complete - Ready for Phase 4
+- Current Step: Phase 3 Complete - Ready for Phase 3.4 (LangChain Integration)
 - Blockers: none
 
 ---
@@ -201,6 +201,22 @@ Rules:
 
 ---
 
+## Step 3.4 – LangChain integration
+- [ ] Install LangChain dependencies (`langchain`, `langchain-openai`, `langchain-community`, `langchain-chroma`)
+- [ ] Integrate LangChain with existing Chroma vector store
+- [ ] Create LangChain Chroma retriever wrapper (using existing ChromaVectorStore)
+- [ ] Integrate LangChain with existing embedding service (custom EmbeddingService)
+- [ ] Test LangChain retriever with existing indexed documents
+- [ ] Verify compatibility with existing custom abstractions
+
+**Definition of Done**
+- LangChain is installed and configured
+- LangChain retriever works with existing Chroma collection
+- Existing custom abstractions (embeddings, vector store) remain functional
+- No breaking changes to existing indexing pipeline
+
+---
+
 # Phase 4 – Query Understanding & Routing
 
 ## Step 4.1 – Rule-based intent classification
@@ -214,12 +230,16 @@ Rules:
 ---
 
 ## Step 4.2 – LLM-based intent classification
-- [ ] Implement LLM classifier
-- [ ] Structured JSON output
+- [ ] Implement LLM classifier using LangChain
+- [ ] Use LangChain's structured output support (Pydantic models)
+- [ ] Configure LLM abstraction (OpenAI/HuggingFace via LangChain)
 - [ ] Confidence score returned
+- [ ] Bulgarian prompt templates for intent classification
 
 **Definition of Done**
 - Ambiguous queries are handled correctly
+- Structured outputs are validated via Pydantic
+- LLM can be switched via LangChain abstraction
 
 ---
 
@@ -236,73 +256,109 @@ Rules:
 # Phase 5 – RAG & SQL Pipelines
 
 ## Step 5.1 – RAG retrieval chain
-- [ ] Chroma retriever
-- [ ] Metadata filtering (support both DB content and analysis document)
-- [ ] Retrieval priority logic:
+- [ ] Implement LangChain RAG chain (RetrievalQA or ConversationalRetrievalChain)
+- [ ] Use LangChain Chroma retriever with metadata filtering
+- [ ] Support both DB content and analysis document via metadata filters
+- [ ] Implement retrieval priority logic:
   - Retrieve analysis document only when relevant
   - Do not let analysis document override DB facts
   - Prefer DB content for factual queries
-- [ ] Prompt templates (Bulgarian)
-- [ ] Context assembly from multiple sources
+- [ ] Create Bulgarian prompt templates using LangChain PromptTemplate
+- [ ] Context assembly using custom logic (maintain control over DB facts vs analysis doc separation)
+- [ ] Pass assembled context into LangChain chains (LangChain consumes context, does not define it)
+- [ ] Integrate with existing embedding service via LangChain embedding interface
 
 **Definition of Done**
 - RAG answers are grounded in context
 - System distinguishes between DB facts and analysis document content
 - Retrieval prioritizes DB content for factual queries
+- LangChain chain orchestrates retrieval and generation
+- Custom context assembly logic maintains full control over data mixing
 
 ---
 
 ## Step 5.2 – SQL agent
-- [ ] Read-only SQL agent
-- [ ] Aggregation support
-- [ ] Safety constraints
+- [ ] Implement LangChain SQL agent (create_sql_agent)
+- [ ] Configure read-only database access (SQLAlchemy connection)
+- [ ] Add safety constraints (prevent DELETE/UPDATE/INSERT)
+- [ ] SQL generation logic is validated and optionally post-processed before execution
+- [ ] Support aggregation queries
+- [ ] Bulgarian language support for SQL query generation
+- [ ] Error handling and query validation
+- [ ] Audit logging of generated SQL queries
 
 **Definition of Done**
 - Numeric answers are correct and safe
+- SQL agent only performs read operations
+- Agent handles complex aggregation queries
+- All SQL queries are validated before execution
+- SQL generation is auditable and traceable
 
 ---
 
 ## Step 5.3 – Hybrid pipeline
-- [ ] SQL → text context
-- [ ] RAG enrichment
-- [ ] Unified answer format
+- [ ] Create LangChain chain for hybrid queries (SequentialChain or custom chain)
+- [ ] SQL → text context conversion (format SQL results as narrative)
+- [ ] RAG enrichment using retrieval chain
+- [ ] Combine SQL and RAG results using LangChain's chain composition
+- [ ] Unified answer format (Bulgarian)
+- [ ] Routing logic to determine when to use SQL vs RAG vs hybrid
 
 **Definition of Done**
 - Hybrid queries return correct combined answers
+- LangChain orchestrates SQL and RAG pipeline execution
+- Results are properly formatted and combined
 
 ---
 
 # Phase 6 – LLM Management
 
 ## Step 6.1 – LLM registry
-- [ ] OpenAI models
-- [ ] Hugging Face models
-- [ ] Task-based selection
+- [ ] Use LangChain's LLM abstraction (ChatOpenAI, HuggingFacePipeline, etc.)
+- [ ] Create LLM factory/registry using LangChain's model abstractions
+- [ ] Support OpenAI models (via langchain-openai)
+- [ ] Support Hugging Face models (via langchain-community)
+- [ ] Task-based selection (different models for classification vs generation)
+- [ ] Configuration via environment variables
 
 **Definition of Done**
-- Models are swappable at runtime
+- Models are swappable at runtime via LangChain abstraction
+- Multiple LLM providers supported
+- Task-specific model selection works
 
 ---
 
 ## Step 6.2 – Hallucination control modes
-- [ ] Low tolerance mode
-- [ ] High tolerance mode
-- [ ] Temperature and prompt control
+- [ ] Implement mode-based LLM configuration (via LangChain LLM parameters)
+- [ ] Low tolerance mode (low temperature, strict prompts, citation requirements)
+- [ ] High tolerance mode (higher temperature, more creative prompts)
+- [ ] Temperature and prompt control via LangChain chain configuration
+- [ ] Prompt templates that enforce grounding in retrieved context
+- [ ] Mode selection in API requests
 
 **Definition of Done**
 - User can switch answer strictness
+- Different modes use appropriate temperature and prompt strategies
+- LangChain chains respect mode configuration
 
 ---
 
 # Phase 7 – API & UX
 
 ## Step 7.1 – Chat endpoint
-- [ ] `/chat` endpoint
-- [ ] Streaming responses
-- [ ] Mode selection
+- [ ] `/chat` endpoint (FastAPI route)
+- [ ] Implement streaming using LangChain's streaming support (streaming=True)
+- [ ] Chat history management (optional use of LangChain memory OR custom conversation state)
+- [ ] Mode selection (low/high tolerance)
+- [ ] Integration with RAG/SQL/Hybrid chains
+- [ ] Error handling and timeout management
 
 **Definition of Done**
 - Chat works end-to-end
+- Streaming responses work correctly
+- Chat history is maintained across conversation (via LangChain memory or custom state)
+- Mode selection affects response generation
+- Memory implementation is flexible and not locked into LangChain abstractions
 
 ---
 
