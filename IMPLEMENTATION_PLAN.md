@@ -12,8 +12,8 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 2 – Ingestion & Semantic Preparation
-- Current Step: Step 2.5 – Analysis document ingestion
+- Phase: Phase 3 – Vector Store & Embeddings (Chroma)
+- Current Step: Step 3.2 – Embedding layer
 - Blockers: none
 
 ---
@@ -169,9 +169,9 @@ Rules:
 # Phase 3 – Vector Store & Embeddings (Chroma)
 
 ## Step 3.1 – Chroma initialization
-- [ ] Configure Chroma persistence directory
-- [ ] Initialize vector store
-- [ ] Clear/rebuild index safely
+- [x] Configure Chroma persistence directory
+- [x] Initialize vector store
+- [x] Clear/rebuild index safely
 
 **Definition of Done**
 - Chroma starts and persists data locally
