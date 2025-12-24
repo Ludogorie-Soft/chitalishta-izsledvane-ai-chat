@@ -14,11 +14,12 @@ logger = logging.getLogger(__name__)
 
 try:
     from langchain_core.language_models.chat_models import BaseChatModel
-    from langchain_core.runnables import RunnableSerializable
+    from langchain_core.runnables import RunnableLambda, RunnableSerializable
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_openai import ChatOpenAI
 except ImportError as _e:  # pragma: no cover - guarded by tests
     BaseChatModel = object  # type: ignore[assignment]
+    RunnableLambda = object  # type: ignore[assignment]
     RunnableSerializable = object  # type: ignore[assignment]
     ChatPromptTemplate = object  # type: ignore[assignment]
     ChatOpenAI = None  # type: ignore[assignment]
@@ -126,7 +127,8 @@ class LLMIntentClassifier:
             return prompt | structured_llm
         except (AttributeError, NotImplementedError, TypeError):
             # Fallback: parse JSON from text response (for Hugging Face models without structured output)
-            return prompt | llm | self._parse_json_response
+            # Use RunnableLambda to properly wrap the parsing function
+            return prompt | llm | RunnableLambda(self._parse_json_response)
 
     def _parse_json_response(self, response) -> LLMIntentSchema:
         """
