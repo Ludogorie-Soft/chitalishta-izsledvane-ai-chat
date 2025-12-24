@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 5 – RAG & SQL Pipelines
-- Current Step: Phase 5.2 Complete - Ready for Phase 5.3 (Hybrid Pipeline)
+- Current Step: Phase 5 Complete - Ready for Phase 6 (LLM Management)
 - Blockers: none
 
 ---
@@ -297,12 +297,12 @@ Rules:
 ---
 
 ## Step 5.3 – Hybrid pipeline
-- [ ] Create LangChain chain for hybrid queries (SequentialChain or custom chain)
-- [ ] SQL → text context conversion (format SQL results as narrative)
-- [ ] RAG enrichment using retrieval chain
-- [ ] Combine SQL and RAG results using LangChain's chain composition
-- [ ] Unified answer format (Bulgarian)
-- [ ] Routing logic to determine when to use SQL vs RAG vs hybrid
+- [x] Create LangChain chain for hybrid queries (SequentialChain or custom chain)
+- [x] SQL → text context conversion (format SQL results as narrative)
+- [x] RAG enrichment using retrieval chain
+- [x] Combine SQL and RAG results using LangChain's chain composition
+- [x] Unified answer format (Bulgarian)
+- [x] Routing logic to determine when to use SQL vs RAG vs hybrid
 
 **Definition of Done**
 - Hybrid queries return correct combined answers

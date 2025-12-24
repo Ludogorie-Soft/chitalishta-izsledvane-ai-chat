@@ -12,6 +12,10 @@ from app.rag.llm_intent_classification import (
 )
 from app.rag.rag_chain import RAGChainService, get_rag_chain_service
 from app.rag.sql_agent import SQLAgentService, get_sql_agent_service
+from app.rag.hybrid_pipeline import (
+    HybridPipelineService,
+    get_hybrid_pipeline_service,
+)
 
 __all__ = [
     "HybridIntentRouter",
@@ -25,5 +29,7 @@ __all__ = [
     "get_rag_chain_service",
     "SQLAgentService",
     "get_sql_agent_service",
+    "HybridPipelineService",
+    "get_hybrid_pipeline_service",
 ]
 
