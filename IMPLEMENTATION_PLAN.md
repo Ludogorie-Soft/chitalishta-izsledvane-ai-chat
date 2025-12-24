@@ -12,8 +12,8 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 3 – Vector Store & Embeddings (Chroma)
-- Current Step: Phase 3 Complete - Ready for Phase 3.4 (LangChain Integration)
+- Phase: Phase 5 – RAG & SQL Pipelines
+- Current Step: Phase 5.2 Complete - Ready for Phase 5.3 (Hybrid Pipeline)
 - Blockers: none
 
 ---
@@ -256,17 +256,17 @@ Rules:
 # Phase 5 – RAG & SQL Pipelines
 
 ## Step 5.1 – RAG retrieval chain
-- [ ] Implement LangChain RAG chain (RetrievalQA or ConversationalRetrievalChain)
-- [ ] Use LangChain Chroma retriever with metadata filtering
-- [ ] Support both DB content and analysis document via metadata filters
-- [ ] Implement retrieval priority logic:
+- [x] Implement LangChain RAG chain (RetrievalQA or ConversationalRetrievalChain)
+- [x] Use LangChain Chroma retriever with metadata filtering
+- [x] Support both DB content and analysis document via metadata filters
+- [x] Implement retrieval priority logic:
   - Retrieve analysis document only when relevant
   - Do not let analysis document override DB facts
   - Prefer DB content for factual queries
-- [ ] Create Bulgarian prompt templates using LangChain PromptTemplate
-- [ ] Context assembly using custom logic (maintain control over DB facts vs analysis doc separation)
-- [ ] Pass assembled context into LangChain chains (LangChain consumes context, does not define it)
-- [ ] Integrate with existing embedding service via LangChain embedding interface
+- [x] Create Bulgarian prompt templates using LangChain PromptTemplate
+- [x] Context assembly using custom logic (maintain control over DB facts vs analysis doc separation)
+- [x] Pass assembled context into LangChain chains (LangChain consumes context, does not define it)
+- [x] Integrate with existing embedding service via LangChain embedding interface
 
 **Definition of Done**
 - RAG answers are grounded in context
@@ -278,14 +278,14 @@ Rules:
 ---
 
 ## Step 5.2 – SQL agent
-- [ ] Implement LangChain SQL agent (create_sql_agent)
-- [ ] Configure read-only database access (SQLAlchemy connection)
-- [ ] Add safety constraints (prevent DELETE/UPDATE/INSERT)
-- [ ] SQL generation logic is validated and optionally post-processed before execution
-- [ ] Support aggregation queries
-- [ ] Bulgarian language support for SQL query generation
-- [ ] Error handling and query validation
-- [ ] Audit logging of generated SQL queries
+- [x] Implement LangChain SQL agent (create_sql_agent)
+- [x] Configure read-only database access (SQLAlchemy connection)
+- [x] Add safety constraints (prevent DELETE/UPDATE/INSERT)
+- [x] SQL generation logic is validated and optionally post-processed before execution
+- [x] Support aggregation queries
+- [x] Bulgarian language support for SQL query generation
+- [x] Error handling and query validation
+- [x] Audit logging of generated SQL queries
 
 **Definition of Done**
 - Numeric answers are correct and safe
