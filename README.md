@@ -77,7 +77,21 @@ poetry install
 
    **LLM Configuration (for Intent Classification and Chat):**
 
-   Choose one of the following options:
+   The system uses an LLM registry that supports task-based model selection. You can configure different models for different tasks:
+   - **Classification tasks** (intent classification, routing): Fast, cost-effective models
+   - **Generation tasks** (RAG, SQL agent): More powerful models for quality
+   - **Synthesis tasks** (combining SQL and RAG results): Balanced models
+
+   **Task-Specific Provider Configuration (Optional):**
+   ```
+   LLM_PROVIDER=openai                    # Default provider for all tasks
+   LLM_PROVIDER_CLASSIFICATION=openai     # Optional: Override for classification
+   LLM_PROVIDER_GENERATION=openai         # Optional: Override for generation
+   LLM_PROVIDER_SYNTHESIS=openai          # Optional: Override for synthesis
+   ```
+   If not specified, all tasks use `LLM_PROVIDER`. This allows you to optimize cost/performance per task.
+
+   Choose one of the following provider options:
 
    **Option 1: OpenAI LLM (Recommended for production)**
    ```

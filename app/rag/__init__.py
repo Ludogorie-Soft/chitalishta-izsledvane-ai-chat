@@ -16,6 +16,15 @@ from app.rag.hybrid_pipeline import (
     HybridPipelineService,
     get_hybrid_pipeline_service,
 )
+from app.rag.llm_registry import (
+    LLMRegistry,
+    LLMTask,
+    get_classification_llm,
+    get_generation_llm,
+    get_llm_for_task,
+    get_llm_registry,
+    get_synthesis_llm,
+)
 
 __all__ = [
     "HybridIntentRouter",
@@ -31,5 +40,12 @@ __all__ = [
     "get_sql_agent_service",
     "HybridPipelineService",
     "get_hybrid_pipeline_service",
+    "LLMRegistry",
+    "LLMTask",
+    "get_llm_registry",
+    "get_llm_for_task",
+    "get_classification_llm",
+    "get_generation_llm",
+    "get_synthesis_llm",
 ]
 

@@ -19,6 +19,10 @@ class Settings(BaseSettings):
 
     # LLM configuration (for LangChain-based components)
     llm_provider: str = "openai"  # Options: "openai", "huggingface", or "tgi"
+    # Task-specific providers (optional, defaults to llm_provider)
+    llm_provider_classification: str = ""  # Provider for classification tasks (empty = use llm_provider)
+    llm_provider_generation: str = ""  # Provider for generation tasks (empty = use llm_provider)
+    llm_provider_synthesis: str = ""  # Provider for synthesis tasks (empty = use llm_provider)
     openai_chat_model: str = "gpt-4o-mini"
     huggingface_llm_model: str = "HuggingFaceH4/zephyr-7b-beta"  # Good multilingual support, no authentication required
     # Alternative Hugging Face models:

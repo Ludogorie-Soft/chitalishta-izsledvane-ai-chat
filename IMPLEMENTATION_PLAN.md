@@ -12,8 +12,8 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 5 – RAG & SQL Pipelines
-- Current Step: Phase 5 Complete - Ready for Phase 6 (LLM Management)
+- Phase: Phase 6 – LLM Management
+- Current Step: Phase 6.1 Complete - Ready for Phase 6.2 (Hallucination control modes)
 - Blockers: none
 
 ---
@@ -314,12 +314,12 @@ Rules:
 # Phase 6 – LLM Management
 
 ## Step 6.1 – LLM registry
-- [ ] Use LangChain's LLM abstraction (ChatOpenAI, HuggingFacePipeline, etc.)
-- [ ] Create LLM factory/registry using LangChain's model abstractions
-- [ ] Support OpenAI models (via langchain-openai)
-- [ ] Support Hugging Face models (via langchain-community)
-- [ ] Task-based selection (different models for classification vs generation)
-- [ ] Configuration via environment variables
+- [x] Use LangChain's LLM abstraction (ChatOpenAI, HuggingFacePipeline, etc.)
+- [x] Create LLM factory/registry using LangChain's model abstractions
+- [x] Support OpenAI models (via langchain-openai)
+- [x] Support Hugging Face models (via langchain-community)
+- [x] Task-based selection (different models for classification vs generation)
+- [x] Configuration via environment variables
 
 **Definition of Done**
 - Models are swappable at runtime via LangChain abstraction
