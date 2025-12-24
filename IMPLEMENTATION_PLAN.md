@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 6 – LLM Management
-- Current Step: Phase 6.1 Complete - Ready for Phase 6.2 (Hallucination control modes)
+- Current Step: Phase 6 Complete - Ready for Phase 7 (API & UX)
 - Blockers: none
 
 ---
@@ -329,12 +329,12 @@ Rules:
 ---
 
 ## Step 6.2 – Hallucination control modes
-- [ ] Implement mode-based LLM configuration (via LangChain LLM parameters)
-- [ ] Low tolerance mode (low temperature, strict prompts, citation requirements)
-- [ ] High tolerance mode (higher temperature, more creative prompts)
-- [ ] Temperature and prompt control via LangChain chain configuration
-- [ ] Prompt templates that enforce grounding in retrieved context
-- [ ] Mode selection in API requests
+- [x] Implement mode-based LLM configuration (via LangChain LLM parameters)
+- [x] Low tolerance mode (low temperature, strict prompts, citation requirements)
+- [x] High tolerance mode (higher temperature, more creative prompts)
+- [x] Temperature and prompt control via LangChain chain configuration
+- [x] Prompt templates that enforce grounding in retrieved context
+- [ ] Mode selection in API requests (deferred to Phase 7.1 – Chat endpoint)
 
 **Definition of Done**
 - User can switch answer strictness

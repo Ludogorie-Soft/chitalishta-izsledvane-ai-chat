@@ -7,6 +7,12 @@ from app.rag.hybrid_router import HybridIntentRouter, get_hybrid_router
 from app.rag.intent_classification import QueryIntent
 from app.rag.rag_chain import RAGChainService, get_rag_chain_service
 from app.rag.sql_agent import SQLAgentService, get_sql_agent_service
+from app.rag.hallucination_control import (
+    HallucinationConfig,
+    HallucinationMode,
+    PromptEnhancer,
+    get_default_hallucination_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +94,7 @@ class HybridPipelineService:
         sql_agent: Optional[SQLAgentService] = None,
         rag_chain: Optional[RAGChainService] = None,
         llm: Optional[BaseChatModel] = None,
+        hallucination_config: Optional[HallucinationConfig] = None,
     ):
         """
         Initialize hybrid pipeline service.
@@ -97,6 +104,7 @@ class HybridPipelineService:
             sql_agent: Optional SQL agent service. If None, creates default.
             rag_chain: Optional RAG chain service. If None, creates default.
             llm: Optional LLM instance for final answer synthesis. If None, uses default.
+            hallucination_config: Optional hallucination control configuration. If None, uses default (MEDIUM_TOLERANCE).
         """
         if _LANGCHAIN_IMPORT_ERROR is not None:
             raise ImportError(
@@ -105,42 +113,57 @@ class HybridPipelineService:
                 "  poetry add langchain langchain-openai langchain-community"
             ) from _LANGCHAIN_IMPORT_ERROR
 
+        self.hallucination_config = hallucination_config or get_default_hallucination_config()
+
         self.router = router or get_hybrid_router()
-        self.sql_agent = sql_agent or get_sql_agent_service()
-        self.rag_chain = rag_chain or get_rag_chain_service()
-        self.llm = llm or self.rag_chain.llm  # Use RAG chain's LLM by default
+        self.sql_agent = sql_agent or get_sql_agent_service(
+            hallucination_config=self.hallucination_config
+        )
+        self.rag_chain = rag_chain or get_rag_chain_service(
+            hallucination_config=self.hallucination_config
+        )
+
+        # Configure synthesis LLM with hallucination settings
+        base_llm = llm or self.rag_chain.llm
+        self.llm = self.hallucination_config.get_llm_with_config(base_llm)
 
         # Create synthesis chain for combining SQL and RAG results
         self.synthesis_chain = self._create_synthesis_chain()
 
     def _create_synthesis_chain(self):
-        """Create LangChain chain for synthesizing SQL and RAG results."""
+        """Create LangChain chain for synthesizing SQL and RAG results with hallucination control."""
+        base_system_prompt = (
+            "Ти си помощник за система за данни за читалища в България.\n"
+            "Твоята задача е да комбинираш резултати от SQL заявки и RAG извличания "
+            "в единен, кохерентен отговор на български език.\n"
+            "\n"
+            "ПРАВИЛА:\n"
+            "1. Използвай SQL резултатите за точни числени данни и статистики.\n"
+            "2. Използвай RAG контекста за обяснения, история и допълнителна информация.\n"
+            "3. Не повтаряй информация - комбинирай я логично.\n"
+            "4. Ако има противоречия, приоритизирай SQL резултатите за фактически данни.\n"
+            "5. Отговорът трябва да бъде естествен и четим на български език.\n"
+            "6. Структурирай отговора ясно: първо числа/статистика, после обяснения.\n"
+            "\n"
+            "SQL Резултати:\n"
+            "{sql_results}\n"
+            "\n"
+            "RAG Контекст:\n"
+            "{rag_context}\n"
+            "\n"
+            "Оригинален въпрос: {question}\n"
+            "\n"
+            "Създай единен отговор:"
+        )
+
+        # Enhance with hallucination control instructions
+        enhanced_prompt = PromptEnhancer.enhance_synthesis_prompt(
+            base_system_prompt, self.hallucination_config
+        )
+
         prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    "Ти си помощник за система за данни за читалища в България.\n"
-                    "Твоята задача е да комбинираш резултати от SQL заявки и RAG извличания "
-                    "в единен, кохерентен отговор на български език.\n"
-                    "\n"
-                    "ПРАВИЛА:\n"
-                    "1. Използвай SQL резултатите за точни числени данни и статистики.\n"
-                    "2. Използвай RAG контекста за обяснения, история и допълнителна информация.\n"
-                    "3. Не повтаряй информация - комбинирай я логично.\n"
-                    "4. Ако има противоречия, приоритизирай SQL резултатите за фактически данни.\n"
-                    "5. Отговорът трябва да бъде естествен и четим на български език.\n"
-                    "6. Структурирай отговора ясно: първо числа/статистика, после обяснения.\n"
-                    "\n"
-                    "SQL Резултати:\n"
-                    "{sql_results}\n"
-                    "\n"
-                    "RAG Контекст:\n"
-                    "{rag_context}\n"
-                    "\n"
-                    "Оригинален въпрос: {question}\n"
-                    "\n"
-                    "Създай единен отговор:",
-                ),
+                ("system", enhanced_prompt),
                 ("human", "{question}"),
             ]
         )
@@ -269,6 +292,7 @@ def get_hybrid_pipeline_service(
     sql_agent: Optional[SQLAgentService] = None,
     rag_chain: Optional[RAGChainService] = None,
     llm: Optional[BaseChatModel] = None,
+    hallucination_config: Optional[HallucinationConfig] = None,
 ) -> HybridPipelineService:
     """
     Factory function to get a default HybridPipelineService.
@@ -287,5 +311,6 @@ def get_hybrid_pipeline_service(
         sql_agent=sql_agent,
         rag_chain=rag_chain,
         llm=llm,
+        hallucination_config=hallucination_config,
     )
 

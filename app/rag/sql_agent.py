@@ -7,6 +7,11 @@ from typing import Dict, List, Optional
 from app.core.config import settings
 from app.db.database import engine
 from app.rag.llm_intent_classification import get_default_llm
+from app.rag.hallucination_control import (
+    HallucinationConfig,
+    PromptEnhancer,
+    get_default_hallucination_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +213,7 @@ class SQLAgentService:
         llm: Optional[BaseChatModel] = None,
         database_url: Optional[str] = None,
         enable_audit_logging: bool = True,
+        hallucination_config: Optional[HallucinationConfig] = None,
     ):
         """
         Initialize SQL agent service.
@@ -216,6 +222,7 @@ class SQLAgentService:
             llm: Optional LLM instance. If None, creates one from settings.
             database_url: Optional database URL. If None, uses config default.
             enable_audit_logging: Whether to enable audit logging of SQL queries
+            hallucination_config: Optional hallucination control configuration. If None, uses default (MEDIUM_TOLERANCE).
         """
         if _LANGCHAIN_IMPORT_ERROR is not None:
             raise ImportError(
@@ -224,7 +231,11 @@ class SQLAgentService:
                 "  poetry add langchain langchain-community langchain-openai"
             ) from _LANGCHAIN_IMPORT_ERROR
 
-        self.llm = llm or get_default_llm()
+        self.hallucination_config = hallucination_config or get_default_hallucination_config()
+
+        # Configure LLM with hallucination settings
+        base_llm = llm or get_default_llm()
+        self.llm = self.hallucination_config.get_llm_with_config(base_llm)
         self.database_url = database_url or settings.database_url
         self.enable_audit_logging = enable_audit_logging
 
@@ -262,8 +273,8 @@ class SQLAgentService:
         return agent
 
     def _get_bulgarian_system_message(self) -> str:
-        """Get Bulgarian system message for SQL agent."""
-        return (
+        """Get Bulgarian system message for SQL agent with hallucination control."""
+        base_message = (
             "Ти си SQL агент за база данни за читалища в България.\n"
             "Твоята задача е да генерираш SQL заявки на базата на потребителските въпроси.\n"
             "\n"
@@ -277,6 +288,9 @@ class SQLAgentService:
             "6. Ако потребителят пита за статистика, използвай GROUP BY.\n"
             "7. Връщай резултатите на български език, когато е възможно.\n"
         )
+
+        # Enhance with hallucination control instructions
+        return PromptEnhancer.enhance_sql_prompt(base_message, self.hallucination_config)
 
     def _validate_and_sanitize_sql(self, sql: str) -> tuple[str, Optional[str]]:
         """
@@ -456,6 +470,7 @@ class SQLAgentService:
 def get_sql_agent_service(
     llm: Optional[BaseChatModel] = None,
     enable_audit_logging: bool = True,
+    hallucination_config: Optional[HallucinationConfig] = None,
 ) -> SQLAgentService:
     """
     Factory function to get a default SQLAgentService.
@@ -470,5 +485,6 @@ def get_sql_agent_service(
     return SQLAgentService(
         llm=llm,
         enable_audit_logging=enable_audit_logging,
+        hallucination_config=hallucination_config,
     )
 

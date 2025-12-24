@@ -25,6 +25,12 @@ from app.rag.llm_registry import (
     get_llm_registry,
     get_synthesis_llm,
 )
+from app.rag.hallucination_control import (
+    HallucinationConfig,
+    HallucinationMode,
+    PromptEnhancer,
+    get_default_hallucination_config,
+)
 
 __all__ = [
     "HybridIntentRouter",
@@ -47,5 +53,9 @@ __all__ = [
     "get_classification_llm",
     "get_generation_llm",
     "get_synthesis_llm",
+    "HallucinationConfig",
+    "HallucinationMode",
+    "PromptEnhancer",
+    "get_default_hallucination_config",
 ]
 

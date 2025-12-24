@@ -5,6 +5,12 @@ from typing import Dict, List, Optional, Tuple
 
 from app.rag.langchain_integration import LangChainChromaFactory, get_langchain_retriever
 from app.rag.llm_intent_classification import get_default_llm
+from app.rag.hallucination_control import (
+    HallucinationConfig,
+    HallucinationMode,
+    PromptEnhancer,
+    get_default_hallucination_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +174,7 @@ class RAGChainService:
         db_retriever: Optional[BaseRetriever] = None,
         analysis_retriever: Optional[BaseRetriever] = None,
         prefer_db_for_factual: bool = True,
+        hallucination_config: Optional[HallucinationConfig] = None,
     ):
         """
         Initialize RAG chain service.
@@ -177,6 +184,7 @@ class RAGChainService:
             db_retriever: Optional retriever for DB content. If None, creates default.
             analysis_retriever: Optional retriever for analysis document. If None, creates default with filter.
             prefer_db_for_factual: If True, prioritize DB content for factual queries
+            hallucination_config: Optional hallucination control configuration. If None, uses default (MEDIUM_TOLERANCE).
         """
         if _LANGCHAIN_IMPORT_ERROR is not None:
             raise ImportError(
@@ -185,7 +193,12 @@ class RAGChainService:
                 "  poetry add langchain langchain-openai langchain-community langchain-chroma"
             ) from _LANGCHAIN_IMPORT_ERROR
 
-        self.llm = llm or get_default_llm()
+        self.hallucination_config = hallucination_config or get_default_hallucination_config()
+
+        # Configure LLM with hallucination settings
+        base_llm = llm or get_default_llm()
+        self.llm = self.hallucination_config.get_llm_with_config(base_llm)
+
         self.prefer_db_for_factual = prefer_db_for_factual
 
         # Create retrievers if not provided
@@ -222,8 +235,8 @@ class RAGChainService:
         self.chain = self._build_chain()
 
     def _create_bulgarian_prompt(self) -> ChatPromptTemplate:
-        """Create Bulgarian prompt template for RAG."""
-        system_prompt = (
+        """Create Bulgarian prompt template for RAG with hallucination control."""
+        base_system_prompt = (
             "Ти си помощник за система за данни за читалища в България.\n"
             "Твоята задача е да отговориш на въпроси на базата на предоставения контекст.\n"
             "\n"
@@ -244,14 +257,8 @@ class RAGChainService:
             "Отговор:"
         )
 
-        # Note: The system prompt includes {context} and {question} placeholders
-        # We'll format it manually in the chain
-        return ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                ("human", "{question}"),
-            ]
-        )
+        # Enhance prompt with hallucination control instructions
+        return PromptEnhancer.enhance_rag_prompt(base_system_prompt, self.hallucination_config)
 
     def _build_chain(self):
         """
@@ -366,6 +373,7 @@ class RAGChainService:
 def get_rag_chain_service(
     llm: Optional[BaseChatModel] = None,
     prefer_db_for_factual: bool = True,
+    hallucination_config: Optional[HallucinationConfig] = None,
 ) -> RAGChainService:
     """
     Factory function to get a default RAGChainService.
@@ -373,6 +381,7 @@ def get_rag_chain_service(
     Args:
         llm: Optional LLM instance. If None, creates one from settings.
         prefer_db_for_factual: If True, prioritize DB content for factual queries
+        hallucination_config: Optional hallucination control configuration
 
     Returns:
         RAGChainService instance
@@ -380,5 +389,6 @@ def get_rag_chain_service(
     return RAGChainService(
         llm=llm,
         prefer_db_for_factual=prefer_db_for_factual,
+        hallucination_config=hallucination_config,
     )
 
