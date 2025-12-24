@@ -10,6 +10,7 @@ from app.rag.llm_intent_classification import (
     LLMIntentClassifier,
     get_llm_intent_classifier,
 )
+from app.rag.rag_chain import RAGChainService, get_rag_chain_service
 
 __all__ = [
     "HybridIntentRouter",
@@ -19,5 +20,7 @@ __all__ = [
     "RuleBasedIntentClassifier",
     "LLMIntentClassifier",
     "get_llm_intent_classifier",
+    "RAGChainService",
+    "get_rag_chain_service",
 ]
 
