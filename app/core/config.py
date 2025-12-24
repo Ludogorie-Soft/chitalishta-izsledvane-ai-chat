@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Alternative Hugging Face models:
     # - "mistralai/Mistral-7B-Instruct-v0.2" (larger, better quality, may require auth)
     # - "meta-llama/Llama-3.2-3B-Instruct" (good for Bulgarian, requires Hugging Face auth)
-    # - "google/gemma-2b-it" (smaller, faster, no auth required)
+    # - "google/gemma-2b-it" (smaller, faster, requires Hugging Face auth - gated model)
     # - "microsoft/Phi-3-mini-4k-instruct" (small, fast, no auth required)
 
     # TGI (Text Generation Inference) configuration (for local Docker-based LLM)

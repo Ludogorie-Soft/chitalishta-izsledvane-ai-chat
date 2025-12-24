@@ -127,9 +127,18 @@ poetry install
    - Uses OpenAI-compatible API (seamless integration with LangChain)
    - Default model: `google/gemma-2b-it` (2B params, lightweight, CPU-friendly)
    - **Setup**:
-     1. Start TGI service: `docker-compose up -d tgi`
-     2. Wait for model to load (first start may take 3-5 minutes to download model)
-     3. Check health: `curl http://localhost:8080/health`
+     1. **Authenticate with Hugging Face** (required for gated models like `google/gemma-2b-it`):
+        - Visit https://huggingface.co/google/gemma-2b-it and accept the model's terms
+        - Go to https://huggingface.co/settings/tokens and create a new token with "Read" permission
+        - Add the token to your `.env` file:
+          ```
+          HUGGING_FACE_HUB_TOKEN=hf_your_token_here
+          ```
+        - Replace `hf_your_token_here` with your actual Hugging Face token
+     2. Start TGI service: `docker-compose up -d tgi`
+     3. Wait for model to load (first start may take 3-5 minutes to download model)
+     4. Check health: `curl http://localhost:8080/health`
+   - **Note**: If you see authentication errors, verify your token is correctly set in `.env` and restart the container: `docker-compose restart tgi`
    - **Advantages**:
      - No dependency conflicts (runs in separate container)
      - Faster app restarts (model stays loaded)

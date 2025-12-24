@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:latest
@@ -11,10 +9,10 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      # Use the original volume from the crawler project
-      - chitalishta-crawler_pg_data_chitalishta:/var/lib/postgresql/data
+      # PostgreSQL 18+ requires mounting at /var/lib/postgresql instead of /var/lib/postgresql/data
+      - chitalishta-crawler_pg_data_chitalishta:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root"]
+      test: ["CMD-SHELL", "pg_isready -U root || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,28 +27,35 @@ services:
     ports:
       - "5435:5432"
     volumes:
-      - pg_data_chitalishta_test:/var/lib/postgresql/data
+      # PostgreSQL 18+ requires mounting at /var/lib/postgresql instead of /var/lib/postgresql/data
+      - pg_data_chitalishta_test:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root"]
+      test: ["CMD-SHELL", "pg_isready -U root || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   tgi:
     image: ghcr.io/huggingface/text-generation-inference:latest
+    platform: linux/amd64  # Required for ARM64 Mac compatibility (uses x86_64 emulation)
     container_name: chitalishta_tgi
     shm_size: 1g  # Shared memory for model loading
     ports:
       - "8080:80"  # TGI OpenAI-compatible API endpoint
     volumes:
       - tgi_model_cache:/data
+    environment:
+      # Hugging Face token for accessing gated models (e.g., google/gemma-2b-it)
+      # Get your token from: https://huggingface.co/settings/tokens
+      # Add it to your .env file as: HUGGING_FACE_HUB_TOKEN=your_token_here
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
     command:
       - --model-id
       - google/gemma-2b-it
       - --port
       - "80"
       - --max-input-length
-      - "2048"
+      - "1536"
       - --max-total-tokens
       - "2048"
       - --disable-custom-kernels  # Required for CPU-only inference
@@ -69,9 +74,8 @@ services:
     restart: unless-stopped
 
 volumes:
-  # Reference the existing volume from the crawler project
+  # Database volume (changed from external to regular volume since it doesn't exist)
   chitalishta-crawler_pg_data_chitalishta:
-    external: true
   pg_data_chitalishta_test:
   tgi_model_cache:
 
