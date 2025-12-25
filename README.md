@@ -24,17 +24,17 @@ RAG (Retrieval-Augmented Generation) system for Bulgarian Chitalishta research d
 poetry install
 ```
 
-2. Start services using Docker Compose:
+2. Start external services (database, etc.) using Docker Compose:
    ```bash
-   docker-compose up -d
+   docker-compose -f docker-compose.dev.yml up -d
    ```
    This will start:
    - Main database on port 5434 (`chitalishta_db`)
    - Test database on port 5435 (`chitalishta_test_db`)
-   - TGI (Text Generation Inference) LLM service on port 8080 (if `LLM_PROVIDER=tgi`)
+   - Optional: TGI (Text Generation Inference) LLM service on port 8080 (if `LLM_PROVIDER=tgi`)
 
-   **Note**: If using TGI, the first start may take 5-10 minutes to download the model.
-   Check TGI health: `curl http://localhost:8080/health`
+   **Note**: For local development, the FastAPI app runs directly on your machine (not in Docker).
+   For production deployment, use `docker-compose -f docker-compose.prod.yml` (see `DOCKER.md` for details).
 
 3. Initialize database schema (if using a fresh database):
    ```bash

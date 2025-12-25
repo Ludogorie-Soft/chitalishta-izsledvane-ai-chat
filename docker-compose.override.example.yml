@@ -1,0 +1,25 @@
+# Example docker-compose override file for local development
+# Copy this to docker-compose.override.yml and customize as needed
+# docker-compose automatically loads docker-compose.override.yml if it exists
+
+services:
+  app:
+    environment:
+      # Override environment variables for local development
+      # Example: Use Hugging Face instead of OpenAI
+      # EMBEDDING_PROVIDER: huggingface
+      # LLM_PROVIDER: huggingface
+
+      # Or use OpenAI with your API key
+      # OPENAI_API_KEY: your_key_here
+
+      # Enable debug mode (if supported)
+      # DEBUG: "true"
+    volumes:
+      # Mount local code for development (hot reload)
+      # Uncomment to enable:
+      # - .:/app
+      # - /app/__pycache__  # Exclude pycache from volume
+    # Override command for development
+    # command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+

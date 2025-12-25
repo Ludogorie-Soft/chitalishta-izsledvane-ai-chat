@@ -1,27 +1,33 @@
-# This file is kept for backward compatibility
-# For local development, use: docker-compose -f docker-compose.dev.yml
-# For production, use: docker-compose -f docker-compose.prod.yml
+# Docker Compose for Production/Server Deployment
+# This file contains all services including the FastAPI application
+#
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+#
+# Required environment variables (set in .env or pass via -e):
+#   - POSTGRES_USER
+#   - POSTGRES_PASSWORD
+#   - POSTGRES_DB
+#   - OPENAI_API_KEY (if using OpenAI)
+#   - HUGGING_FACE_HUB_TOKEN (if using gated Hugging Face models)
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ludogoriesoft/chitalishta_ai_chat_app:latest
     container_name: chitalishta_ai_chat_app
     ports:
-      - "8000:8000"
+      - "${APP_PORT:-8000}:8000"
     environment:
-      # Database connection
-      DATABASE_URL: postgresql://root:root@db:5432/chitalishta_db
+      # Database connection (constructed from env vars or use DATABASE_URL directly)
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}}
       # Chroma vector store
       CHROMA_PERSIST_DIRECTORY: /app/chroma_db
-      CHROMA_COLLECTION_NAME: chitalishta_documents
-      # Embedding configuration (set in .env or override)
+      CHROMA_COLLECTION_NAME: ${CHROMA_COLLECTION_NAME:-chitalishta_documents}
+      # Embedding configuration
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
       HUGGINGFACE_MODEL_NAME: ${HUGGINGFACE_MODEL_NAME:-intfloat/multilingual-e5-base}
-      # LLM configuration (set in .env or override)
+      # LLM configuration
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_PROVIDER_CLASSIFICATION: ${LLM_PROVIDER_CLASSIFICATION:-}
       LLM_PROVIDER_GENERATION: ${LLM_PROVIDER_GENERATION:-}
@@ -51,70 +57,49 @@ services:
     image: postgres:latest
     container_name: chitalishta_db_ai_chat
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: chitalishta_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5434:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       # PostgreSQL 18+ requires mounting at /var/lib/postgresql instead of /var/lib/postgresql/data
       - chitalishta-crawler_pg_data_chitalishta:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - chitalishta_network
+    restart: unless-stopped
 
-  test_db:
-    image: postgres:latest
-    container_name: chitalishta_test_db
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: chitalishta_test_db
-    ports:
-      - "5435:5432"
-    volumes:
-      # PostgreSQL 18+ requires mounting at /var/lib/postgresql instead of /var/lib/postgresql/data
-      - pg_data_chitalishta_test:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - chitalishta_network
-
+  # Optional: TGI service for local LLM
   # tgi:
   #   image: ghcr.io/huggingface/text-generation-inference:latest
-  #   platform: linux/amd64  # Required for ARM64 Mac compatibility (uses x86_64 emulation)
+  #   platform: linux/amd64
   #   container_name: chitalishta_tgi
-  #   shm_size: 1g  # Shared memory for model loading
+  #   shm_size: 1g
   #   ports:
-  #     - "8080:80"  # TGI OpenAI-compatible API endpoint
+  #     - "${TGI_PORT:-8080}:80"
   #   volumes:
   #     - tgi_model_cache:/data
   #   environment:
-  #     # Hugging Face token for accessing gated models (e.g., google/gemma-2b-it)
-  #     # Get your token from: https://huggingface.co/settings/tokens
-  #     # Add it to your .env file as: HUGGING_FACE_HUB_TOKEN=your_token_here
   #     - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
   #   command:
   #     - --model-id
-  #     - google/gemma-2b-it
+  #     - ${TGI_MODEL_NAME:-google/gemma-2b-it}
   #     - --port
   #     - "80"
   #     - --max-input-length
   #     - "1536"
   #     - --max-total-tokens
   #     - "2048"
-  #     - --disable-custom-kernels  # Required for CPU-only inference
+  #     - --disable-custom-kernels
   #   deploy:
   #     resources:
   #       limits:
-  #         memory: 6G  # Allocate 6GB RAM for Gemma-2b (smaller model)
+  #         memory: 6G
   #       reservations:
   #         memory: 4G
   #   healthcheck:
@@ -122,14 +107,15 @@ services:
   #     interval: 30s
   #     timeout: 10s
   #     retries: 5
-  #     start_period: 180s  # Give TGI time to download and load model on first start (3 minutes for smaller model)
+  #     start_period: 180s
   #   restart: unless-stopped
+  #   networks:
+  #     - chitalishta_network
+  #   depends_on:
+  #     - app
 
 volumes:
-  # Database volume (changed from external to regular volume since it doesn't exist)
   chitalishta-crawler_pg_data_chitalishta:
-  pg_data_chitalishta_test:
-  # Chroma DB data persistence
   chroma_db_data:
   # tgi_model_cache:
 

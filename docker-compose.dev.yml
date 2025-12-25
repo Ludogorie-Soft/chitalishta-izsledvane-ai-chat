@@ -1,0 +1,96 @@
+# Docker Compose for Local Development
+# This file contains only external services (database, etc.)
+# The FastAPI application runs directly on the host machine for development
+#
+# Usage: docker-compose -f docker-compose.dev.yml up -d
+
+services:
+  db:
+    image: postgres:latest
+    container_name: chitalishta_db_ai_chat
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      POSTGRES_DB: ${POSTGRES_DB:-chitalishta_db}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      # PostgreSQL 18+ requires mounting at /var/lib/postgresql instead of /var/lib/postgresql/data
+      - chitalishta-crawler_pg_data_chitalishta:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-root} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chitalishta_network
+    restart: unless-stopped
+
+  test_db:
+    image: postgres:latest
+    container_name: chitalishta_test_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      POSTGRES_DB: ${TEST_POSTGRES_DB:-chitalishta_test_db}
+    ports:
+      - "${TEST_POSTGRES_PORT:-5435}:5432"
+    volumes:
+      # PostgreSQL 18+ requires mounting at /var/lib/postgresql instead of /var/lib/postgresql/data
+      - pg_data_chitalishta_test:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-root} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chitalishta_network
+    restart: unless-stopped
+
+  # Optional: TGI service for local LLM (uncomment if needed)
+  # tgi:
+  #   image: ghcr.io/huggingface/text-generation-inference:latest
+  #   platform: linux/amd64
+  #   container_name: chitalishta_tgi
+  #   shm_size: 1g
+  #   ports:
+  #     - "8080:80"
+  #   volumes:
+  #     - tgi_model_cache:/data
+  #   environment:
+  #     - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+  #   command:
+  #     - --model-id
+  #     - ${TGI_MODEL_NAME:-google/gemma-2b-it}
+  #     - --port
+  #     - "80"
+  #     - --max-input-length
+  #     - "1536"
+  #     - --max-total-tokens
+  #     - "2048"
+  #     - --disable-custom-kernels
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 6G
+  #       reservations:
+  #         memory: 4G
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 180s
+  #   restart: unless-stopped
+  #   networks:
+  #     - chitalishta_network
+
+volumes:
+  chitalishta-crawler_pg_data_chitalishta:
+  pg_data_chitalishta_test:
+  # tgi_model_cache:
+
+networks:
+  chitalishta_network:
+    driver: bridge
+

@@ -12,8 +12,8 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 7 – API & UX
-- Current Step: Step 7.2 Complete - Ready for Phase 8 (Auth & Public Access)
+- Phase: Phase 9 – Deployment & Ops
+- Current Step: Step 9.1 Complete - Ready for Step 9.2 (AWS EC2 deployment)
 - Blockers: none
 
 ---
@@ -396,9 +396,9 @@ Rules:
 # Phase 9 – Deployment & Ops
 
 ## Step 9.1 – Dockerization
-- [ ] Dockerfile
-- [ ] Environment config
-- [ ] Local build
+- [x] Dockerfile
+- [x] Environment config
+- [x] Local build
 
 **Definition of Done**
 - App runs in Docker
