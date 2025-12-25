@@ -240,12 +240,29 @@ class SQLAgentService:
         self.enable_audit_logging = enable_audit_logging
 
         # Create SQLDatabase instance (read-only)
+        # Add custom instructions for case-insensitive text field comparisons
+        custom_table_info = {
+            "chitalishte": (
+                "Table: chitalishte\n"
+                "IMPORTANT: For text field comparisons (region, town, municipality, status, etc.), "
+                "ALWAYS use case-insensitive comparison:\n"
+                "- Use ILIKE instead of = for text comparisons (e.g., WHERE region ILIKE 'Враца')\n"
+                "- OR use LOWER() function: WHERE LOWER(region) = LOWER('Враца')\n"
+                "This is critical because users may query with different cases (Враца, ВРАЦА, враца).\n"
+            ),
+            "information_card": (
+                "Table: information_card\n"
+                "This table contains information cards linked to chitalishte via chitalishte_id.\n"
+            ),
+        }
+
         self.db = SQLDatabase(
             engine=engine,
             # Include only the tables we want to expose
             include_tables=["chitalishte", "information_card"],
             # Sample rows for schema understanding (limit to avoid large samples)
             sample_rows_in_table_info=3,
+            custom_table_info=custom_table_info,
         )
 
         # Create SQL toolkit
@@ -287,10 +304,87 @@ class SQLAgentService:
             "5. Бъди точен с имената на колоните.\n"
             "6. Ако потребителят пита за статистика, използвай GROUP BY.\n"
             "7. Връщай резултатите на български език, когато е възможно.\n"
+            "8. ВАЖНО - За сравнения на текстови полета (region, town, municipality, status и др.) ВИНАГИ използвай case-insensitive сравнение:\n"
+            "   - Използвай ILIKE вместо = за текстови сравнения (напр. WHERE region ILIKE 'Враца')\n"
+            "   - ИЛИ използвай LOWER() функцията: WHERE LOWER(region) = LOWER('Враца')\n"
+            "   - Това е критично, защото потребителите могат да питат с различни регистри (Враца, ВРАЦА, враца)\n"
+            "   - Пример: Вместо 'WHERE region = \\'Враца\\'' използвай 'WHERE region ILIKE \\'Враца\\'' или 'WHERE LOWER(region) = LOWER(\\'Враца\\')'\n"
         )
 
         # Enhance with hallucination control instructions
         return PromptEnhancer.enhance_sql_prompt(base_message, self.hallucination_config)
+
+    def _make_case_insensitive(self, sql: str) -> str:
+        """
+        Convert case-sensitive text comparisons to case-insensitive for known text fields.
+
+        This method converts patterns like:
+        - WHERE region = 'value' -> WHERE LOWER(region) = LOWER('value')
+        - WHERE chitalishte.region = 'value' -> WHERE LOWER(chitalishte.region) = LOWER('value')
+        - WHERE town = 'value' -> WHERE LOWER(town) = LOWER('value')
+        - etc.
+
+        Args:
+            sql: SQL query string
+
+        Returns:
+            SQL query with case-insensitive comparisons for text fields
+        """
+        # Text fields that should be case-insensitive
+        text_fields = [
+            "region",
+            "town",
+            "municipality",
+            "status",
+            "chairman",
+            "secretary",
+            "name",
+            "address",
+            "email",
+            "phone",
+            "bulstat",
+        ]
+
+        # Pattern to match: [table.]field = 'value' or [table.]field = "value"
+        # This handles both single and double quotes, table-qualified fields, and various whitespace
+        # Avoid matching if already wrapped in LOWER() or using ILIKE
+        for field in text_fields:
+            # Match field = 'value' (case-insensitive field name, avoid if already LOWER or ILIKE)
+            # Pattern matches: optional table prefix, field name, whitespace, =, whitespace, quoted value
+            pattern1 = re.compile(
+                rf"(?<!LOWER\()(?<!ILIKE\s)(\w+\.)?({re.escape(field)})\s*=\s*'([^']*)'",
+                re.IGNORECASE,
+            )
+
+            def replace_single_quote(match):
+                table_prefix = match.group(1) or ""  # May be None, so default to empty
+                original_field = match.group(2)  # Field name (preserve original casing)
+                value = match.group(3)
+                if table_prefix:
+                    return f"{table_prefix}LOWER({original_field}) = LOWER('{value}')"
+                else:
+                    return f"LOWER({original_field}) = LOWER('{value}')"
+
+            sql = pattern1.sub(replace_single_quote, sql)
+
+            # Match field = "value" (double quotes)
+            pattern2 = re.compile(
+                rf'(?<!LOWER\()(?<!ILIKE\s)(\w+\.)?({re.escape(field)})\s*=\s*"([^"]*)"',
+                re.IGNORECASE,
+            )
+
+            def replace_double_quote(match):
+                table_prefix = match.group(1) or ""
+                original_field = match.group(2)
+                value = match.group(3)
+                if table_prefix:
+                    return f'{table_prefix}LOWER({original_field}) = LOWER("{value}")'
+                else:
+                    return f'LOWER({original_field}) = LOWER("{value}")'
+
+            sql = pattern2.sub(replace_double_quote, sql)
+
+        return sql
 
     def _validate_and_sanitize_sql(self, sql: str) -> tuple[str, Optional[str]]:
         """
@@ -309,6 +403,9 @@ class SQLAgentService:
 
         # Sanitize
         sanitized = self.validator.sanitize_sql(sql)
+
+        # Make text field comparisons case-insensitive
+        sanitized = self._make_case_insensitive(sanitized)
 
         return sanitized, None
 
