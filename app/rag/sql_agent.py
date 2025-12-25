@@ -423,7 +423,12 @@ class SQLAgentService:
                 "ALWAYS use case-insensitive comparison:\n"
                 "   - Use ILIKE instead of = (e.g., WHERE region ILIKE 'Враца')\n"
                 "   - OR use LOWER() function: WHERE LOWER(region) = LOWER('Враца')\n"
-                "3. This table does NOT contain subsidiary_count, subsidized_count, or any count fields.\n"
+                "3. IMPORTANT - The 'town' column contains values like 'ГРАД ВРАЦА' or 'СЕЛО ВРАЦА' "
+                "(i.e., 'ГРАД/СЕЛО <name>'), NOT just the town name.\n"
+                "   When filtering by town, ALWAYS use ILIKE with wildcards: WHERE town ILIKE '%Враца%'\n"
+                "   This will match 'ГРАД ВРАЦА', 'СЕЛО ВРАЦА', or just 'ВРАЦА'.\n"
+                "4. When query asks for 'извън град X' (outside city X), use 'town NOT ILIKE' instead of 'town ILIKE'.\n"
+                "5. This table does NOT contain subsidiary_count, subsidized_count, or any count fields.\n"
                 "   Those fields are in the information_card table.\n"
             ),
             "information_card": (
@@ -568,7 +573,12 @@ class SQLAgentService:
             "JOIN information_card ic ON ch.id = ic.chitalishte_id "
             "GROUP BY ch.id ORDER BY MAX(ic.subsidiary_count) DESC\n"
             "   Това гарантира, че всяко chitalishte се появява само веднъж в резултатите.\n"
-            "10. ВАЖНО - За сравнения на текстови полета (region, town, municipality, status и др.) ВИНАГИ използвай case-insensitive сравнение:\n"
+            "10. ВАЖНО - Колоната 'town' съдържа стойности като 'ГРАД ВРАЦА' или 'СЕЛО ВРАЦА' "
+            "(т.е. 'ГРАД/СЕЛО <име>'), НЕ само името на града.\n"
+            "   Когато филтрираш по town, ВИНАГИ използвай ILIKE с wildcards: WHERE town ILIKE '%Враца%'\n"
+            "   Това ще съвпадне с 'ГРАД ВРАЦА', 'СЕЛО ВРАЦА', или само 'ВРАЦА'.\n"
+            "11. Когато заявката пита за 'извън град X' (outside city X), използвай 'town NOT ILIKE' вместо 'town ILIKE'.\n"
+            "12. ВАЖНО - За сравнения на текстови полета (region, town, municipality, status и др.) ВИНАГИ използвай case-insensitive сравнение:\n"
             "   - Използвай ILIKE вместо = за текстови сравнения (напр. WHERE region ILIKE 'Враца')\n"
             "   - ИЛИ използвай LOWER() функцията: WHERE LOWER(region) = LOWER('Враца')\n"
             "   - Това е критично, защото потребителите могат да питат с различни регистри (Враца, ВРАЦА, враца)\n"
@@ -873,6 +883,117 @@ class SQLAgentService:
 
         return sql
 
+    def _fix_town_field_patterns(self, sql: str) -> str:
+        """
+        Fix town field comparisons to handle patterns like "ГРАД ВРАЦА" or "СЕЛО ВРАЦА".
+
+        The town column contains values like "ГРАД ВРАЦА" or "СЕЛО ВРАЦА" (i.e., "ГРАД/СЕЛО <name>"),
+        not just the town name. This method converts exact matches to pattern matches using ILIKE.
+
+        Args:
+            sql: SQL query string
+
+        Returns:
+            SQL query with town field comparisons using ILIKE patterns
+        """
+        # Find town field comparisons that use exact match (=) or ILIKE without wildcards
+        # Pattern: [table.]town = 'value' or [table.]town ILIKE 'value' (without %)
+        # Convert to: [table.]town ILIKE '%value%' to match "ГРАД value" or "СЕЛО value" patterns
+
+        # Match: town = 'value' -> town ILIKE '%value%'
+        pattern1 = re.compile(
+            r"(\w+\.)?town\s*=\s*'([^']+)'",
+            re.IGNORECASE,
+        )
+
+        def replace_exact_match1(match):
+            table_prefix = match.group(1) or ""
+            value = match.group(2)
+            # Use ILIKE with wildcards to match "ГРАД value", "СЕЛО value", or just "value"
+            return f"{table_prefix}town ILIKE '%{value}%'"
+
+        sql = pattern1.sub(replace_exact_match1, sql)
+
+        # Match: town = "value" -> town ILIKE "%value%"
+        pattern2 = re.compile(
+            r'(\w+\.)?town\s*=\s*"([^"]+)"',
+            re.IGNORECASE,
+        )
+
+        def replace_exact_match2(match):
+            table_prefix = match.group(1) or ""
+            value = match.group(2)
+            return f'{table_prefix}town ILIKE "%{value}%"'
+
+        sql = pattern2.sub(replace_exact_match2, sql)
+
+        # Also fix ILIKE without wildcards: town ILIKE 'value' -> town ILIKE '%value%'
+        # But only if it doesn't already have wildcards
+        pattern3 = re.compile(
+            r"(\w+\.)?town\s+ILIKE\s+'([^']+)'",
+            re.IGNORECASE,
+        )
+
+        def replace_ilike_no_wildcard1(match):
+            table_prefix = match.group(1) or ""
+            value = match.group(2)
+            # Only add wildcards if not already present
+            if "%" not in value:
+                return f"{table_prefix}town ILIKE '%{value}%'"
+            return match.group(0)
+
+        sql = pattern3.sub(replace_ilike_no_wildcard1, sql)
+
+        pattern4 = re.compile(
+            r'(\w+\.)?town\s+ILIKE\s+"([^"]+)"',
+            re.IGNORECASE,
+        )
+
+        def replace_ilike_no_wildcard2(match):
+            table_prefix = match.group(1) or ""
+            value = match.group(2)
+            if "%" not in value:
+                return f'{table_prefix}town ILIKE "%{value}%"'
+            return match.group(0)
+
+        sql = pattern4.sub(replace_ilike_no_wildcard2, sql)
+
+        return sql
+
+    def _fix_not_conditions(self, sql: str) -> str:
+        """
+        Fix missing NOT in conditions when query asks for "извън" (outside/excluding).
+
+        When the user asks for "извън град X" (outside city X), the query should use
+        "town NOT ILIKE" instead of "town ILIKE".
+
+        Args:
+            sql: SQL query string
+
+        Returns:
+            SQL query with corrected NOT conditions
+        """
+        sql_upper = sql.upper()
+
+        # Find patterns where we have "town ILIKE 'value'" but should have "town NOT ILIKE 'value'"
+        # This is a heuristic - we look for cases where town ILIKE appears but the logic suggests exclusion
+        # For now, we'll look for patterns like "town ILIKE 'value' = false" which is incorrect SQL
+        # and should be "town NOT ILIKE 'value'"
+
+        # Pattern: town ILIKE 'value' = false (incorrect SQL that should be town NOT ILIKE 'value')
+        pattern = r"(\w+\.)?town\s+ILIKE\s+['\"]([^'\"]+)['\"]\s*=\s*false"
+        replacement = r"\1town NOT ILIKE '\2'"
+
+        sql = re.sub(pattern, replacement, sql, flags=re.IGNORECASE)
+
+        # Also handle: town ILIKE 'value' = true (should just be town ILIKE 'value')
+        pattern2 = r"(\w+\.)?town\s+ILIKE\s+['\"]([^'\"]+)['\"]\s*=\s*true"
+        replacement2 = r"\1town ILIKE '\2'"
+
+        sql = re.sub(pattern2, replacement2, sql, flags=re.IGNORECASE)
+
+        return sql
+
     def _validate_and_sanitize_sql(self, sql: str) -> tuple[str, Optional[str]]:
         """
         Validate and sanitize SQL query.
@@ -907,6 +1028,12 @@ class SQLAgentService:
 
         # Make text field comparisons case-insensitive
         sanitized = self._make_case_insensitive(sanitized)
+
+        # Fix town field patterns (handle "ГРАД ВРАЦА" or "СЕЛО ВРАЦА" patterns)
+        sanitized = self._fix_town_field_patterns(sanitized)
+
+        # Fix missing NOT in conditions (handle "извън" / outside conditions)
+        sanitized = self._fix_not_conditions(sanitized)
 
         # Add IS NOT NULL filters for nullable columns used in ORDER BY
         sanitized = self._add_null_filters(sanitized)
