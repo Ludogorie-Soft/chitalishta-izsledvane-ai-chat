@@ -105,6 +105,161 @@ class SQLValidator:
         "END",
     ]
 
+    # Valid columns for each table (to prevent hallucinations)
+    VALID_COLUMNS = {
+        "chitalishte": {
+            "id",
+            "registration_number",
+            "created_at",
+            "address",
+            "bulstat",
+            "chairman",
+            "chitalishta_url",
+            "email",
+            "municipality",
+            "name",
+            "phone",
+            "region",
+            "secretary",
+            "status",
+            "town",
+            "url_to_libraries_site",
+        },
+        "information_card": {
+            "id",
+            "chitalishte_id",
+            "year",
+            "created_at",
+            "administrative_positions",
+            "amateur_arts",
+            "dancing_groups",
+            "disabilities_and_volunteers",
+            "employees_count",
+            "employees_specialized",
+            "employees_with_higher_education",
+            "folklore_formations",
+            "kraeznanie_clubs",
+            "language_courses",
+            "library_activity",
+            "membership_applications",
+            "modern_ballet",
+            "museum_collections",
+            "new_members",
+            "other_activities",
+            "other_clubs",
+            "participation_in_events",
+            "participation_in_live_human_treasures_national",
+            "participation_in_live_human_treasures_regional",
+            "participation_in_trainings",
+            "projects_participation_leading",
+            "projects_participation_partner",
+            "reg_number",
+            "registration_number",
+            "rejected_members",
+            "subsidiary_count",  # Note: NOT subsidized_count
+            "supporting_employees",
+            "theatre_formations",
+            "total_members_count",
+            "town_population",
+            "town_users",
+            "vocal_groups",
+            "workshops_clubs_arts",
+            "has_pc_and_internet_services",
+            "bulstat",
+            "email",
+            "kraeznanie_clubs_text",
+            "language_courses_text",
+            "museum_collections_text",
+            "sanctions_for31and33",
+            "url",
+            "webpage",
+            "workshops_clubs_arts_text",
+        },
+    }
+
+    # Nullable columns that should be filtered when used in ORDER BY or important queries
+    # These are columns that can be NULL and should have IS NOT NULL filter when queried
+    NULLABLE_COLUMNS = {
+        "information_card": {
+            "subsidiary_count",
+            "employees_count",
+            "total_members_count",
+            "new_members",
+            "rejected_members",
+            "town_population",
+            "town_users",
+            "administrative_positions",
+            "amateur_arts",
+            "dancing_groups",
+            "disabilities_and_volunteers",
+            "employees_specialized",
+            "employees_with_higher_education",
+            "folklore_formations",
+            "kraeznanie_clubs",
+            "language_courses",
+            "library_activity",
+            "membership_applications",
+            "modern_ballet",
+            "museum_collections",
+            "other_activities",
+            "other_clubs",
+            "participation_in_events",
+            "participation_in_live_human_treasures_national",
+            "participation_in_live_human_treasures_regional",
+            "participation_in_trainings",
+            "projects_participation_leading",
+            "projects_participation_partner",
+            "supporting_employees",
+            "theatre_formations",
+            "vocal_groups",
+            "workshops_clubs_arts",
+        },
+    }
+
+    @classmethod
+    def validate_columns(cls, sql: str) -> tuple[bool, Optional[str], Optional[list[str]]]:
+        """
+        Validate that all column references in SQL exist in the schema.
+
+        Args:
+            sql: SQL query string
+
+        Returns:
+            Tuple of (is_valid, error_message, invalid_columns)
+        """
+        sql_upper = sql.upper()
+        invalid_columns = []
+
+        # Extract column references from SQL
+        # Pattern: column names after SELECT, in WHERE, ORDER BY, GROUP BY, etc.
+        # This is a simplified check - we look for common patterns
+
+        # Check for common hallucinated column names
+        common_mistakes = {
+            "subsidized_count": "subsidiary_count",  # Common mistake
+        }
+
+        # Check all tables
+        for table_name, valid_cols in cls.VALID_COLUMNS.items():
+            # Look for table.column or just column references
+            # This is a heuristic - we check if columns are mentioned that don't exist
+            for col in common_mistakes:
+                # Check if the wrong column name appears
+                pattern = rf"\b{re.escape(col)}\b"
+                if re.search(pattern, sql, re.IGNORECASE):
+                    invalid_columns.append(
+                        f"{col} (should be {common_mistakes[col]} in {table_name} table)"
+                    )
+
+        # More comprehensive check: extract column names from SELECT, WHERE, ORDER BY, etc.
+        # This is a simplified version - a full parser would be better
+        # For now, we'll rely on the common mistakes check and schema info
+
+        if invalid_columns:
+            return False, f"Invalid column names detected: {', '.join(invalid_columns)}", invalid_columns
+
+        return True, None, None
+
     @classmethod
     def validate_sql(cls, sql: str) -> tuple[bool, Optional[str]]:
         """
@@ -240,19 +395,108 @@ class SQLAgentService:
         self.enable_audit_logging = enable_audit_logging
 
         # Create SQLDatabase instance (read-only)
-        # Add custom instructions for case-insensitive text field comparisons
+        # Add custom instructions with detailed column information to prevent hallucinations
         custom_table_info = {
             "chitalishte": (
                 "Table: chitalishte\n"
-                "IMPORTANT: For text field comparisons (region, town, municipality, status, etc.), "
+                "COLUMNS (use ONLY these exact column names):\n"
+                "- id (INTEGER, primary key)\n"
+                "- registration_number (INTEGER)\n"
+                "- created_at (TIMESTAMP)\n"
+                "- address (VARCHAR)\n"
+                "- bulstat (VARCHAR)\n"
+                "- chairman (VARCHAR)\n"
+                "- chitalishta_url (VARCHAR)\n"
+                "- email (VARCHAR)\n"
+                "- municipality (VARCHAR)\n"
+                "- name (VARCHAR)\n"
+                "- phone (VARCHAR)\n"
+                "- region (VARCHAR)\n"
+                "- secretary (VARCHAR)\n"
+                "- status (VARCHAR)\n"
+                "- town (VARCHAR)\n"
+                "- url_to_libraries_site (VARCHAR)\n"
+                "\n"
+                "CRITICAL RULES:\n"
+                "1. NEVER invent column names that don't exist in the list above.\n"
+                "2. For text field comparisons (region, town, municipality, status, etc.), "
                 "ALWAYS use case-insensitive comparison:\n"
-                "- Use ILIKE instead of = for text comparisons (e.g., WHERE region ILIKE 'Враца')\n"
-                "- OR use LOWER() function: WHERE LOWER(region) = LOWER('Враца')\n"
-                "This is critical because users may query with different cases (Враца, ВРАЦА, враца).\n"
+                "   - Use ILIKE instead of = (e.g., WHERE region ILIKE 'Враца')\n"
+                "   - OR use LOWER() function: WHERE LOWER(region) = LOWER('Враца')\n"
+                "3. This table does NOT contain subsidiary_count, subsidized_count, or any count fields.\n"
+                "   Those fields are in the information_card table.\n"
             ),
             "information_card": (
                 "Table: information_card\n"
-                "This table contains information cards linked to chitalishte via chitalishte_id.\n"
+                "COLUMNS (use ONLY these exact column names):\n"
+                "- id (INTEGER, primary key)\n"
+                "- chitalishte_id (INTEGER, foreign key to chitalishte.id)\n"
+                "- year (INTEGER)\n"
+                "- created_at (TIMESTAMP)\n"
+                "- administrative_positions (INTEGER)\n"
+                "- amateur_arts (INTEGER)\n"
+                "- dancing_groups (INTEGER)\n"
+                "- disabilities_and_volunteers (INTEGER)\n"
+                "- employees_count (DOUBLE)\n"
+                "- employees_specialized (INTEGER)\n"
+                "- employees_with_higher_education (INTEGER)\n"
+                "- folklore_formations (INTEGER)\n"
+                "- kraeznanie_clubs (INTEGER)\n"
+                "- language_courses (INTEGER)\n"
+                "- library_activity (INTEGER)\n"
+                "- membership_applications (INTEGER)\n"
+                "- modern_ballet (INTEGER)\n"
+                "- museum_collections (INTEGER)\n"
+                "- new_members (INTEGER)\n"
+                "- other_activities (INTEGER)\n"
+                "- other_clubs (INTEGER)\n"
+                "- participation_in_events (INTEGER)\n"
+                "- participation_in_live_human_treasures_national (INTEGER)\n"
+                "- participation_in_live_human_treasures_regional (INTEGER)\n"
+                "- participation_in_trainings (INTEGER)\n"
+                "- projects_participation_leading (INTEGER)\n"
+                "- projects_participation_partner (INTEGER)\n"
+                "- reg_number (INTEGER)\n"
+                "- registration_number (INTEGER)\n"
+                "- rejected_members (INTEGER)\n"
+                "- subsidiary_count (DOUBLE) - NOTE: This is 'subsidiary_count', NOT 'subsidized_count'\n"
+                "- supporting_employees (INTEGER)\n"
+                "- theatre_formations (INTEGER)\n"
+                "- total_members_count (INTEGER)\n"
+                "- town_population (INTEGER)\n"
+                "- town_users (INTEGER)\n"
+                "- vocal_groups (INTEGER)\n"
+                "- workshops_clubs_arts (INTEGER)\n"
+                "- has_pc_and_internet_services (BOOLEAN)\n"
+                "- bulstat (VARCHAR)\n"
+                "- email (VARCHAR)\n"
+                "- kraeznanie_clubs_text (TEXT)\n"
+                "- language_courses_text (TEXT)\n"
+                "- museum_collections_text (TEXT)\n"
+                "- sanctions_for31and33 (VARCHAR)\n"
+                "- url (VARCHAR)\n"
+                "- webpage (VARCHAR)\n"
+                "- workshops_clubs_arts_text (TEXT)\n"
+                "\n"
+                "CRITICAL RULES:\n"
+                "1. NEVER invent column names that don't exist in the list above.\n"
+                "2. The column is 'subsidiary_count' (NOT 'subsidized_count').\n"
+                "3. To access information_card columns, you MUST JOIN with chitalishte:\n"
+                "   JOIN information_card ON chitalishte.id = information_card.chitalishte_id\n"
+                "4. If a query needs subsidiary_count or other information_card fields, "
+                "you MUST include the JOIN.\n"
+                "5. IMPORTANT - Many columns in this table can be NULL (including subsidiary_count, "
+                "employees_count, total_members_count, etc.). When ordering by these columns or "
+                "querying for meaningful results, ALWAYS add IS NOT NULL filter:\n"
+                "   Example: WHERE information_card.subsidiary_count IS NOT NULL\n"
+                "   This ensures you get records with actual values, not NULLs.\n"
+                "6. CRITICAL - Each chitalishte can have MULTIPLE information_card records (one per year). "
+                "When joining chitalishte with information_card and ordering by information_card columns, "
+                "you MUST use GROUP BY chitalishte.id and MAX() aggregation to avoid duplicate chitalishte records:\n"
+                "   Example: SELECT ch.name, MAX(ic.subsidiary_count) FROM chitalishte ch "
+                "JOIN information_card ic ON ch.id = ic.chitalishte_id "
+                "GROUP BY ch.id ORDER BY MAX(ic.subsidiary_count) DESC\n"
+                "   This ensures each chitalishte appears only once in results.\n"
             ),
         }
 
@@ -295,16 +539,36 @@ class SQLAgentService:
             "Ти си SQL агент за база данни за читалища в България.\n"
             "Твоята задача е да генерираш SQL заявки на базата на потребителските въпроси.\n"
             "\n"
-            "ВАЖНИ ПРАВИЛА:\n"
+            "КРИТИЧНО ВАЖНИ ПРАВИЛА ЗА ПРЕДОТВРЪЩАНЕ НА ГРЕШКИ:\n"
+            "1. ВИНАГИ проверявай точните имена на колоните в схемата преди да ги използваш.\n"
+            "2. НИКОГА не измисляй имена на колони - използвай САМО тези, които са в схемата.\n"
+            "3. Ако не си сигурен за име на колона, провери схемата отново.\n"
+            "4. ВАЖНО: Колоната е 'subsidiary_count' (НЕ 'subsidized_count') и е в таблицата 'information_card'.\n"
+            "5. Ако заявката изисква колони от 'information_card', ТРЯБВА да направиш JOIN:\n"
+            "   JOIN information_card ON chitalishte.id = information_card.chitalishte_id\n"
+            "\n"
+            "ОСНОВНИ ПРАВИЛА:\n"
             "1. Генерирай САМО SELECT заявки. Никога не използвай DELETE, UPDATE, INSERT, DROP или други модифициращи команди.\n"
             "2. Използвай таблиците 'chitalishte' и 'information_card'.\n"
             "3. За агрегации използвай COUNT, SUM, AVG, MIN, MAX.\n"
             "4. За JOIN операции използвай правилните ключове:\n"
             "   - chitalishte.id = information_card.chitalishte_id\n"
-            "5. Бъди точен с имената на колоните.\n"
+            "5. Бъди точен с имената на колоните - ВИНАГИ проверявай схемата.\n"
             "6. Ако потребителят пита за статистика, използвай GROUP BY.\n"
             "7. Връщай резултатите на български език, когато е възможно.\n"
-            "8. ВАЖНО - За сравнения на текстови полета (region, town, municipality, status и др.) ВИНАГИ използвай case-insensitive сравнение:\n"
+            "8. ВАЖНО - Много колони в information_card могат да бъдат NULL (subsidiary_count, "
+            "employees_count, total_members_count и др.). Когато сортираш по тези колони или търсиш "
+            "смислени резултати, ВИНАГИ добави IS NOT NULL филтър:\n"
+            "   Пример: WHERE information_card.subsidiary_count IS NOT NULL\n"
+            "   Това гарантира, че получаваш записи с реални стойности, а не NULL.\n"
+            "9. КРИТИЧНО - Всяко chitalishte може да има МНОЖЕСТВО information_card записи (по един за всяка година). "
+            "Когато правиш JOIN между chitalishte и information_card и сортираш по колони от information_card, "
+            "ТРЯБВА да използваш GROUP BY chitalishte.id и MAX() агрегация, за да избегнеш дублирани chitalishte записи:\n"
+            "   Пример: SELECT ch.name, MAX(ic.subsidiary_count) FROM chitalishte ch "
+            "JOIN information_card ic ON ch.id = ic.chitalishte_id "
+            "GROUP BY ch.id ORDER BY MAX(ic.subsidiary_count) DESC\n"
+            "   Това гарантира, че всяко chitalishte се появява само веднъж в резултатите.\n"
+            "10. ВАЖНО - За сравнения на текстови полета (region, town, municipality, status и др.) ВИНАГИ използвай case-insensitive сравнение:\n"
             "   - Използвай ILIKE вместо = за текстови сравнения (напр. WHERE region ILIKE 'Враца')\n"
             "   - ИЛИ използвай LOWER() функцията: WHERE LOWER(region) = LOWER('Враца')\n"
             "   - Това е критично, защото потребителите могат да питат с различни регистри (Враца, ВРАЦА, враца)\n"
@@ -313,6 +577,229 @@ class SQLAgentService:
 
         # Enhance with hallucination control instructions
         return PromptEnhancer.enhance_sql_prompt(base_message, self.hallucination_config)
+
+    def _fix_column_names(self, sql: str) -> str:
+        """
+        Fix common column name mistakes (e.g., subsidized_count -> subsidiary_count).
+
+        Args:
+            sql: SQL query string
+
+        Returns:
+            SQL query with corrected column names
+        """
+        # Common mistakes: wrong_name -> correct_name
+        column_fixes = {
+            "subsidized_count": "subsidiary_count",
+        }
+
+        for wrong_name, correct_name in column_fixes.items():
+            # Replace wrong column name with correct one
+            # Use word boundaries to avoid partial matches
+            pattern = re.compile(rf"\b{re.escape(wrong_name)}\b", re.IGNORECASE)
+            sql = pattern.sub(correct_name, sql)
+
+        return sql
+
+    def _add_null_filters(self, sql: str) -> str:
+        """
+        Automatically add IS NOT NULL filters for nullable columns used in ORDER BY.
+
+        This ensures that queries ordering by nullable columns filter out NULL values
+        to return meaningful results.
+
+        Args:
+            sql: SQL query string
+
+        Returns:
+            SQL query with added IS NOT NULL filters
+        """
+        sql_upper = sql.upper()
+
+        # Find columns used in ORDER BY
+        order_by_match = re.search(r"ORDER\s+BY\s+([^,\n]+)", sql_upper)
+        if not order_by_match:
+            return sql
+
+        order_by_clause = order_by_match.group(1)
+        # Extract column references (handle table.column, alias.column, and just column, with optional DESC/ASC)
+        # Pattern: table.column or alias.column or column, optionally followed by ASC/DESC
+        order_by_cols = re.findall(
+            r"(\w+\.\w+|\w+)(?:\s+(?:ASC|DESC))?", order_by_clause, re.IGNORECASE
+        )
+
+        filters_to_add = []
+
+        # Check each column in ORDER BY
+        for col_ref in order_by_cols:
+            col_ref_clean = col_ref.strip()
+            # Check if it's a table.column or alias.column
+            if "." in col_ref_clean:
+                parts = col_ref_clean.split(".")
+                if len(parts) == 2:
+                    table_or_alias, col_name = parts[0].lower(), parts[1].lower()
+                    # Check if this column is nullable in information_card
+                    # We check both the actual table name and common aliases (ic, information_card)
+                    # Only add filter if it's an information_card column
+                    if (
+                        col_name in self.validator.NULLABLE_COLUMNS.get("information_card", set())
+                        and table_or_alias in ["information_card", "ic", "card"]
+                    ):
+                        # Check if IS NOT NULL filter already exists for this column
+                        # Look for the column reference with IS NOT NULL in WHERE clause
+                        # Use case-insensitive search
+                        where_pattern = rf"{re.escape(col_ref_clean)}\s+IS\s+NOT\s+NULL"
+                        if not re.search(where_pattern, sql_upper):
+                            filters_to_add.append(f"{col_ref_clean} IS NOT NULL")
+
+        # Add filters if needed
+        if filters_to_add:
+            filter_text = " AND ".join(filters_to_add)
+            # Find WHERE clause
+            where_match = re.search(r"\bWHERE\b", sql_upper)
+            if where_match:
+                # Insert after WHERE, before ORDER BY/GROUP BY/LIMIT
+                where_pos = where_match.end()
+                # Find the end of WHERE clause
+                where_end_match = re.search(
+                    r"\b(ORDER\s+BY|GROUP\s+BY|HAVING|LIMIT)\b",
+                    sql_upper[where_pos:],
+                )
+                if where_end_match:
+                    insert_pos = where_pos + where_end_match.start()
+                else:
+                    insert_pos = len(sql)
+                # Insert the filter
+                sql = sql[:insert_pos] + f" AND {filter_text}" + sql[insert_pos:]
+            else:
+                # No WHERE clause, add one before ORDER BY
+                order_by_pos = order_by_match.start()
+                sql = sql[:order_by_pos] + f" WHERE {filter_text} " + sql[order_by_pos:]
+
+        return sql
+
+    def _fix_duplicate_chitalishte(self, sql: str) -> str:
+        """
+        Fix duplicate chitalishte records when joining with information_card.
+
+        When joining chitalishte with information_card and ordering by information_card columns,
+        we get duplicates because each chitalishte can have multiple information_card records.
+        This method automatically adds GROUP BY and MAX() aggregation to get one record per chitalishte.
+
+        Args:
+            sql: SQL query string
+
+        Returns:
+            SQL query with GROUP BY and aggregation to prevent duplicates
+        """
+        sql_upper = sql.upper()
+
+        # Check if query joins with information_card
+        has_information_card_join = re.search(
+            r"JOIN\s+information_card|JOIN\s+\w+\s+(?:ic|card)\s+ON",
+            sql_upper,
+        )
+
+        if not has_information_card_join:
+            return sql
+
+        # Check if query already has GROUP BY
+        has_group_by = re.search(r"\bGROUP\s+BY\b", sql_upper)
+        if has_group_by:
+            # Already has GROUP BY, assume it's handled correctly
+            return sql
+
+        # Check if query orders by an information_card column
+        order_by_match = re.search(r"ORDER\s+BY\s+([^,\n]+)", sql_upper)
+        if not order_by_match:
+            return sql
+
+        order_by_clause = order_by_match.group(1)
+        # Extract column references from ORDER BY
+        order_by_cols = re.findall(
+            r"(\w+\.\w+|\w+)(?:\s+(?:ASC|DESC))?", order_by_clause, re.IGNORECASE
+        )
+
+        # Check if any ORDER BY column is from information_card
+        ic_order_by_col = None
+        for col_ref in order_by_cols:
+            col_ref_clean = col_ref.strip()
+            if "." in col_ref_clean:
+                parts = col_ref_clean.split(".")
+                if len(parts) == 2:
+                    table_or_alias, col_name = parts[0].lower(), parts[1].lower()
+                    if table_or_alias in ["information_card", "ic", "card"]:
+                        ic_order_by_col = col_ref_clean
+                        break
+
+        if not ic_order_by_col:
+            return sql
+
+        # Find chitalishte table alias
+        chitalishte_alias = None
+        alias_match = re.search(
+            r"FROM\s+chitalishte\s+(\w+)|FROM\s+(\w+)\s+chitalishte",
+            sql_upper,
+        )
+        if alias_match:
+            chitalishte_alias = alias_match.group(1) or alias_match.group(2)
+
+        # Determine chitalishte identifier for GROUP BY
+        if chitalishte_alias:
+            chitalishte_id_col = f"{chitalishte_alias}.id"
+        else:
+            chitalishte_id_col = "chitalishte.id"
+
+        # Wrap the information_card column in MAX() in SELECT if it's there
+        select_match = re.search(r"SELECT\s+(.+?)\s+FROM", sql_upper, re.DOTALL)
+        if select_match:
+            select_clause = select_match.group(1)
+            # Check if the order by column appears in SELECT
+            select_col_pattern = rf"\b{re.escape(ic_order_by_col)}\b"
+            if re.search(select_col_pattern, select_clause, re.IGNORECASE):
+                # Check if it's already wrapped in an aggregate function
+                if not re.search(
+                    rf"(MAX|SUM|AVG|MIN|COUNT)\s*\(\s*{re.escape(ic_order_by_col)}\s*\)",
+                    select_clause,
+                    re.IGNORECASE,
+                ):
+                    # Replace with MAX(column)
+                    select_clause_new = re.sub(
+                        select_col_pattern,
+                        f"MAX({ic_order_by_col})",
+                        select_clause,
+                        flags=re.IGNORECASE,
+                    )
+                    sql = sql.replace(select_clause, select_clause_new)
+
+        # Add GROUP BY before ORDER BY
+        order_by_pos = order_by_match.start()
+        sql = sql[:order_by_pos] + f" GROUP BY {chitalishte_id_col} " + sql[order_by_pos:]
+
+        # Update ORDER BY to use MAX() as well
+        sql_upper = sql.upper()
+        order_by_match_new = re.search(r"ORDER\s+BY\s+([^,\n]+)", sql_upper)
+        if order_by_match_new:
+            order_by_clause_new = order_by_match_new.group(1)
+            # Check if MAX() is already there
+            if not re.search(
+                rf"MAX\s*\(\s*{re.escape(ic_order_by_col)}\s*\)",
+                order_by_clause_new,
+                re.IGNORECASE,
+            ):
+                # Replace the column with MAX(column) in ORDER BY
+                order_by_new = re.sub(
+                    rf"\b{re.escape(ic_order_by_col)}\b",
+                    f"MAX({ic_order_by_col})",
+                    order_by_clause_new,
+                    flags=re.IGNORECASE,
+                )
+                sql = sql.replace(
+                    f"ORDER BY {order_by_match_new.group(1)}",
+                    f"ORDER BY {order_by_new}",
+                )
+
+        return sql
 
     def _make_case_insensitive(self, sql: str) -> str:
         """
@@ -396,16 +883,36 @@ class SQLAgentService:
         Returns:
             Tuple of (sanitized_sql, error_message)
         """
-        # Validate
+        # Validate SQL structure
         is_valid, error = self.validator.validate_sql(sql)
         if not is_valid:
             return sql, error
 
+        # Validate columns exist
+        cols_valid, cols_error, invalid_cols = self.validator.validate_columns(sql)
+        if not cols_valid:
+            logger.warning(f"Column validation failed: {cols_error}")
+            # Log the invalid columns for debugging
+            if invalid_cols:
+                logger.warning(f"Invalid columns detected: {invalid_cols}")
+            # Return error but don't block execution - let the database error handle it
+            # This allows the agent to see the actual error and retry
+            return sql, cols_error
+
         # Sanitize
         sanitized = self.validator.sanitize_sql(sql)
 
+        # Fix common column name mistakes (e.g., subsidized_count -> subsidiary_count)
+        sanitized = self._fix_column_names(sanitized)
+
         # Make text field comparisons case-insensitive
         sanitized = self._make_case_insensitive(sanitized)
+
+        # Add IS NOT NULL filters for nullable columns used in ORDER BY
+        sanitized = self._add_null_filters(sanitized)
+
+        # Fix duplicate chitalishte records when joining with information_card
+        sanitized = self._fix_duplicate_chitalishte(sanitized)
 
         return sanitized, None
 
