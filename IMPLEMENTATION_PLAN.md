@@ -12,8 +12,8 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 6 – LLM Management
-- Current Step: Phase 6 Complete - Ready for Phase 7 (API & UX)
+- Phase: Phase 7 – API & UX
+- Current Step: Step 7.2 Complete - Ready for Phase 8 (Auth & Public Access)
 - Blockers: none
 
 ---
@@ -244,9 +244,9 @@ Rules:
 ---
 
 ## Step 4.3 – Hybrid routing logic
-- [ ] Combine rule + LLM signals
-- [ ] Final intent decision
-- [ ] Safe fallback to hybrid
+- [x] Combine rule + LLM signals
+- [x] Final intent decision
+- [x] Safe fallback to hybrid
 
 **Definition of Done**
 - Routing is deterministic and explainable
@@ -334,7 +334,7 @@ Rules:
 - [x] High tolerance mode (higher temperature, more creative prompts)
 - [x] Temperature and prompt control via LangChain chain configuration
 - [x] Prompt templates that enforce grounding in retrieved context
-- [ ] Mode selection in API requests (deferred to Phase 7.1 – Chat endpoint)
+- [x] Mode selection in API requests (completed in Phase 7.1 – Chat endpoint)
 
 **Definition of Done**
 - User can switch answer strictness
@@ -346,12 +346,12 @@ Rules:
 # Phase 7 – API & UX
 
 ## Step 7.1 – Chat endpoint
-- [ ] `/chat` endpoint (FastAPI route)
-- [ ] Implement streaming using LangChain's streaming support (streaming=True)
-- [ ] Chat history management (optional use of LangChain memory OR custom conversation state)
-- [ ] Mode selection (low/high tolerance)
-- [ ] Integration with RAG/SQL/Hybrid chains
-- [ ] Error handling and timeout management
+- [x] `/chat` endpoint (FastAPI route)
+- [x] Implement streaming using LangChain's streaming support (streaming=True)
+- [x] Chat history management (optional use of LangChain memory OR custom conversation state)
+- [x] Mode selection (low/high tolerance)
+- [x] Integration with RAG/SQL/Hybrid chains
+- [x] Error handling and timeout management
 
 **Definition of Done**
 - Chat works end-to-end
@@ -363,9 +363,9 @@ Rules:
 ---
 
 ## Step 7.2 – Structured outputs
-- [ ] Tables
-- [ ] Bullet summaries
-- [ ] Statistics
+- [x] Tables
+- [x] Bullet summaries
+- [x] Statistics
 
 **Definition of Done**
 - Output matches requested format

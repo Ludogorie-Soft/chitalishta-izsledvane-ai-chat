@@ -256,5 +256,136 @@ class TestChatEndpoint:
 
         assert response.status_code == 404
 
+    @patch("app.api.chat.get_hybrid_pipeline_service")
+    def test_chat_endpoint_table_format(self, mock_get_pipeline):
+        """Test chat endpoint with table output format."""
+        # Mock pipeline
+        mock_pipeline = MagicMock()
+        mock_pipeline.query = MagicMock(
+            return_value={
+                "answer": "Регион: Пловдив, Брой: 10\nРегион: София, Брой: 15",
+                "intent": "sql",
+                "routing_confidence": 0.9,
+                "routing_explanation": "SQL intent",
+                "sql_executed": True,
+                "sql_success": True,
+                "rag_executed": False,
+            }
+        )
+        mock_get_pipeline.return_value = mock_pipeline
+
+        response = client.post(
+            "/chat/",
+            json={
+                "message": "Покажи читалищата по региони",
+                "mode": "medium",
+                "output_format": "table",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "structured_output" in data
+        assert data["structured_output"]["format"] == "table"
+        assert "formatted_answer" in data["structured_output"]
+
+    @patch("app.api.chat.get_hybrid_pipeline_service")
+    def test_chat_endpoint_bullets_format(self, mock_get_pipeline):
+        """Test chat endpoint with bullets output format."""
+        # Mock pipeline
+        mock_pipeline = MagicMock()
+        mock_pipeline.query = MagicMock(
+            return_value={
+                "answer": "Читалището е културна институция. То организира различни дейности. Има библиотека.",
+                "intent": "rag",
+                "routing_confidence": 0.9,
+                "routing_explanation": "RAG intent",
+                "sql_executed": False,
+                "rag_executed": True,
+            }
+        )
+        mock_get_pipeline.return_value = mock_pipeline
+
+        response = client.post(
+            "/chat/",
+            json={
+                "message": "Разкажи за читалищата",
+                "mode": "medium",
+                "output_format": "bullets",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "structured_output" in data
+        assert data["structured_output"]["format"] == "bullets"
+        assert "formatted_answer" in data["structured_output"]
+        # Check that formatted answer contains bullet points
+        assert "-" in data["structured_output"]["formatted_answer"] or "•" in data["structured_output"]["formatted_answer"]
+
+    @patch("app.api.chat.get_hybrid_pipeline_service")
+    def test_chat_endpoint_statistics_format(self, mock_get_pipeline):
+        """Test chat endpoint with statistics output format."""
+        # Mock pipeline
+        mock_pipeline = MagicMock()
+        mock_pipeline.query = MagicMock(
+            return_value={
+                "answer": "Общо читалища: 100. Средно: 50. Минимум: 10. Максимум: 200.",
+                "intent": "sql",
+                "routing_confidence": 0.9,
+                "routing_explanation": "SQL intent",
+                "sql_executed": True,
+                "sql_success": True,
+                "rag_executed": False,
+            }
+        )
+        mock_get_pipeline.return_value = mock_pipeline
+
+        response = client.post(
+            "/chat/",
+            json={
+                "message": "Статистика за читалищата",
+                "mode": "medium",
+                "output_format": "statistics",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "structured_output" in data
+        assert data["structured_output"]["format"] == "statistics"
+        assert "formatted_answer" in data["structured_output"]
+
+    @patch("app.api.chat.get_hybrid_pipeline_service")
+    def test_chat_endpoint_text_format_default(self, mock_get_pipeline):
+        """Test chat endpoint with default text format (no structured output)."""
+        # Mock pipeline
+        mock_pipeline = MagicMock()
+        mock_pipeline.query = MagicMock(
+            return_value={
+                "answer": "Обикновен текстов отговор",
+                "intent": "rag",
+                "routing_confidence": 0.9,
+                "routing_explanation": "RAG intent",
+                "sql_executed": False,
+                "rag_executed": True,
+            }
+        )
+        mock_get_pipeline.return_value = mock_pipeline
+
+        response = client.post(
+            "/chat/",
+            json={
+                "message": "Въпрос",
+                "mode": "medium",
+                "output_format": "text",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # When format is "text", structured_output should be None or not present
+        assert data.get("structured_output") is None or data["structured_output"] is None
+
 
 

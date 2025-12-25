@@ -31,6 +31,11 @@ from app.rag.hallucination_control import (
     PromptEnhancer,
     get_default_hallucination_config,
 )
+from app.rag.structured_output import (
+    OutputFormat,
+    StructuredOutputFormatter,
+    get_structured_output_formatter,
+)
 
 __all__ = [
     "HybridIntentRouter",
@@ -57,5 +62,8 @@ __all__ = [
     "HallucinationMode",
     "PromptEnhancer",
     "get_default_hallucination_config",
+    "OutputFormat",
+    "StructuredOutputFormatter",
+    "get_structured_output_formatter",
 ]
 

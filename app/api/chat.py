@@ -18,6 +18,10 @@ from app.api.chat_schemas import (
 from app.rag.chat_memory import get_chat_memory
 from app.rag.hallucination_control import HallucinationConfig, HallucinationMode
 from app.rag.hybrid_pipeline import get_hybrid_pipeline_service
+from app.rag.structured_output import (
+    OutputFormat,
+    get_structured_output_formatter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +84,28 @@ async def chat(request: ChatRequest):
         # Extract answer
         answer = result.get("answer", "Не мога да отговоря на този въпрос.")
 
-        # Add assistant message to history
+        # Format structured output if requested
+        structured_output = None
+        original_answer = answer  # Keep original for history
+        if request.output_format and request.output_format != OutputFormat.TEXT:
+            formatter = get_structured_output_formatter()
+            # Prepare query result for formatter
+            query_result = {
+                "sql_executed": result.get("sql_executed", False),
+                "sql_success": result.get("sql_success", False),
+                "sql_answer": answer if result.get("sql_executed") else None,
+                "rag_executed": result.get("rag_executed", False),
+            }
+            structured_output = formatter.format(
+                answer, request.output_format, query_result
+            )
+            # Use formatted answer if available
+            if structured_output.get("formatted_answer"):
+                answer = structured_output["formatted_answer"]
+
+        # Add assistant message to history (store original answer, not formatted)
         memory.add_message(
-            request.conversation_id, "assistant", answer
+            request.conversation_id, "assistant", original_answer
         )
 
         # Build response
@@ -99,6 +122,7 @@ async def chat(request: ChatRequest):
                 "sql_query": result.get("sql_query"),
                 "rag_metadata": result.get("rag_metadata"),
             },
+            structured_output=structured_output,
         )
 
         return response

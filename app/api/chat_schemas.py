@@ -1,10 +1,11 @@
 """Schemas for chat API endpoints."""
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 from app.rag.hallucination_control import HallucinationMode
+from app.rag.structured_output import OutputFormat
 
 
 class ChatMessage(BaseModel):
@@ -28,6 +29,10 @@ class ChatRequest(BaseModel):
     stream: bool = Field(
         False, description="Whether to stream the response (SSE)"
     )
+    output_format: Optional[OutputFormat] = Field(
+        OutputFormat.TEXT,
+        description="Output format: 'text', 'table', 'bullets', or 'statistics'",
+    )
 
 
 class ChatResponse(BaseModel):
@@ -42,8 +47,11 @@ class ChatResponse(BaseModel):
     mode: HallucinationMode = Field(..., description="Hallucination mode used")
     sql_executed: bool = Field(..., description="Whether SQL was executed")
     rag_executed: bool = Field(..., description="Whether RAG was executed")
-    metadata: Optional[dict] = Field(
+    metadata: Optional[Dict[str, Any]] = Field(
         None, description="Additional metadata about the response"
+    )
+    structured_output: Optional[Dict[str, Any]] = Field(
+        None, description="Structured output (table, bullets, statistics) if requested"
     )
 
 
