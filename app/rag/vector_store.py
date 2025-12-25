@@ -1,4 +1,5 @@
 """Chroma vector store service for RAG system."""
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -6,6 +7,8 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class ChromaVectorStore:
@@ -133,4 +136,52 @@ class ChromaVectorStore:
             return result
         except Exception:
             return 0
+
+    def validate_and_fix_dimension(self, expected_dimension: int) -> bool:
+        """
+        Validate that the collection has the correct embedding dimension.
+        If there's a mismatch, reset the collection.
+
+        Args:
+            expected_dimension: The expected embedding dimension
+
+        Returns:
+            True if collection was reset, False if it was already correct
+        """
+        try:
+            count = self.get_collection_count()
+            if count == 0:
+                # Empty collection - dimension will be set correctly on first insert
+                return False
+
+            # Try a test query with the expected dimension to check compatibility
+            test_embedding = [0.0] * expected_dimension
+            try:
+                self.collection.query(
+                    query_embeddings=[test_embedding],
+                    n_results=min(1, count),  # Don't request more than available
+                )
+                # Query succeeded, dimension is correct
+                return False
+            except Exception as e:
+                error_msg = str(e).lower()
+                if "dimension" in error_msg or "embedding" in error_msg:
+                    # Dimension mismatch detected - reset collection
+                    logger.warning(
+                        f"Collection dimension mismatch detected. "
+                        f"Expected {expected_dimension} dimensions, but collection was created with a different dimension. "
+                        f"Resetting collection (this will delete all existing documents)..."
+                    )
+                    self.reset_collection()
+                    # Update collection reference after reset
+                    self.collection = self._get_or_create_collection()
+                    return True
+                else:
+                    # Some other error - might be a temporary issue, don't reset
+                    logger.debug(f"Collection query failed with non-dimension error: {e}")
+                    return False
+        except Exception as e:
+            # If we can't even check, log but don't reset (might be a temporary issue)
+            logger.debug(f"Could not validate collection dimension: {e}")
+            return False
 

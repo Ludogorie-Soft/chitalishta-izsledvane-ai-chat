@@ -256,3 +256,5 @@ class TestChatEndpoint:
 
         assert response.status_code == 404
 
+
+

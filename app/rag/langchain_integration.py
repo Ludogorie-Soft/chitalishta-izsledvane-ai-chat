@@ -83,6 +83,10 @@ class LangChainChromaFactory:
         Returns:
             LangChain Chroma vectorstore
         """
+        # Validate and fix dimension mismatch if needed
+        expected_dimension = self.embedding_service.get_dimension()
+        self.vector_store.validate_and_fix_dimension(expected_dimension)
+
         # We reuse the existing Chroma client and collection configuration.
         client = self.vector_store.get_client()
         # ChromaVectorStore stores collection_name as an instance attribute.

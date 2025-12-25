@@ -59,3 +59,5 @@ class ChatHistoryResponse(BaseModel):
     conversation_id: str = Field(..., description="Conversation ID")
     messages: List[ChatMessage] = Field(..., description="List of messages in the conversation")
 
+
+

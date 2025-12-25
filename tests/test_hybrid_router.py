@@ -250,3 +250,5 @@ class TestHybridIntentRouter:
         assert result.intent in [QueryIntent.RAG, QueryIntent.SQL, QueryIntent.HYBRID]
         assert 0.0 <= result.confidence <= 1.0
 
+
+

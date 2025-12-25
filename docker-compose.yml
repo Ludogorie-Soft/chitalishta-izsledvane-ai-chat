@@ -35,47 +35,47 @@ services:
       timeout: 5s
       retries: 5
 
-  tgi:
-    image: ghcr.io/huggingface/text-generation-inference:latest
-    platform: linux/amd64  # Required for ARM64 Mac compatibility (uses x86_64 emulation)
-    container_name: chitalishta_tgi
-    shm_size: 1g  # Shared memory for model loading
-    ports:
-      - "8080:80"  # TGI OpenAI-compatible API endpoint
-    volumes:
-      - tgi_model_cache:/data
-    environment:
-      # Hugging Face token for accessing gated models (e.g., google/gemma-2b-it)
-      # Get your token from: https://huggingface.co/settings/tokens
-      # Add it to your .env file as: HUGGING_FACE_HUB_TOKEN=your_token_here
-      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
-    command:
-      - --model-id
-      - google/gemma-2b-it
-      - --port
-      - "80"
-      - --max-input-length
-      - "1536"
-      - --max-total-tokens
-      - "2048"
-      - --disable-custom-kernels  # Required for CPU-only inference
-    deploy:
-      resources:
-        limits:
-          memory: 6G  # Allocate 6GB RAM for Gemma-2b (smaller model)
-        reservations:
-          memory: 4G
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 180s  # Give TGI time to download and load model on first start (3 minutes for smaller model)
-    restart: unless-stopped
+  # tgi:
+  #   image: ghcr.io/huggingface/text-generation-inference:latest
+  #   platform: linux/amd64  # Required for ARM64 Mac compatibility (uses x86_64 emulation)
+  #   container_name: chitalishta_tgi
+  #   shm_size: 1g  # Shared memory for model loading
+  #   ports:
+  #     - "8080:80"  # TGI OpenAI-compatible API endpoint
+  #   volumes:
+  #     - tgi_model_cache:/data
+  #   environment:
+  #     # Hugging Face token for accessing gated models (e.g., google/gemma-2b-it)
+  #     # Get your token from: https://huggingface.co/settings/tokens
+  #     # Add it to your .env file as: HUGGING_FACE_HUB_TOKEN=your_token_here
+  #     - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+  #   command:
+  #     - --model-id
+  #     - google/gemma-2b-it
+  #     - --port
+  #     - "80"
+  #     - --max-input-length
+  #     - "1536"
+  #     - --max-total-tokens
+  #     - "2048"
+  #     - --disable-custom-kernels  # Required for CPU-only inference
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 6G  # Allocate 6GB RAM for Gemma-2b (smaller model)
+  #       reservations:
+  #         memory: 4G
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 180s  # Give TGI time to download and load model on first start (3 minutes for smaller model)
+  #   restart: unless-stopped
 
 volumes:
   # Database volume (changed from external to regular volume since it doesn't exist)
   chitalishta-crawler_pg_data_chitalishta:
   pg_data_chitalishta_test:
-  tgi_model_cache:
+  # tgi_model_cache:
 

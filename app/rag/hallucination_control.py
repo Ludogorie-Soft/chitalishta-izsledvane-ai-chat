@@ -298,3 +298,5 @@ def get_default_hallucination_config(
     """
     return HallucinationConfig(mode=mode or HallucinationMode.MEDIUM_TOLERANCE)
 
+
+

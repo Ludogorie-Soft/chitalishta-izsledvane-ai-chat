@@ -285,3 +285,5 @@ class TestHybridPipelineService:
             assert pipeline.sql_agent == mock_sql_agent
             assert pipeline.rag_chain == mock_rag_chain
 
+
+

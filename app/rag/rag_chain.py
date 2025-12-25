@@ -15,13 +15,11 @@ from app.rag.hallucination_control import (
 logger = logging.getLogger(__name__)
 
 try:
-    from langchain.chains import RetrievalQA
     from langchain_core.language_models.chat_models import BaseChatModel
     from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
     from langchain_core.retrievers import BaseRetriever
     from langchain_core.runnables import RunnablePassthrough
 except ImportError as _e:  # pragma: no cover - guarded by tests
-    RetrievalQA = None  # type: ignore[assignment]
     BaseChatModel = object  # type: ignore[assignment]
     ChatPromptTemplate = object  # type: ignore[assignment]
     PromptTemplate = object  # type: ignore[assignment]

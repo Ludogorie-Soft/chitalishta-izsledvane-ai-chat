@@ -28,15 +28,24 @@ else:
     _LLM_IMPORT_ERROR = None
 
 # Try to import Hugging Face support
+_HUGGINGFACE_PACKAGE = None
 try:
-    from langchain_huggingface import ChatHuggingFace
+    from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
     _HUGGINGFACE_AVAILABLE = True
-except ImportError:
+    _HUGGINGFACE_PACKAGE = "langchain_huggingface"
+    logger.debug("Using langchain_huggingface package for Hugging Face support")
+except ImportError as e:
+    logger.debug(f"Failed to import from langchain_huggingface: {e}")
     try:
         from langchain_community.chat_models import ChatHuggingFace
+        from langchain_community.llms import HuggingFacePipeline
         _HUGGINGFACE_AVAILABLE = True
-    except ImportError:
+        _HUGGINGFACE_PACKAGE = "langchain_community"
+        logger.debug("Using langchain_community package for Hugging Face support (fallback)")
+    except ImportError as e2:
+        logger.debug(f"Failed to import from langchain_community: {e2}")
         ChatHuggingFace = None  # type: ignore[assignment]
+        HuggingFacePipeline = None  # type: ignore[assignment]
         _HUGGINGFACE_AVAILABLE = False
 
 
@@ -95,11 +104,11 @@ class LLMIntentClassifier:
             "   и описателен текст (напр. \"Колко читалища има и разкажи за тях\").\n"
             "\n"
             "Винаги връщай валиден JSON обект със следната структура:\n"
-            "{\n"
+            "{{\n"
             '  "intent": "sql" | "rag" | "hybrid",\n'
             '  "confidence": число между 0.0 и 1.0,\n'
             '  "reason": "кратко обяснение на български (1–2 изречения)"\n'
-            "}\n"
+            "}}\n"
             "\n"
             "Правила за confidence:\n"
             "  * 0.8–1.0, ако си силно уверен\n"
@@ -338,28 +347,60 @@ def get_default_llm() -> BaseChatModel:
 
         model_name = settings.huggingface_llm_model
 
-        # Use ChatHuggingFace from langchain-community
-        # langchain-community's ChatHuggingFace requires creating a pipeline first
+        # Log which package we're using
+        logger.info(
+            f"Initializing Hugging Face model '{model_name}' "
+            f"using package: {_HUGGINGFACE_PACKAGE}"
+        )
+
+        # Use different approaches based on which package is available
         try:
-            from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+            if _HUGGINGFACE_PACKAGE == "langchain_huggingface":
+                # langchain_huggingface package - use HuggingFacePipeline directly
+                from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 
-            # Load model and tokenizer
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForCausalLM.from_pretrained(model_name)
+                if HuggingFacePipeline is None:
+                    raise ImportError(
+                        "HuggingFacePipeline is not available. "
+                        "Make sure langchain-huggingface is installed."
+                    )
 
-            # Create pipeline
-            hf_pipeline = pipeline(
-                "text-generation",
-                model=model,
-                tokenizer=tokenizer,
-                temperature=0.0,
-                max_new_tokens=512,
-            )
+                # Load model and tokenizer
+                tokenizer = AutoTokenizer.from_pretrained(model_name)
+                model = AutoModelForCausalLM.from_pretrained(model_name)
 
-            # Create ChatHuggingFace with the pipeline
-            return ChatHuggingFace(
-                llm=hf_pipeline,
-            )
+                # Create pipeline
+                hf_pipeline = pipeline(
+                    "text-generation",
+                    model=model,
+                    tokenizer=tokenizer,
+                    temperature=0.0,
+                    max_new_tokens=512,
+                )
+
+                # Wrap pipeline with HuggingFacePipeline
+                llm = HuggingFacePipeline(pipeline=hf_pipeline)
+
+                # langchain_huggingface supports HuggingFacePipeline directly
+                return ChatHuggingFace(llm=llm)
+            else:
+                # langchain_community - ChatHuggingFace doesn't accept HuggingFacePipeline
+                # We need to use HuggingFaceHub or recommend langchain-huggingface
+                # For local models, langchain-huggingface is recommended
+                raise ValueError(
+                    f"langchain_community.chat_models.ChatHuggingFace doesn't support "
+                    f"local models with HuggingFacePipeline.\n"
+                    f"For local Hugging Face models, please install langchain-huggingface:\n"
+                    f"  poetry add langchain-huggingface\n"
+                    f"\n"
+                    f"Alternatively, you can use HuggingFaceHub (requires API access):\n"
+                    f"  from langchain_community.llms import HuggingFaceHub\n"
+                    f"  llm = HuggingFaceHub(repo_id='{model_name}')\n"
+                    f"  chat_model = ChatHuggingFace(llm=llm)\n"
+                    f"\n"
+                    f"Or use TGI (Text Generation Inference) for local models:\n"
+                    f"  Set LLM_PROVIDER=tgi in your .env file"
+                )
         except ImportError as e:
             raise ImportError(
                 f"Missing dependencies for Hugging Face model '{model_name}'. "
