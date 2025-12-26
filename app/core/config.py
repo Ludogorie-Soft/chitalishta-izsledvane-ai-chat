@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     tgi_timeout: int = 30  # Request timeout in seconds
     tgi_enabled: bool = True  # Whether to use TGI when llm_provider="tgi"
 
+    # Logging configuration
+    log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    log_format: str = "json"  # "json" or "console" (human-readable)
+    log_file: str = ""  # Optional: path to log file (empty = stdout only)
+    log_file_max_bytes: int = 10485760  # 10MB per log file
+    log_file_backup_count: int = 5  # Number of backup log files to keep
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -1,10 +1,10 @@
 """API endpoints for chat functionality."""
 
 import asyncio
-import logging
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException
+import structlog
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 
@@ -23,7 +23,7 @@ from app.rag.structured_output import (
     get_structured_output_formatter,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -128,10 +128,21 @@ async def chat(request: ChatRequest):
         return response
 
     except ValidationError as e:
-        logger.error(f"Validation error in chat request: {e}")
+        logger.error(
+            "validation_error",
+            error_type="ValidationError",
+            error_message=str(e),
+            endpoint="chat",
+        )
         raise HTTPException(status_code=400, detail=f"Invalid request: {str(e)}")
     except Exception as e:
-        logger.error(f"Error processing chat request: {e}", exc_info=True)
+        logger.error(
+            "chat_request_error",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            endpoint="chat",
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=500, detail=f"Error processing request: {str(e)}"
         )
@@ -218,7 +229,13 @@ async def chat_stream(request: ChatRequest):
                 )
 
             except Exception as e:
-                logger.error(f"Error in stream generation: {e}", exc_info=True)
+                logger.error(
+                    "stream_generation_error",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    endpoint="chat_stream",
+                    exc_info=True,
+                )
                 yield f"data: {{'error': '{str(e)}'}}\n\n"
 
         return StreamingResponse(
@@ -226,10 +243,21 @@ async def chat_stream(request: ChatRequest):
         )
 
     except ValidationError as e:
-        logger.error(f"Validation error in chat stream request: {e}")
+        logger.error(
+            "validation_error",
+            error_type="ValidationError",
+            error_message=str(e),
+            endpoint="chat_stream",
+        )
         raise HTTPException(status_code=400, detail=f"Invalid request: {str(e)}")
     except Exception as e:
-        logger.error(f"Error processing chat stream request: {e}", exc_info=True)
+        logger.error(
+            "chat_stream_request_error",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            endpoint="chat_stream",
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=500, detail=f"Error processing request: {str(e)}"
         )
@@ -267,7 +295,14 @@ async def get_chat_history(request: ChatHistoryRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting chat history: {e}", exc_info=True)
+        logger.error(
+            "get_chat_history_error",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            endpoint="chat_history",
+            conversation_id=request.conversation_id,
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=500, detail=f"Error getting history: {str(e)}"
         )
@@ -299,7 +334,14 @@ async def delete_chat_history(conversation_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting chat history: {e}", exc_info=True)
+        logger.error(
+            "delete_chat_history_error",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            endpoint="delete_chat_history",
+            conversation_id=conversation_id,
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=500, detail=f"Error deleting history: {str(e)}"
         )

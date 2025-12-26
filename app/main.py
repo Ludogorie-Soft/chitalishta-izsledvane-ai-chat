@@ -8,9 +8,15 @@ from app.api.indexing import router as indexing_router
 from app.api.ingestion import router as ingestion_router
 from app.api.vector_store import router as vector_store_router
 from app.core.config import settings
+from app.core.logging_config import configure_logging  # noqa: F401 - Initialize logging
+from app.core.middleware import RequestIDMiddleware, RequestLoggingMiddleware
 from app.db.database import get_db
 
 app = FastAPI(title="Chitalishta RAG System", version="0.1.0")
+
+# Add middleware (order matters: RequestIDMiddleware must come first)
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 
 # Register routers
 app.include_router(chitalishte_router)

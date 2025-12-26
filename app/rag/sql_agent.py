@@ -1,6 +1,6 @@
 """SQL agent using LangChain for querying the database."""
 
-import logging
+import structlog
 import re
 from typing import Dict, List, Optional
 
@@ -13,7 +13,7 @@ from app.rag.hallucination_control import (
     get_default_hallucination_config,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 try:
     # Try different import paths for create_sql_agent (varies by LangChain version)
@@ -353,7 +353,7 @@ class SQLAuditLogger:
             log_data["error"] = error
 
         # Log as structured JSON for easy parsing
-        logger.info("SQL_QUERY_AUDIT", extra=log_data)
+        logger.info("sql_query_audit", **log_data)
 
 
 class SQLAgentService:
@@ -1012,10 +1012,18 @@ class SQLAgentService:
         # Validate columns exist
         cols_valid, cols_error, invalid_cols = self.validator.validate_columns(sql)
         if not cols_valid:
-            logger.warning(f"Column validation failed: {cols_error}")
+            logger.warning(
+                "column_validation_failed",
+                error=cols_error,
+                sql_preview=sql[:100] if sql else None,
+            )
             # Log the invalid columns for debugging
             if invalid_cols:
-                logger.warning(f"Invalid columns detected: {invalid_cols}")
+                logger.warning(
+                    "invalid_columns_detected",
+                    invalid_columns=invalid_cols,
+                    sql_preview=sql[:100] if sql else None,
+                )
             # Return error but don't block execution - let the database error handle it
             # This allows the agent to see the actual error and retry
             return sql, cols_error
@@ -1088,7 +1096,11 @@ class SQLAgentService:
             if generated_sql:
                 sanitized_sql, error = self._validate_and_sanitize_sql(generated_sql)
                 if error:
-                    logger.warning(f"SQL validation failed: {error}")
+                    logger.warning(
+                        "sql_validation_failed",
+                        error=error,
+                        sql_preview=generated_sql[:100] if generated_sql else None,
+                    )
                     # Still return the answer, but log the warning
                 generated_sql = sanitized_sql
 
@@ -1118,7 +1130,12 @@ class SQLAgentService:
                     error=error_msg,
                 )
 
-            logger.error(f"SQL agent error: {error_msg}", exc_info=True)
+            logger.error(
+                "sql_agent_error",
+                error_message=error_msg,
+                query=question,
+                exc_info=True,
+            )
 
             return {
                 "answer": f"Грешка при изпълнение на заявката: {error_msg}",
@@ -1188,7 +1205,12 @@ class SQLAgentService:
                     error=error_msg,
                 )
 
-            logger.error(f"SQL execution error: {error_msg}", exc_info=True)
+            logger.error(
+                "sql_execution_error",
+                error_message=error_msg,
+                sql_preview=sanitized_sql[:100] if sanitized_sql else None,
+                exc_info=True,
+            )
 
             return {
                 "success": False,

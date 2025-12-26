@@ -12,8 +12,8 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 9 – Deployment & Ops
-- Current Step: Step 9.1 Complete - Ready for Step 9.2 (AWS EC2 deployment)
+- Phase: Phase 10 – Quality & Observability
+- Current Step: Step 10.1 Complete - Ready for Step 10.2 (LangChain observability)
 - Blockers: none
 
 ---
@@ -418,13 +418,13 @@ Rules:
 # Phase 10 – Quality & Observability
 
 ## Step 10.1 – Structured logging foundation
-- [ ] Install structured logging library (`structlog` or `loguru`)
-- [ ] Configure JSON-formatted logs with timestamps
-- [ ] Set up log levels (DEBUG, INFO, WARNING, ERROR)
-- [ ] Create log rotation strategy (file size/time-based)
-- [ ] Add request ID generation (UUID) for trace correlation
-- [ ] Implement FastAPI middleware for request/response logging
-- [ ] Log all API endpoints (query, routing, errors)
+- [x] Install structured logging library (`structlog` or `loguru`)
+- [x] Configure JSON-formatted logs with timestamps
+- [x] Set up log levels (DEBUG, INFO, WARNING, ERROR)
+- [x] Create log rotation strategy (file size/time-based)
+- [x] Add request ID generation (UUID) for trace correlation
+- [x] Implement FastAPI middleware for request/response logging
+- [x] Log all API endpoints (query, routing, errors)
 
 **Definition of Done**
 - All application events are logged in structured JSON format
