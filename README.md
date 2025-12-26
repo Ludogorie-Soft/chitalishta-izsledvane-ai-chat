@@ -240,4 +240,12 @@ To test the TGI LLM integration:
 
 See `IMPLEMENTATION_PLAN.md` for the detailed step-by-step implementation plan.
 
+## Observability
+
+The application includes comprehensive structured logging and LangChain observability. See `OBSERVABILITY.md` for:
+- How to access and analyze logs
+- Production observability options (CloudWatch, Loki, ELK)
+- Querying LangChain operations
+- Performance analysis tools
+
 

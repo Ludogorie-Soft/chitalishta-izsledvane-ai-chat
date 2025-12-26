@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 
 from app.core.config import settings
 from app.db.database import engine
+from app.rag.langchain_callbacks import get_langchain_callback_handler
 from app.rag.llm_intent_classification import get_default_llm
 from app.rag.hallucination_control import (
     HallucinationConfig,
@@ -33,11 +34,13 @@ try:
         from langchain.agents.agent_toolkits import SQLDatabaseToolkit
         from langchain.sql_database import SQLDatabase
 
+    from langchain_core.callbacks import BaseCallbackHandler
     from langchain_core.language_models.chat_models import BaseChatModel
 except ImportError as _e:  # pragma: no cover - guarded by tests
     create_sql_agent = None  # type: ignore[assignment]
     SQLDatabaseToolkit = None  # type: ignore[assignment]
     SQLDatabase = None  # type: ignore[assignment]
+    BaseCallbackHandler = object  # type: ignore[assignment]
     BaseChatModel = object  # type: ignore[assignment]
     _LANGCHAIN_IMPORT_ERROR = _e
 else:
@@ -369,6 +372,7 @@ class SQLAgentService:
         database_url: Optional[str] = None,
         enable_audit_logging: bool = True,
         hallucination_config: Optional[HallucinationConfig] = None,
+        callbacks: Optional[List[BaseCallbackHandler]] = None,
     ):
         """
         Initialize SQL agent service.
@@ -378,6 +382,7 @@ class SQLAgentService:
             database_url: Optional database URL. If None, uses config default.
             enable_audit_logging: Whether to enable audit logging of SQL queries
             hallucination_config: Optional hallucination control configuration. If None, uses default (MEDIUM_TOLERANCE).
+            callbacks: Optional list of LangChain callback handlers for observability.
         """
         if _LANGCHAIN_IMPORT_ERROR is not None:
             raise ImportError(
@@ -516,6 +521,11 @@ class SQLAgentService:
 
         # Create SQL toolkit
         self.toolkit = SQLDatabaseToolkit(db=self.db, llm=self.llm)
+
+        # Store callbacks (default to structured logging callback if not provided)
+        if callbacks is None:
+            callbacks = [get_langchain_callback_handler()]
+        self.callbacks = callbacks
 
         # Create SQL agent with Bulgarian prompt
         self.agent = self._create_sql_agent()
@@ -1062,8 +1072,9 @@ class SQLAgentService:
             Dictionary with answer, SQL query, and metadata
         """
         try:
-            # Invoke the agent
-            result = self.agent.invoke({"input": question})
+            # Invoke the agent with callbacks
+            config = {"callbacks": self.callbacks} if self.callbacks else {}
+            result = self.agent.invoke({"input": question}, config=config)
 
             # Extract SQL query from agent execution
             # The agent returns a dict with 'output' and potentially intermediate steps
@@ -1224,6 +1235,7 @@ def get_sql_agent_service(
     llm: Optional[BaseChatModel] = None,
     enable_audit_logging: bool = True,
     hallucination_config: Optional[HallucinationConfig] = None,
+    callbacks: Optional[List[BaseCallbackHandler]] = None,
 ) -> SQLAgentService:
     """
     Factory function to get a default SQLAgentService.
@@ -1231,6 +1243,8 @@ def get_sql_agent_service(
     Args:
         llm: Optional LLM instance. If None, creates one from settings.
         enable_audit_logging: Whether to enable audit logging
+        hallucination_config: Optional hallucination control configuration
+        callbacks: Optional list of LangChain callback handlers
 
     Returns:
         SQLAgentService instance
@@ -1239,5 +1253,6 @@ def get_sql_agent_service(
         llm=llm,
         enable_audit_logging=enable_audit_logging,
         hallucination_config=hallucination_config,
+        callbacks=callbacks,
     )
 

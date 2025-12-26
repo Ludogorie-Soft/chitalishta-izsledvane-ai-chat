@@ -1,10 +1,11 @@
 """Hybrid pipeline that combines SQL and RAG for comprehensive query answering."""
 
-import logging
+import structlog
 from typing import Dict, List, Optional
 
 from app.rag.hybrid_router import HybridIntentRouter, get_hybrid_router
 from app.rag.intent_classification import QueryIntent
+from app.rag.langchain_callbacks import get_langchain_callback_handler
 from app.rag.rag_chain import RAGChainService, get_rag_chain_service
 from app.rag.sql_agent import SQLAgentService, get_sql_agent_service
 from app.rag.hallucination_control import (
@@ -14,13 +15,15 @@ from app.rag.hallucination_control import (
     get_default_hallucination_config,
 )
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 try:
+    from langchain_core.callbacks import BaseCallbackHandler
     from langchain_core.language_models.chat_models import BaseChatModel
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.runnables import RunnablePassthrough
 except ImportError as _e:  # pragma: no cover - guarded by tests
+    BaseCallbackHandler = object  # type: ignore[assignment]
     BaseChatModel = object  # type: ignore[assignment]
     ChatPromptTemplate = object  # type: ignore[assignment]
     RunnablePassthrough = object  # type: ignore[assignment]
@@ -95,6 +98,7 @@ class HybridPipelineService:
         rag_chain: Optional[RAGChainService] = None,
         llm: Optional[BaseChatModel] = None,
         hallucination_config: Optional[HallucinationConfig] = None,
+        callbacks: Optional[List[BaseCallbackHandler]] = None,
     ):
         """
         Initialize hybrid pipeline service.
@@ -105,6 +109,7 @@ class HybridPipelineService:
             rag_chain: Optional RAG chain service. If None, creates default.
             llm: Optional LLM instance for final answer synthesis. If None, uses default.
             hallucination_config: Optional hallucination control configuration. If None, uses default (MEDIUM_TOLERANCE).
+            callbacks: Optional list of LangChain callback handlers for observability.
         """
         if _LANGCHAIN_IMPORT_ERROR is not None:
             raise ImportError(
@@ -115,12 +120,19 @@ class HybridPipelineService:
 
         self.hallucination_config = hallucination_config or get_default_hallucination_config()
 
+        # Store callbacks (default to structured logging callback if not provided)
+        if callbacks is None:
+            callbacks = [get_langchain_callback_handler()]
+        self.callbacks = callbacks
+
         self.router = router or get_hybrid_router()
         self.sql_agent = sql_agent or get_sql_agent_service(
-            hallucination_config=self.hallucination_config
+            hallucination_config=self.hallucination_config,
+            callbacks=callbacks,
         )
         self.rag_chain = rag_chain or get_rag_chain_service(
-            hallucination_config=self.hallucination_config
+            hallucination_config=self.hallucination_config,
+            callbacks=callbacks,
         )
 
         # Configure synthesis LLM with hallucination settings
@@ -187,8 +199,10 @@ class HybridPipelineService:
         intent = routing_result.intent
 
         logger.info(
-            f"Query routed to intent: {intent.value} "
-            f"(confidence: {routing_result.confidence:.2%})"
+            "query_routed",
+            intent=intent.value,
+            confidence=routing_result.confidence,
+            question=question[:200],  # Preview
         )
 
         # Step 2: Execute based on intent
@@ -221,7 +235,9 @@ class HybridPipelineService:
                 "question": question,
             }
 
-            synthesis_output = self.synthesis_chain.invoke(synthesis_input)
+            # Invoke synthesis chain with callbacks
+            config = {"callbacks": self.callbacks} if self.callbacks else {}
+            synthesis_output = self.synthesis_chain.invoke(synthesis_input, config=config)
 
             # Extract answer from synthesis
             if hasattr(synthesis_output, "content"):
@@ -293,6 +309,7 @@ def get_hybrid_pipeline_service(
     rag_chain: Optional[RAGChainService] = None,
     llm: Optional[BaseChatModel] = None,
     hallucination_config: Optional[HallucinationConfig] = None,
+    callbacks: Optional[List[BaseCallbackHandler]] = None,
 ) -> HybridPipelineService:
     """
     Factory function to get a default HybridPipelineService.
@@ -312,5 +329,6 @@ def get_hybrid_pipeline_service(
         rag_chain=rag_chain,
         llm=llm,
         hallucination_config=hallucination_config,
+        callbacks=callbacks,
     )
 

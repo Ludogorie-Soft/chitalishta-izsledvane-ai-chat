@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 10 – Quality & Observability
-- Current Step: Step 10.1 Complete - Ready for Step 10.2 (LangChain observability)
+- Current Step: Step 10.2 Complete - Ready for Step 10.3 (Performance monitoring)
 - Blockers: none
 
 ---
@@ -434,16 +434,16 @@ Rules:
 ---
 
 ## Step 10.2 – LangChain observability (callbacks)
-- [ ] Create custom LangChain callback handler (`LocalTraceCallbackHandler`)
-- [ ] Implement callback methods:
+- [x] Create custom LangChain callback handler (`StructuredLoggingCallbackHandler`)
+- [x] Implement callback methods:
   - `on_llm_start` / `on_llm_end` (log LLM calls, token usage, latency)
   - `on_retriever_start` / `on_retriever_end` (log retrieval queries and results)
   - `on_chain_start` / `on_chain_end` (log chain execution flow)
   - `on_chain_error` (log chain failures with context)
-- [ ] Store trace data (inputs, outputs, intermediate steps) in structured logs
-- [ ] Include trace IDs in all callback logs for correlation
-- [ ] Log metadata (model used, retrieval count, document sources)
-- [ ] Integrate callbacks into all LangChain chains (RAG, SQL agent, hybrid)
+- [x] Store trace data (inputs, outputs, intermediate steps) in structured logs
+- [x] Include trace IDs in all callback logs for correlation
+- [x] Log metadata (model used, retrieval count, document sources)
+- [x] Integrate callbacks into all LangChain chains (RAG, SQL agent, hybrid)
 
 **Definition of Done**
 - All LangChain operations are traceable via callbacks

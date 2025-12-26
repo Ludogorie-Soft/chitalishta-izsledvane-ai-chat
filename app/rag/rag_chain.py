@@ -15,11 +15,13 @@ from app.rag.hallucination_control import (
 logger = logging.getLogger(__name__)
 
 try:
+    from langchain_core.callbacks import BaseCallbackHandler
     from langchain_core.language_models.chat_models import BaseChatModel
     from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
     from langchain_core.retrievers import BaseRetriever
     from langchain_core.runnables import RunnablePassthrough
 except ImportError as _e:  # pragma: no cover - guarded by tests
+    BaseCallbackHandler = object  # type: ignore[assignment]
     BaseChatModel = object  # type: ignore[assignment]
     ChatPromptTemplate = object  # type: ignore[assignment]
     PromptTemplate = object  # type: ignore[assignment]
@@ -173,6 +175,7 @@ class RAGChainService:
         analysis_retriever: Optional[BaseRetriever] = None,
         prefer_db_for_factual: bool = True,
         hallucination_config: Optional[HallucinationConfig] = None,
+        callbacks: Optional[List[BaseCallbackHandler]] = None,
     ):
         """
         Initialize RAG chain service.
@@ -183,6 +186,7 @@ class RAGChainService:
             analysis_retriever: Optional retriever for analysis document. If None, creates default with filter.
             prefer_db_for_factual: If True, prioritize DB content for factual queries
             hallucination_config: Optional hallucination control configuration. If None, uses default (MEDIUM_TOLERANCE).
+            callbacks: Optional list of LangChain callback handlers for observability.
         """
         if _LANGCHAIN_IMPORT_ERROR is not None:
             raise ImportError(
@@ -228,6 +232,11 @@ class RAGChainService:
 
         # Create Bulgarian prompt template
         self.prompt_template = self._create_bulgarian_prompt()
+
+        # Store callbacks (default to structured logging callback if not provided)
+        if callbacks is None:
+            callbacks = [get_langchain_callback_handler()]
+        self.callbacks = callbacks
 
         # Build the chain
         self.chain = self._build_chain()
@@ -310,8 +319,12 @@ class RAGChainService:
         Returns:
             Dictionary with answer and metadata
         """
-        # Invoke the chain with use_analysis parameter
-        result = self.chain.invoke({"question": question, "use_analysis": use_analysis})
+        # Invoke the chain with use_analysis parameter and callbacks
+        config = {"callbacks": self.callbacks} if self.callbacks else {}
+        result = self.chain.invoke(
+            {"question": question, "use_analysis": use_analysis},
+            config=config,
+        )
 
         # Extract answer from result
         if hasattr(result, "content"):
@@ -372,6 +385,7 @@ def get_rag_chain_service(
     llm: Optional[BaseChatModel] = None,
     prefer_db_for_factual: bool = True,
     hallucination_config: Optional[HallucinationConfig] = None,
+    callbacks: Optional[List[BaseCallbackHandler]] = None,
 ) -> RAGChainService:
     """
     Factory function to get a default RAGChainService.
@@ -380,6 +394,7 @@ def get_rag_chain_service(
         llm: Optional LLM instance. If None, creates one from settings.
         prefer_db_for_factual: If True, prioritize DB content for factual queries
         hallucination_config: Optional hallucination control configuration
+        callbacks: Optional list of LangChain callback handlers
 
     Returns:
         RAGChainService instance
@@ -388,5 +403,6 @@ def get_rag_chain_service(
         llm=llm,
         prefer_db_for_factual=prefer_db_for_factual,
         hallucination_config=hallucination_config,
+        callbacks=callbacks,
     )
 
