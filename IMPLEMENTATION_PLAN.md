@@ -415,6 +415,50 @@ Rules:
 
 ---
 
+## Step 9.3 – AWS Native (Mostly Free Tier) observability
+- [ ] Configure CloudWatch Logs integration
+  - Set up log group for application logs
+  - Configure log stream from structured JSON logs
+  - Set up log retention policy (7-30 days for free tier)
+- [ ] Configure CloudWatch Metrics
+  - EC2 instance metrics (CPU, memory, disk, network)
+  - Custom application metrics (request count, latency, error rate)
+  - Custom business metrics (token usage, cost estimates)
+- [ ] Set up CloudWatch Alarms
+  - High error rate alerts (4xx / 5xx threshold)
+  - High latency alerts (p95/p99 thresholds)
+  - EC2 resource alerts (CPU, memory, disk usage)
+  - Custom metric alerts (token usage spikes, cost thresholds)
+
+**What you can monitor:**
+
+**Request metrics (via CloudWatch Logs):**
+- Request count & latency (extracted from structured logs)
+- Error rate (4xx / 5xx status codes)
+- Request patterns by endpoint, method, status
+
+**EC2 system metrics (via CloudWatch Metrics):**
+- CPU utilization percentage
+- Memory usage (bytes and percentage)
+- Disk I/O and disk space usage
+- Network I/O (bytes in/out)
+
+**Custom application metrics (via CloudWatch Metrics):**
+- Token usage (input, output, total) by model/provider
+- Cost estimates per request/endpoint/model
+- RAG query latency and document retrieval count
+- SQL query latency and execution status
+- LLM call latency by model/provider/task
+
+**Definition of Done**
+- CloudWatch Logs collect all application logs
+- CloudWatch Metrics track EC2 and custom application metrics
+- CloudWatch Alarms notify on critical thresholds
+- Monitoring dashboard provides visibility into system health
+- All metrics are accessible via AWS Console and APIs
+
+---
+
 # Phase 10 – Quality & Observability
 
 ## Step 10.1 – Structured logging foundation
@@ -522,30 +566,7 @@ Rules:
 
 ---
 
-## Step 10.6 – Production monitoring setup
-- [ ] Set up log aggregation (optional: ELK stack or simple log viewer)
-- [ ] Configure Grafana dashboards (optional: Docker setup):
-  - Request rate and latency graphs
-  - Error rate trends
-  - Token usage over time
-  - Cost trends
-  - System resource usage
-- [ ] Create alerting rules (optional):
-  - High error rate alerts
-  - High latency alerts
-  - Cost threshold alerts
-- [ ] Set up log retention policy
-- [ ] Document observability setup and usage
-
-**Definition of Done**
-- Production monitoring is operational
-- Dashboards provide visibility into system health
-- Alerts notify on critical issues (if configured)
-- Observability tools are documented
-
----
-
-## Step 10.7 – Evaluation
+## Step 10.6 – Evaluation
 - [ ] Bulgarian test queries
 - [ ] Groundedness checks
 - [ ] Regression safety
