@@ -4,6 +4,7 @@ import logging
 import time
 from typing import Dict, List, Optional, Tuple
 
+from app.core.config import settings
 from app.core.metrics import track_rag_query
 from app.rag.langchain_integration import LangChainChromaFactory, get_langchain_retriever
 from app.rag.llm_intent_classification import get_default_llm
@@ -60,7 +61,7 @@ class ContextAssembler:
         self.prefer_db_for_factual = prefer_db_for_factual
 
     def assemble_context(
-        self, query: str, k_db: int = 4, k_analysis: int = 2, use_analysis: bool = True
+        self, query: str, k_db: int = 4, k_analysis: int = 4, use_analysis: bool = True
     ) -> Tuple[List, Dict[str, any]]:
         """
         Assemble context from both DB and analysis document with priority logic.
@@ -203,6 +204,40 @@ class RAGChainService:
         base_llm = llm or get_default_llm()
         self.llm = self.hallucination_config.get_llm_with_config(base_llm)
 
+        # Create fallback LLM for retry (more powerful model)
+        self.fallback_llm = None
+        if settings.rag_enable_fallback:
+            try:
+                from app.rag.llm_registry import LLMRegistry, LLMTask
+                registry = LLMRegistry()
+                fallback_provider = (
+                    settings.llm_provider_fallback.lower()
+                    if settings.llm_provider_fallback
+                    else settings.llm_provider.lower()
+                )
+                # Get fallback model name based on provider
+                if fallback_provider == "openai":
+                    fallback_model = settings.openai_chat_model_fallback
+                elif fallback_provider == "huggingface":
+                    fallback_model = (
+                        settings.huggingface_llm_model_fallback
+                        if settings.huggingface_llm_model_fallback
+                        else settings.huggingface_llm_model
+                    )
+                else:
+                    fallback_model = None
+
+                self.fallback_llm = registry.get_llm(
+                    task=LLMTask.GENERATION,
+                    provider=fallback_provider,
+                    model_name=fallback_model,
+                )
+                self.fallback_llm = self.hallucination_config.get_llm_with_config(self.fallback_llm)
+                logger.info(f"Fallback LLM configured: {fallback_provider}/{fallback_model}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize fallback LLM: {e}. Fallback retry will be disabled.")
+                self.fallback_llm = None
+
         self.prefer_db_for_factual = prefer_db_for_factual
 
         # Create retrievers if not provided
@@ -218,8 +253,9 @@ class RAGChainService:
             factory = LangChainChromaFactory()
             vectorstore = factory.get_vectorstore()
             # Add metadata filter for analysis document
+            # Increased k from 2 to 4 to improve semantic retrieval coverage
             analysis_retriever = vectorstore.as_retriever(
-                search_kwargs={"k": 2, "filter": {"source": "analysis_document"}}
+                search_kwargs={"k": 4, "filter": {"source": "analysis_document"}}
             )
 
         self.db_retriever = db_retriever
@@ -278,45 +314,50 @@ class RAGChainService:
         2. Formats context with separation between DB and analysis
         3. Passes formatted context to LLM via prompt
         """
-        # Create a custom chain that uses our context assembler
-        def retrieve_and_format(inputs: Dict[str, str]) -> Dict[str, str]:
-            """Retrieve documents and format context."""
-            query = inputs.get("question", inputs.get("query", ""))
-            use_analysis = inputs.get("use_analysis", True)
-
-            # Retrieve and assemble context
-            documents, metadata = self.context_assembler.assemble_context(
-                query, k_db=4, k_analysis=2, use_analysis=use_analysis
-            )
-
-            # Format context
-            formatted_context = self.context_assembler.format_context(documents)
-
-            return {
-                "context": formatted_context,
-                "question": query,
-                "metadata": metadata,
-            }
-
         # Create chain: retrieve -> format -> prompt -> LLM
         # The prompt template expects "context" and "question" keys
         # retrieve_and_format returns a dict with these keys
         chain = (
             RunnablePassthrough()
-            | retrieve_and_format
+            | self._create_retrieve_and_format(use_analysis=True)
             | self.prompt_template
             | self.llm
         )
 
         return chain
 
-    def query(self, question: str, use_analysis: bool = True) -> Dict[str, any]:
+    def _is_no_information_response(self, answer: str) -> bool:
         """
-        Query the RAG chain.
+        Check if the answer indicates no information was found.
+
+        Args:
+            answer: The generated answer
+
+        Returns:
+            True if the answer indicates no information was found
+        """
+        answer_lower = answer.lower().strip()
+        # Check for common "no information" patterns in Bulgarian
+        no_info_patterns = [
+            "нямам информация",
+            "няма информация",
+            "не мога да намеря",
+            "не мога да отговоря",
+            "не знам",
+            "няма данни",
+            "липсва информация",
+        ]
+        return any(pattern in answer_lower for pattern in no_info_patterns)
+
+    def query(self, question: str, use_analysis: bool = True, enable_fallback: bool = True) -> Dict[str, any]:
+        """
+        Query the RAG chain with optional fallback retry using more powerful LLM.
 
         Args:
             question: User question in Bulgarian
             use_analysis: Whether to include analysis documents
+            enable_fallback: Whether to enable fallback retry with more powerful LLM.
+                           Should be True for RAG-only queries, False for hybrid queries.
 
         Returns:
             Dictionary with answer and metadata
@@ -324,6 +365,7 @@ class RAGChainService:
         start_time = time.time()
         status = "success"
         documents_retrieved = 0
+        used_fallback = False
 
         try:
             # Invoke the chain with use_analysis parameter and callbacks
@@ -344,11 +386,58 @@ class RAGChainService:
             # Get context metadata by retrieving again
             # (The chain doesn't preserve metadata in the final output)
             _, metadata = self.context_assembler.assemble_context(
-                question, k_db=4, k_analysis=2, use_analysis=use_analysis
+                question, k_db=4, k_analysis=4, use_analysis=use_analysis
             )
 
             # Extract document count for metrics
             documents_retrieved = metadata.get("total_documents", 0)
+
+            # Check if answer indicates no information and fallback is enabled
+            # Only use fallback for RAG-only queries (not hybrid queries where SQL might provide answers)
+            if (
+                self._is_no_information_response(answer)
+                and self.fallback_llm is not None
+                and settings.rag_enable_fallback
+                and enable_fallback
+            ):
+                logger.info(
+                    f"Initial answer indicates no information. Retrying with fallback LLM for question: {question}"
+                )
+                # Retry with fallback LLM
+                try:
+                    # Create a new chain with fallback LLM
+                    fallback_chain = (
+                        RunnablePassthrough()
+                        | self._create_retrieve_and_format(use_analysis)
+                        | self.prompt_template
+                        | self.fallback_llm
+                    )
+
+                    fallback_result = fallback_chain.invoke(
+                        {"question": question, "use_analysis": use_analysis},
+                        config=config,
+                    )
+
+                    # Extract fallback answer
+                    if hasattr(fallback_result, "content"):
+                        fallback_answer = fallback_result.content
+                    elif isinstance(fallback_result, str):
+                        fallback_answer = fallback_result
+                    else:
+                        fallback_answer = str(fallback_result)
+
+                    # Only use fallback answer if it's different from "no information"
+                    if not self._is_no_information_response(fallback_answer):
+                        answer = fallback_answer
+                        used_fallback = True
+                        logger.info("Fallback LLM provided a better answer")
+                    else:
+                        logger.info("Fallback LLM also returned no information")
+                except Exception as e:
+                    logger.warning(f"Fallback LLM retry failed: {e}. Using original answer.")
+
+            # Add metadata about fallback usage
+            metadata["used_fallback_llm"] = used_fallback
 
             return {
                 "answer": answer,
@@ -363,27 +452,49 @@ class RAGChainService:
             duration = time.time() - start_time
             track_rag_query(status=status, duration=duration, documents_retrieved=documents_retrieved)
 
-    def query_with_context(self, question: str, use_analysis: bool = True) -> Dict[str, any]:
+    def _create_retrieve_and_format(self, use_analysis: bool):
+        """Create retrieve_and_format function for chain."""
+        def retrieve_and_format(inputs: Dict[str, str]) -> Dict[str, str]:
+            """Retrieve documents and format context."""
+            query = inputs.get("question", inputs.get("query", ""))
+
+            # Retrieve and assemble context
+            documents, metadata = self.context_assembler.assemble_context(
+                query, k_db=4, k_analysis=4, use_analysis=use_analysis
+            )
+
+            # Format context
+            formatted_context = self.context_assembler.format_context(documents)
+
+            return {
+                "context": formatted_context,
+                "question": query,
+                "metadata": metadata,
+            }
+        return retrieve_and_format
+
+    def query_with_context(self, question: str, use_analysis: bool = True, enable_fallback: bool = True) -> Dict[str, any]:
         """
         Query the RAG chain and return full context information.
 
         Args:
             question: User question in Bulgarian
             use_analysis: Whether to include analysis documents
+            enable_fallback: Whether to enable fallback retry with more powerful LLM
 
         Returns:
             Dictionary with answer, context, and metadata
         """
         # Retrieve documents
         documents, metadata = self.context_assembler.assemble_context(
-            question, k_db=4, k_analysis=2, use_analysis=use_analysis
+            question, k_db=4, k_analysis=4, use_analysis=use_analysis
         )
 
         # Format context
         formatted_context = self.context_assembler.format_context(documents)
 
         # Get answer using the chain
-        result = self.query(question, use_analysis=use_analysis)
+        result = self.query(question, use_analysis=use_analysis, enable_fallback=enable_fallback)
 
         # Add context information
         result["context"] = formatted_context

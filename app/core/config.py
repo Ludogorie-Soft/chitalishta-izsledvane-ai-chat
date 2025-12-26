@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     llm_provider_synthesis: str = ""  # Provider for synthesis tasks (empty = use llm_provider)
     openai_chat_model: str = "gpt-4o-mini"
     huggingface_llm_model: str = "HuggingFaceH4/zephyr-7b-beta"  # Good multilingual support, no authentication required
+
+    # Fallback LLM configuration (for retry with more powerful model when initial answer is "no information")
+    llm_provider_fallback: str = ""  # Provider for fallback/retry (empty = use llm_provider)
+    openai_chat_model_fallback: str = "gpt-4o"  # More powerful model for fallback (e.g., gpt-4o, gpt-4-turbo)
+    huggingface_llm_model_fallback: str = ""  # Fallback Hugging Face model (empty = use huggingface_llm_model)
+    rag_enable_fallback: bool = True  # Enable fallback retry for RAG queries when answer is "no information"
     # Alternative Hugging Face models:
     # - "mistralai/Mistral-7B-Instruct-v0.2" (larger, better quality, may require auth)
     # - "meta-llama/Llama-3.2-3B-Instruct" (good for Bulgarian, requires Hugging Face auth)

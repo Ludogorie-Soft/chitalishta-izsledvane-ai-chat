@@ -215,14 +215,15 @@ class HybridPipelineService:
             final_answer = sql_result.get("answer", "Не мога да отговоря на този въпрос.")
 
         elif intent == QueryIntent.RAG:
-            # RAG-only query
-            rag_result = self.rag_chain.query(question)
+            # RAG-only query - enable fallback retry with more powerful LLM
+            rag_result = self.rag_chain.query(question, enable_fallback=True)
             final_answer = rag_result.get("answer", "Не мога да отговоря на този въпрос.")
 
         else:  # QueryIntent.HYBRID
             # Hybrid query - execute both and combine
+            # Disable fallback for RAG in hybrid queries since SQL might provide answers
             sql_result = self.sql_agent.query(question)
-            rag_result = self.rag_chain.query(question, use_analysis=True)
+            rag_result = self.rag_chain.query(question, use_analysis=True, enable_fallback=False)
 
             # Combine results using synthesis chain
             sql_formatted = SQLResultFormatter.format_sql_result(sql_result)

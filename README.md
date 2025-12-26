@@ -169,6 +169,45 @@ poetry install
      - `microsoft/Phi-3-mini-128k-instruct` (3.8B params, longer context)
    - **Note**: TGI is optimized for local development. For production, use OpenAI (Option 1).
 
+   **RAG Fallback Configuration (Optional - Cost Optimization):**
+
+   The system includes an intelligent fallback mechanism that automatically retries with a more powerful LLM when the initial RAG response indicates "no information" was found. This keeps costs low for basic questions while providing better answers for complex queries.
+
+   **Configuration:**
+   ```
+   # Enable/disable fallback feature (default: true)
+   RAG_ENABLE_FALLBACK=true
+
+   # Fallback LLM provider (empty = use same as LLM_PROVIDER)
+   LLM_PROVIDER_FALLBACK=openai
+
+   # Fallback model for OpenAI (more powerful than default)
+   OPENAI_CHAT_MODEL_FALLBACK=gpt-4o
+
+   # Fallback model for Hugging Face (optional, defaults to HUGGINGFACE_LLM_MODEL if empty)
+   HUGGINGFACE_LLM_MODEL_FALLBACK=
+   ```
+
+   **How it works:**
+   - Initial query uses the default/cheaper LLM (e.g., `gpt-4o-mini`)
+   - If the answer contains "Нямам информация за тази заявка" (no information), the system automatically retries with the fallback LLM (e.g., `gpt-4o`)
+   - Only uses the expensive model when necessary, keeping costs low
+   - Only applies to RAG-only queries (not hybrid queries where SQL might provide answers)
+
+   **Example Cost-Optimized Setup:**
+   ```
+   # Default: cheap model for most queries
+   LLM_PROVIDER=openai
+   OPENAI_CHAT_MODEL=gpt-4o-mini
+
+   # Fallback: powerful model only when needed
+   LLM_PROVIDER_FALLBACK=openai
+   OPENAI_CHAT_MODEL_FALLBACK=gpt-4o
+   RAG_ENABLE_FALLBACK=true
+   ```
+
+   See `RAG_FALLBACK_FEATURE.md` for detailed documentation.
+
 5. Run the application (Poetry 2.0+):
 ```bash
 poetry run uvicorn app.main:app --reload

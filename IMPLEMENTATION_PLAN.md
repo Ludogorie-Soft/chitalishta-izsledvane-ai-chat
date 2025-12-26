@@ -311,6 +311,24 @@ Rules:
 
 ---
 
+## Step 5.4 – RAG fallback mechanism
+- [x] Add fallback LLM configuration (provider and model selection)
+- [x] Implement "no information" response detection (Bulgarian patterns)
+- [x] Add automatic retry logic with more powerful LLM when initial answer indicates no information
+- [x] Integrate fallback only for RAG-only queries (disabled for hybrid queries)
+- [x] Add metadata tracking for fallback usage
+- [x] Implement graceful degradation (fallback to original answer if retry fails)
+- [x] Add configuration options to enable/disable fallback feature
+
+**Definition of Done**
+- System automatically retries with more powerful LLM when initial RAG answer is "no information"
+- Fallback only applies to RAG-only queries (not hybrid queries)
+- Cost optimization: expensive model only used when necessary
+- Fallback usage is tracked in response metadata
+- Feature can be enabled/disabled via configuration
+
+---
+
 # Phase 6 – LLM Management
 
 ## Step 6.1 – LLM registry
