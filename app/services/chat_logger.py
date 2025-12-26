@@ -8,6 +8,7 @@ import structlog
 from sqlalchemy.orm import Session
 
 from app.db.models import ChatLog
+from app.services.cost_calculator import calculate_total_cost_from_operations
 
 logger = structlog.get_logger(__name__)
 
@@ -26,16 +27,6 @@ class ChatLogger:
         self._llm_operations: List[Dict[str, Any]] = []
         self._start_time: Optional[float] = None
         self._sql_query: Optional[str] = None  # Store SQL query when captured from callbacks
-        self._sql_query: Optional[str] = None  # Store SQL query when captured
-
-    def set_sql_query(self, sql_query: str) -> None:
-        """
-        Set the SQL query that was executed.
-
-        Args:
-            sql_query: SQL query string
-        """
-        self._sql_query = sql_query
 
     def set_sql_query(self, sql_query: str) -> None:
         """
@@ -159,6 +150,9 @@ class ChatLogger:
         if total_tokens == 0 and (total_input_tokens > 0 or total_output_tokens > 0):
             total_tokens = total_input_tokens + total_output_tokens
 
+        # Calculate cost and determine primary model
+        cost_usd, primary_model = calculate_total_cost_from_operations(self._llm_operations)
+
         chat_log = ChatLog(
             request_id=self._request_id,
             conversation_id=self._conversation_id,
@@ -176,6 +170,8 @@ class ChatLogger:
             total_input_tokens=total_input_tokens if total_input_tokens > 0 else None,
             total_output_tokens=total_output_tokens if total_output_tokens > 0 else None,
             total_tokens=total_tokens if total_tokens > 0 else None,
+            cost_usd=cost_usd if cost_usd > 0 else None,
+            llm_model=primary_model,
             llm_operations=self._llm_operations if self._llm_operations else None,
             response_metadata=metadata,
             structured_output=structured_output,
@@ -236,6 +232,9 @@ class ChatLogger:
         if total_tokens == 0 and (total_input_tokens > 0 or total_output_tokens > 0):
             total_tokens = total_input_tokens + total_output_tokens
 
+        # Calculate cost and determine primary model (even for errors)
+        cost_usd, primary_model = calculate_total_cost_from_operations(self._llm_operations)
+
         chat_log = ChatLog(
             request_id=self._request_id,
             conversation_id=self._conversation_id or "unknown",
@@ -253,6 +252,8 @@ class ChatLogger:
             total_input_tokens=total_input_tokens if total_input_tokens > 0 else None,
             total_output_tokens=total_output_tokens if total_output_tokens > 0 else None,
             total_tokens=total_tokens if total_tokens > 0 else None,
+            cost_usd=cost_usd if cost_usd > 0 else None,
+            llm_model=primary_model,
             llm_operations=self._llm_operations if self._llm_operations else None,
             response_metadata=None,
             structured_output=None,

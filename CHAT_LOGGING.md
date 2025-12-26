@@ -41,6 +41,8 @@ The `chat_logs` table includes:
 - `total_input_tokens`: Total input tokens across all LLM calls
 - `total_output_tokens`: Total output tokens across all LLM calls
 - `total_tokens`: Total tokens used
+- `cost_usd`: Calculated cost in USD (based on model pricing and token usage)
+- `llm_model`: Primary LLM model used (e.g., 'gpt-4o-mini', 'text-embedding-3-small')
 - `llm_operations`: JSONB array of LLM operations with model, tokens, latency
 
 ### Additional Data

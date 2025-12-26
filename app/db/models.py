@@ -156,6 +156,10 @@ class ChatLog(Base):
     total_output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Cost and model tracking
+    cost_usd: Mapped[float | None] = mapped_column(Numeric(10, 6), nullable=True)  # Cost in USD (up to $9999.999999)
+    llm_model: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Primary LLM model used
+
     # LLM operations (stored as JSONB array)
     # Format: [{"model": "gpt-4o-mini", "input_tokens": 100, "output_tokens": 50, "latency_ms": 500, "timestamp": "..."}, ...]
     llm_operations: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

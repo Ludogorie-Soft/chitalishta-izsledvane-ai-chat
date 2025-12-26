@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 10 – Quality & Observability
-- Current Step: Step 10.4 Complete - Ready for Step 10.5 (Cost tracking)
+- Current Step: Step 10.5 Complete - Ready for Step 10.6 (Evaluation)
 - Blockers: none
 
 ---
@@ -540,29 +540,25 @@ Rules:
 
 ---
 
-## Step 10.5 – Cost tracking
-- [ ] Create cost tracking service (`CostTracker`)
-- [ ] Define pricing models for all LLM providers:
-  - OpenAI models (GPT-4, GPT-3.5-turbo, embeddings)
-  - Hugging Face models (if using API)
-- [ ] Track costs per LLM call:
-  - Input tokens × input price
-  - Output tokens × output price
-  - Embedding tokens × embedding price
-- [ ] Store cost data (PostgreSQL table or structured logs)
-- [ ] Calculate costs per:
-  - Request/query
-  - User (if applicable)
-  - Endpoint
-  - Model
-- [ ] Generate cost summaries (daily, monthly totals)
-- [ ] Log cost information in structured logs
+## Step 10.5 – Cost tracking (lightweight)
+- [x] Create lightweight cost calculation service (`CostCalculator`)
+- [x] Define pricing models for all LLM providers:
+  - OpenAI models (GPT-4, GPT-4o, GPT-4o-mini, GPT-3.5-turbo, embeddings)
+  - Hugging Face models (local/self-hosted = free)
+  - TGI models (local = free)
+- [x] Add `cost_usd` column to `chat_logs` table
+- [x] Add `llm_model` column to `chat_logs` table (primary model used)
+- [x] Calculate cost at log time from token usage and model pricing
+- [x] Store calculated cost in `chat_logs.cost_usd` column
+- [x] Store primary LLM model in `chat_logs.llm_model` column
+- [x] Create database migration script for new columns
 
 **Definition of Done**
-- All LLM API costs are tracked and calculated
-- Cost data is stored and queryable
-- Cost summaries can be generated
-- Cost information is included in request logs
+- Cost is calculated automatically when logging chat requests
+- Cost data is stored in `chat_logs` table alongside token counts
+- Primary LLM model is tracked for each request
+- Cost can be queried via SQL (e.g., daily/monthly totals, cost per model)
+- No separate cost tracking infrastructure needed
 
 ---
 
