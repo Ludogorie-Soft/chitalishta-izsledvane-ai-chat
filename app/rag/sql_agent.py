@@ -1083,25 +1083,108 @@ class SQLAgentService:
             # Try to extract SQL from intermediate steps if available
             generated_sql = None
             if "intermediate_steps" in result:
+                logger.debug(
+                    "extracting_sql_from_steps",
+                    step_count=len(result["intermediate_steps"]),
+                )
                 for step in result["intermediate_steps"]:
                     if isinstance(step, tuple) and len(step) >= 2:
                         action = step[0]
-                        if hasattr(action, "tool_input") and "query" in str(action.tool_input):
-                            # Extract SQL from tool input
+                        observation = step[1] if len(step) > 1 else None
+
+                        # Method 1: Check tool_input attribute (most common)
+                        if hasattr(action, "tool_input"):
                             tool_input = action.tool_input
-                            if isinstance(tool_input, dict) and "query" in tool_input:
-                                generated_sql = tool_input["query"]
+                            if isinstance(tool_input, dict):
+                                # Try "query" key first
+                                if "query" in tool_input:
+                                    generated_sql = tool_input["query"]
+                                # Try other possible keys
+                                elif "sql" in tool_input:
+                                    generated_sql = tool_input["sql"]
+                                # Check all string values for SQL
+                                if not generated_sql:
+                                    for key, value in tool_input.items():
+                                        if isinstance(value, str) and "SELECT" in value.upper():
+                                            sql_match = re.search(r"SELECT.*?(?:;|$)", value, re.IGNORECASE | re.DOTALL)
+                                            if sql_match:
+                                                generated_sql = sql_match.group(0)
+                                                break
                             elif isinstance(tool_input, str):
                                 # Try to extract SQL from string
                                 sql_match = re.search(r"SELECT.*?(?:;|$)", tool_input, re.IGNORECASE | re.DOTALL)
                                 if sql_match:
                                     generated_sql = sql_match.group(0)
 
+                        # Method 2: Check tool name and extract from action string
+                        if not generated_sql and hasattr(action, "tool"):
+                            tool_name = str(action.tool) if hasattr(action, "tool") else ""
+                            if "sql" in tool_name.lower():
+                                action_str = str(action)
+                                sql_match = re.search(r"SELECT.*?(?:;|$)", action_str, re.IGNORECASE | re.DOTALL)
+                                if sql_match:
+                                    generated_sql = sql_match.group(0)
+
+                        # Method 3: Check the observation/result for SQL
+                        if not generated_sql and observation:
+                            if isinstance(observation, str):
+                                # Look for SQL in observation
+                                sql_match = re.search(r"SELECT.*?(?:;|$)", observation, re.IGNORECASE | re.DOTALL)
+                                if sql_match:
+                                    generated_sql = sql_match.group(0)
+                            elif isinstance(observation, (list, tuple)) and len(observation) > 0:
+                                # Check first element if it's a list/tuple
+                                first_elem = observation[0]
+                                if isinstance(first_elem, str) and "SELECT" in first_elem.upper():
+                                    sql_match = re.search(r"SELECT.*?(?:;|$)", first_elem, re.IGNORECASE | re.DOTALL)
+                                if sql_match:
+                                    generated_sql = sql_match.group(0)
+
+                        # Method 4: Check action string representation
+                        if not generated_sql:
+                            action_str = str(action)
+                            if "SELECT" in action_str.upper() or "sql_db_query" in action_str:
+                                sql_match = re.search(r"SELECT.*?(?:;|$)", action_str, re.IGNORECASE | re.DOTALL)
+                                if sql_match:
+                                    generated_sql = sql_match.group(0)
+
+                        # Method 5: Check if action has args attribute (some LangChain versions)
+                        if not generated_sql and hasattr(action, "args"):
+                            args = action.args
+                            if isinstance(args, dict) and "query" in args:
+                                generated_sql = args["query"]
+                            elif isinstance(args, dict):
+                                # Check all values for SQL
+                                for value in args.values():
+                                    if isinstance(value, str) and "SELECT" in value.upper():
+                                        sql_match = re.search(r"SELECT.*?(?:;|$)", value, re.IGNORECASE | re.DOTALL)
+                                        if sql_match:
+                                            generated_sql = sql_match.group(0)
+                                            break
+
+                        # If we found SQL, break early
+                        if generated_sql:
+                            logger.debug(
+                                "sql_extracted_from_steps",
+                                sql_preview=generated_sql[:100],
+                            )
+                            break
+
             # If we couldn't extract SQL from steps, try to find it in the output
             if not generated_sql:
                 sql_match = re.search(r"SELECT.*?(?:;|$)", answer, re.IGNORECASE | re.DOTALL)
                 if sql_match:
                     generated_sql = sql_match.group(0)
+                    logger.debug("sql_extracted_from_output")
+
+            # Log if we couldn't extract SQL (for debugging)
+            if not generated_sql:
+                logger.warning(
+                    "sql_not_extracted",
+                    has_intermediate_steps="intermediate_steps" in result,
+                    intermediate_steps_count=len(result.get("intermediate_steps", [])),
+                    answer_preview=answer[:200] if answer else None,
+                )
 
             # Validate SQL if we found it
             if generated_sql:

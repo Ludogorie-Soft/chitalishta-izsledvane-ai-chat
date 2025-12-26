@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Double, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Double, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -106,3 +107,71 @@ class InformationCard(Base):
     chitalishte: Mapped["Chitalishte"] = relationship(
         "Chitalishte", back_populates="information_cards"
     )
+
+
+class ChatLog(Base):
+    """Chat log model - stores all POST /chat requests and responses for admin analysis."""
+
+    __tablename__ = "chat_logs"
+
+    # Primary identification
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    request_id: Mapped[str] = mapped_column(
+        String(36), nullable=False, unique=True
+    )  # UUID as string for compatibility
+    conversation_id: Mapped[str] = mapped_column(
+        String(36), nullable=False
+    )  # UUID as string
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+    request_timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+    # Request data
+    user_message: Mapped[str] = mapped_column(Text, nullable=False)
+    hallucination_mode: Mapped[str] = mapped_column(String(20), nullable=False)
+    output_format: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    # Response data
+    answer: Mapped[str | None] = mapped_column(Text, nullable=True)  # Nullable for failed requests
+    intent: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    routing_confidence: Mapped[float | None] = mapped_column(Numeric(3, 2), nullable=True)
+
+    # Execution flags
+    sql_executed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    rag_executed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # SQL query (when executed)
+    sql_query: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Performance metrics
+    response_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Cost tracking (token usage totals)
+    total_input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # LLM operations (stored as JSONB array)
+    # Format: [{"model": "gpt-4o-mini", "input_tokens": 100, "output_tokens": 50, "latency_ms": 500, "timestamp": "..."}, ...]
+    llm_operations: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Response metadata (routing_explanation, rag_metadata, etc.)
+    response_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Structured output (if requested)
+    structured_output: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Error information
+    error_occurred: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    error_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    http_status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Client information
+    client_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)  # IPv6 max length
+    user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)

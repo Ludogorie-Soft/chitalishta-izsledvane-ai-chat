@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 10 – Quality & Observability
-- Current Step: Step 10.2 Complete - Ready for Step 10.3 (Performance monitoring)
+- Current Step: Step 10.3 Complete - Ready for Step 10.4 (Performance monitoring)
 - Blockers: none
 
 ---
@@ -453,7 +453,30 @@ Rules:
 
 ---
 
-## Step 10.3 – Performance monitoring
+## Step 10.3 – Chat logging to database
+- [x] Create `chat_logs` database table with comprehensive schema
+- [x] Implement `ChatLog` SQLAlchemy model
+- [x] Create `ChatLogger` service for logging chat requests/responses
+- [x] Implement `ChatLoggerCallbackHandler` to capture LLM operations and SQL queries from tool calls
+- [x] Integrate chat logging into POST /chat endpoint
+- [x] Capture SQL queries from LangChain tool invocations
+- [x] Store LLM operations (model, token usage, latency) as JSONB
+- [x] Log both successful and failed requests (validation errors, 500 errors)
+- [x] Include cost tracking (total input/output/total tokens)
+- [x] Create database migration script
+- [x] Add indexes for common admin queries
+
+**Definition of Done**
+- All POST /chat requests are logged to database
+- SQL queries are captured and stored when executed
+- LLM operations are stored with token usage and latency
+- Failed requests are logged with error details
+- Cost tracking data is available for analysis
+- Database table is ready for admin page integration
+
+---
+
+## Step 10.4 – Performance monitoring
 - [ ] Install metrics library (`prometheus-client`)
 - [ ] Define key metrics:
   - Request counters (total queries, by endpoint, by status)
@@ -473,7 +496,7 @@ Rules:
 
 ---
 
-## Step 10.4 – Cost tracking
+## Step 10.5 – Cost tracking
 - [ ] Create cost tracking service (`CostTracker`)
 - [ ] Define pricing models for all LLM providers:
   - OpenAI models (GPT-4, GPT-3.5-turbo, embeddings)
@@ -499,7 +522,7 @@ Rules:
 
 ---
 
-## Step 10.5 – Production monitoring setup
+## Step 10.6 – Production monitoring setup
 - [ ] Set up log aggregation (optional: ELK stack or simple log viewer)
 - [ ] Configure Grafana dashboards (optional: Docker setup):
   - Request rate and latency graphs
@@ -522,7 +545,7 @@ Rules:
 
 ---
 
-## Step 10.6 – Evaluation
+## Step 10.7 – Evaluation
 - [ ] Bulgarian test queries
 - [ ] Groundedness checks
 - [ ] Regression safety

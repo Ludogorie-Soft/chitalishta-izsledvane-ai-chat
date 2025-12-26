@@ -4,9 +4,10 @@ import asyncio
 from typing import AsyncGenerator
 
 import structlog
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
+from sqlalchemy.orm import Session
 
 from app.api.chat_schemas import (
     ChatHistoryRequest,
@@ -15,13 +16,17 @@ from app.api.chat_schemas import (
     ChatRequest,
     ChatResponse,
 )
+from app.db.database import get_db
 from app.rag.chat_memory import get_chat_memory
 from app.rag.hallucination_control import HallucinationConfig, HallucinationMode
 from app.rag.hybrid_pipeline import get_hybrid_pipeline_service
+from app.rag.langchain_callbacks import get_langchain_callback_handler
 from app.rag.structured_output import (
     OutputFormat,
     get_structured_output_formatter,
 )
+from app.services.chat_logger import ChatLogger
+from app.services.chat_logger_callbacks import ChatLoggerCallbackHandler
 
 logger = structlog.get_logger(__name__)
 
@@ -29,7 +34,11 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 @router.post("/", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(
+    request: ChatRequest,
+    http_request: Request,
+    db: Session = Depends(get_db),
+):
     """
     Chat endpoint for querying the RAG system.
 
@@ -45,15 +54,44 @@ async def chat(request: ChatRequest):
     Returns:
         ChatResponse with answer, metadata, and execution details
     """
+    # Get request ID from middleware
+    request_id = getattr(http_request.state, "request_id", None)
+    if not request_id:
+        # Fallback: generate one if middleware didn't set it
+        import uuid
+        request_id = str(uuid.uuid4())
+
+    # Get client information
+    client_ip = http_request.client.host if http_request.client else None
+    user_agent = http_request.headers.get("user-agent")
+
+    # Initialize chat logger early (conversation_id will be set later)
+    chat_logger = ChatLogger(db)
+    conversation_id_placeholder = "pending"  # Will be updated after creation
+
     try:
         # Get or create conversation ID
         memory = get_chat_memory()
         if request.conversation_id:
             if not memory.conversation_exists(request.conversation_id):
                 # Create conversation if it doesn't exist
-                memory.create_conversation()
+                request.conversation_id = memory.create_conversation()
         else:
             request.conversation_id = memory.create_conversation()
+
+        # Update conversation_id in logger
+        conversation_id_placeholder = request.conversation_id
+
+        # Start logging request
+        chat_logger.start_request(
+            request_id=request_id,
+            conversation_id=request.conversation_id,
+            user_message=request.message,
+            hallucination_mode=request.mode.value if request.mode else "medium",
+            output_format=request.output_format.value if request.output_format else "text",
+            client_ip=client_ip,
+            user_agent=user_agent,
+        )
 
         # Add user message to history
         memory.add_message(
@@ -73,9 +111,15 @@ async def chat(request: ChatRequest):
         if conversation_context:
             query = f"Контекст от предишни съобщения:\n{conversation_context}\n\nТекущ въпрос: {request.message}"
 
-        # Get hybrid pipeline service with hallucination config
+        # Create callback handler for chat logging
+        chat_logger_callback = ChatLoggerCallbackHandler(chat_logger)
+        structured_callback = get_langchain_callback_handler()
+        callbacks = [structured_callback, chat_logger_callback]
+
+        # Get hybrid pipeline service with hallucination config and callbacks
         pipeline = get_hybrid_pipeline_service(
-            hallucination_config=hallucination_config
+            hallucination_config=hallucination_config,
+            callbacks=callbacks,
         )
 
         # Execute query
@@ -125,6 +169,24 @@ async def chat(request: ChatRequest):
             structured_output=structured_output,
         )
 
+        # Extract SQL query from result
+        # It should be directly in result, or in metadata
+        sql_query = result.get("sql_query")
+        if not sql_query and isinstance(result.get("metadata"), dict):
+            sql_query = result.get("metadata", {}).get("sql_query")
+
+        # Log successful request
+        chat_logger.log_success(
+            answer=answer,
+            intent=result.get("intent", "rag"),
+            routing_confidence=result.get("routing_confidence", 0.5),
+            sql_executed=result.get("sql_executed", False),
+            rag_executed=result.get("rag_executed", False),
+            sql_query=sql_query,
+            metadata=result.get("metadata"),
+            structured_output=structured_output,
+        )
+
         return response
 
     except ValidationError as e:
@@ -134,6 +196,26 @@ async def chat(request: ChatRequest):
             error_message=str(e),
             endpoint="chat",
         )
+        # Log error to database
+        try:
+            # Use placeholder conversation_id if not set yet
+            if not hasattr(chat_logger, "_conversation_id") or not chat_logger._conversation_id:
+                chat_logger.start_request(
+                    request_id=request_id,
+                    conversation_id=conversation_id_placeholder,
+                    user_message=request.message,
+                    hallucination_mode=request.mode.value if request.mode else "medium",
+                    output_format=request.output_format.value if request.output_format else "text",
+                    client_ip=client_ip,
+                    user_agent=user_agent,
+                )
+            chat_logger.log_error(
+                error_type="ValidationError",
+                error_message=str(e),
+                http_status_code=400,
+            )
+        except Exception:
+            pass  # Don't fail if logging fails
         raise HTTPException(status_code=400, detail=f"Invalid request: {str(e)}")
     except Exception as e:
         logger.error(
@@ -143,6 +225,26 @@ async def chat(request: ChatRequest):
             endpoint="chat",
             exc_info=True,
         )
+        # Log error to database
+        try:
+            # Use placeholder conversation_id if not set yet
+            if not hasattr(chat_logger, "_conversation_id") or not chat_logger._conversation_id:
+                chat_logger.start_request(
+                    request_id=request_id,
+                    conversation_id=conversation_id_placeholder,
+                    user_message=request.message,
+                    hallucination_mode=request.mode.value if request.mode else "medium",
+                    output_format=request.output_format.value if request.output_format else "text",
+                    client_ip=client_ip,
+                    user_agent=user_agent,
+                )
+            chat_logger.log_error(
+                error_type=type(e).__name__,
+                error_message=str(e),
+                http_status_code=500,
+            )
+        except Exception:
+            pass  # Don't fail if logging fails
         raise HTTPException(
             status_code=500, detail=f"Error processing request: {str(e)}"
         )

@@ -318,20 +318,28 @@ class StructuredLoggingCallbackHandler(BaseCallbackHandler):
         if isinstance(chain_name, list):
             chain_name = chain_name[-1] if chain_name else "unknown"
 
-        # Get input preview (limit size)
+        # Get input preview (limit size) - handle None or non-dict inputs
         input_preview = {}
-        for key, value in list(inputs.items())[:3]:  # Limit to first 3 inputs
-            if isinstance(value, str):
-                input_preview[key] = value[:200]
-            else:
-                input_preview[key] = str(value)[:200]
+        input_keys = []
+        if inputs is not None and isinstance(inputs, dict):
+            try:
+                input_keys = list(inputs.keys())
+                for key, value in list(inputs.items())[:3]:  # Limit to first 3 inputs
+                    if isinstance(value, str):
+                        input_preview[key] = value[:200]
+                    else:
+                        input_preview[key] = str(value)[:200]
+            except Exception:
+                input_preview = {"raw": str(inputs)[:200]}
+        elif inputs is not None:
+            input_preview = {"raw": str(inputs)[:200]}
 
         self._log_with_context(
             "chain_start",
             run_id=run_id,
             parent_run_id=parent_run_id,
             chain_name=chain_name,
-            input_keys=list(inputs.keys()),
+            input_keys=input_keys,
             input_preview=input_preview,
             tags=tags,
             metadata=metadata,
@@ -360,20 +368,32 @@ class StructuredLoggingCallbackHandler(BaseCallbackHandler):
         if start_time:
             duration_ms = round((time.time() - start_time) * 1000, 2)
 
-        # Get output preview (limit size)
+        # Get output preview (limit size) - handle None, list, or non-dict outputs
         output_preview = {}
-        for key, value in list(outputs.items())[:3]:  # Limit to first 3 outputs
-            if isinstance(value, str):
-                output_preview[key] = value[:200]
+        output_keys = []
+        if outputs is not None:
+            if isinstance(outputs, dict):
+                try:
+                    output_keys = list(outputs.keys())
+                    for key, value in list(outputs.items())[:3]:  # Limit to first 3 outputs
+                        if isinstance(value, str):
+                            output_preview[key] = value[:200]
+                        else:
+                            output_preview[key] = str(value)[:200]
+                except Exception:
+                    output_preview = {"raw": str(outputs)[:200]}
+            elif isinstance(outputs, list):
+                output_keys = [f"item_{i}" for i in range(len(outputs))]
+                output_preview = {"list_length": len(outputs), "preview": str(outputs[:3])[:200]}
             else:
-                output_preview[key] = str(value)[:200]
+                output_preview = {"raw": str(outputs)[:200]}
 
         self._log_with_context(
             "chain_end",
             run_id=run_id,
             parent_run_id=parent_run_id,
             duration_ms=duration_ms,
-            output_keys=list(outputs.keys()),
+            output_keys=output_keys,
             output_preview=output_preview,
         )
 
