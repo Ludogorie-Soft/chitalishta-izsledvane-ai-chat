@@ -1,8 +1,10 @@
 """RAG (Retrieval-Augmented Generation) chain using LangChain."""
 
 import logging
+import time
 from typing import Dict, List, Optional, Tuple
 
+from app.core.metrics import track_rag_query
 from app.rag.langchain_integration import LangChainChromaFactory, get_langchain_retriever
 from app.rag.llm_intent_classification import get_default_llm
 from app.rag.hallucination_control import (
@@ -319,32 +321,47 @@ class RAGChainService:
         Returns:
             Dictionary with answer and metadata
         """
-        # Invoke the chain with use_analysis parameter and callbacks
-        config = {"callbacks": self.callbacks} if self.callbacks else {}
-        result = self.chain.invoke(
-            {"question": question, "use_analysis": use_analysis},
-            config=config,
-        )
+        start_time = time.time()
+        status = "success"
+        documents_retrieved = 0
 
-        # Extract answer from result
-        if hasattr(result, "content"):
-            answer = result.content
-        elif isinstance(result, str):
-            answer = result
-        else:
-            answer = str(result)
+        try:
+            # Invoke the chain with use_analysis parameter and callbacks
+            config = {"callbacks": self.callbacks} if self.callbacks else {}
+            result = self.chain.invoke(
+                {"question": question, "use_analysis": use_analysis},
+                config=config,
+            )
 
-        # Get context metadata by retrieving again
-        # (The chain doesn't preserve metadata in the final output)
-        _, metadata = self.context_assembler.assemble_context(
-            question, k_db=4, k_analysis=2, use_analysis=use_analysis
-        )
+            # Extract answer from result
+            if hasattr(result, "content"):
+                answer = result.content
+            elif isinstance(result, str):
+                answer = result
+            else:
+                answer = str(result)
 
-        return {
-            "answer": answer,
-            "metadata": metadata,
-            "question": question,
-        }
+            # Get context metadata by retrieving again
+            # (The chain doesn't preserve metadata in the final output)
+            _, metadata = self.context_assembler.assemble_context(
+                question, k_db=4, k_analysis=2, use_analysis=use_analysis
+            )
+
+            # Extract document count for metrics
+            documents_retrieved = metadata.get("total_documents", 0)
+
+            return {
+                "answer": answer,
+                "metadata": metadata,
+                "question": question,
+            }
+        except Exception as e:
+            status = "error"
+            raise
+        finally:
+            # Track RAG query metrics
+            duration = time.time() - start_time
+            track_rag_query(status=status, duration=duration, documents_retrieved=documents_retrieved)
 
     def query_with_context(self, question: str, use_analysis: bool = True) -> Dict[str, any]:
         """

@@ -2,9 +2,11 @@
 
 import structlog
 import re
+import time
 from typing import Dict, List, Optional
 
 from app.core.config import settings
+from app.core.metrics import track_sql_query
 from app.db.database import engine
 from app.rag.langchain_callbacks import get_langchain_callback_handler
 from app.rag.llm_intent_classification import get_default_llm
@@ -1071,6 +1073,9 @@ class SQLAgentService:
         Returns:
             Dictionary with answer, SQL query, and metadata
         """
+        start_time = time.time()
+        status = "success"
+
         try:
             # Invoke the agent with callbacks
             config = {"callbacks": self.callbacks} if self.callbacks else {}
@@ -1206,14 +1211,14 @@ class SQLAgentService:
                     result={"answer": answer},
                 )
 
-            return {
+            result = {
                 "answer": answer,
                 "sql_query": generated_sql,
                 "question": question,
                 "success": True,
             }
-
         except Exception as e:
+            status = "error"
             error_msg = str(e)
 
             # Audit log error
@@ -1231,13 +1236,18 @@ class SQLAgentService:
                 exc_info=True,
             )
 
-            return {
+            result = {
                 "answer": f"Грешка при изпълнение на заявката: {error_msg}",
                 "sql_query": None,
                 "question": question,
                 "success": False,
-                "error": error_msg,
             }
+        finally:
+            # Track SQL query metrics
+            duration = time.time() - start_time
+            track_sql_query(status=status, duration=duration)
+
+        return result
 
     def execute_sql(self, sql: str) -> Dict[str, any]:
         """

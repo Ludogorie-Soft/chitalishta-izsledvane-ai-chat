@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 10 – Quality & Observability
-- Current Step: Step 10.3 Complete - Ready for Step 10.4 (Performance monitoring)
+- Current Step: Step 10.4 Complete - Ready for Step 10.5 (Cost tracking)
 - Blockers: none
 
 ---
@@ -477,16 +477,16 @@ Rules:
 ---
 
 ## Step 10.4 – Performance monitoring
-- [ ] Install metrics library (`prometheus-client`)
-- [ ] Define key metrics:
+- [x] Install metrics library (`prometheus-client`)
+- [x] Define key metrics:
   - Request counters (total queries, by endpoint, by status)
   - Latency histograms (RAG queries, SQL queries, LLM calls, retrieval)
   - Token usage counters (input tokens, output tokens, by model)
   - Error rates (by error type, by endpoint)
-- [ ] Create timing decorators for critical operations
-- [ ] Expose Prometheus metrics endpoint (`/metrics`)
-- [ ] Track system metrics (CPU, memory, database connection pool)
-- [ ] Log performance metrics to structured logs
+- [x] Create timing decorators for critical operations
+- [x] Expose Prometheus metrics endpoint (`/metrics`)
+- [x] Track system metrics (CPU, memory, database connection pool)
+- [x] Log performance metrics to structured logs
 
 **Definition of Done**
 - Performance metrics are collected and exposed

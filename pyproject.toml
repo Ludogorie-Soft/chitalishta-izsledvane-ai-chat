@@ -26,6 +26,8 @@ langchain-huggingface = "^1.2.0"
 transformers = "^4.57.3"
 requests = "^2.32.0"
 structlog = "^24.1.0"
+prometheus-client = "^0.21.0"
+psutil = "^6.1.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.12.0"

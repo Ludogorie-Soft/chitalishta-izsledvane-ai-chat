@@ -8,6 +8,11 @@ from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 from langchain_core.tracers.schemas import Run
 
+from app.core.metrics import (
+    track_llm_call,
+    track_rag_retrieval,
+)
+
 logger = structlog.get_logger(__name__)
 
 
@@ -127,6 +132,34 @@ class StructuredLoggingCallbackHandler(BaseCallbackHandler):
             if hasattr(first_gen, "text"):
                 generation_preview = first_gen.text[:200]
 
+        # Extract model information for metrics
+        model_name = "unknown"
+        provider = "unknown"
+        task = "generation"  # Default task
+
+        # Try to extract from serialized (stored in run metadata)
+        run_metadata = kwargs.get("metadata", {})
+        if run_metadata:
+            model_name = run_metadata.get("model", model_name)
+            provider = run_metadata.get("provider", provider)
+            task = run_metadata.get("task", task)
+
+        # Track LLM metrics
+        if start_time:
+            duration = time.time() - start_time
+            input_tokens = token_usage.get("prompt_tokens", 0) or token_usage.get("input_tokens", 0)
+            output_tokens = token_usage.get("completion_tokens", 0) or token_usage.get("output_tokens", 0)
+
+            track_llm_call(
+                model=model_name,
+                provider=provider,
+                task=task,
+                status="success",
+                duration=duration,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+            )
+
         self._log_with_context(
             "llm_end",
             run_id=run_id,
@@ -159,6 +192,22 @@ class StructuredLoggingCallbackHandler(BaseCallbackHandler):
         duration_ms = None
         if start_time:
             duration_ms = round((time.time() - start_time) * 1000, 2)
+
+        # Track LLM error metrics
+        if start_time:
+            duration = time.time() - start_time
+            run_metadata = kwargs.get("metadata", {})
+            model_name = run_metadata.get("model", "unknown") if run_metadata else "unknown"
+            provider = run_metadata.get("provider", "unknown") if run_metadata else "unknown"
+            task = run_metadata.get("task", "generation") if run_metadata else "generation"
+
+            track_llm_call(
+                model=model_name,
+                provider=provider,
+                task=task,
+                status="error",
+                duration=duration,
+            )
 
         logger.error(
             "llm_error",
@@ -242,6 +291,11 @@ class StructuredLoggingCallbackHandler(BaseCallbackHandler):
             if hasattr(doc, "page_content"):
                 preview = doc.page_content[:100] if doc.page_content else ""
                 doc_previews.append(preview)
+
+        # Track RAG retrieval metrics
+        if start_time:
+            duration = time.time() - start_time
+            track_rag_retrieval(duration=duration)
 
         self._log_with_context(
             "retriever_end",

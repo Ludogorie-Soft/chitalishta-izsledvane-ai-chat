@@ -9,6 +9,8 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from app.core.metrics import track_http_request, track_error
+
 logger = structlog.get_logger(__name__)
 
 
@@ -84,7 +86,23 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             status_code = response.status_code
 
             # Calculate duration
-            duration_ms = (time.time() - start_time) * 1000
+            duration = time.time() - start_time
+            duration_ms = duration * 1000
+
+            # Track HTTP metrics
+            endpoint = request.url.path
+            # Normalize endpoint (remove IDs, etc.) for better aggregation
+            if endpoint.startswith("/chitalishte/"):
+                endpoint = "/chitalishte/{id}"
+            elif endpoint.startswith("/chitalishte/"):
+                endpoint = "/chitalishte/{id}/cards"
+
+            track_http_request(
+                method=request.method,
+                endpoint=endpoint,
+                status=status_code,
+                duration=duration,
+            )
 
             # Log successful response
             logger.info(
@@ -100,7 +118,25 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             # Calculate duration
-            duration_ms = (time.time() - start_time) * 1000
+            duration = time.time() - start_time
+            duration_ms = duration * 1000
+
+            # Track error metrics
+            endpoint = request.url.path
+            if endpoint.startswith("/chitalishte/"):
+                endpoint = "/chitalishte/{id}"
+            elif endpoint.startswith("/chitalishte/"):
+                endpoint = "/chitalishte/{id}/cards"
+
+            track_error(error_type=type(e).__name__, endpoint=endpoint)
+
+            # Track HTTP metrics for error
+            track_http_request(
+                method=request.method,
+                endpoint=endpoint,
+                status=500,  # Will be overridden by FastAPI error handler
+                duration=duration,
+            )
 
             # Log error
             logger.error(

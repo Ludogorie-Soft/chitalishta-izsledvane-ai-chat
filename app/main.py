@@ -9,6 +9,7 @@ from app.api.ingestion import router as ingestion_router
 from app.api.vector_store import router as vector_store_router
 from app.core.config import settings
 from app.core.logging_config import configure_logging  # noqa: F401 - Initialize logging
+from app.core.metrics import get_metrics
 from app.core.middleware import RequestIDMiddleware, RequestLoggingMiddleware
 from app.db.database import get_db
 
@@ -49,3 +50,10 @@ async def db_ping(db: Session = Depends(get_db)):
         return {"status": "success", "message": "Database connection successful"}
     except Exception as e:
         return {"status": "error", "message": f"Database connection failed: {str(e)}"}
+
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    from fastapi import Response
+    return Response(content=get_metrics(), media_type="text/plain; version=0.0.4")
