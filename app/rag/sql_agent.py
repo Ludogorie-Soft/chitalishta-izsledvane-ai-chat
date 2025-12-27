@@ -3,6 +3,7 @@
 import structlog
 import re
 import time
+import unicodedata
 from typing import Dict, List, Optional
 
 from app.core.config import settings
@@ -895,12 +896,32 @@ class SQLAgentService:
 
         return sql
 
+    def _normalize_whitespace(self, text: str) -> str:
+        """
+        Normalize whitespace characters, including non-breaking spaces (0xa0).
+
+        Args:
+            text: Input text
+
+        Returns:
+            Text with normalized whitespace (non-breaking spaces converted to regular spaces)
+        """
+        # Replace non-breaking space (U+00A0, 0xa0) with regular space
+        text = text.replace('\xa0', ' ')
+        # Normalize all Unicode whitespace characters to regular space
+        text = ''.join(' ' if unicodedata.category(c)[0] == 'Z' else c for c in text)
+        # Collapse multiple spaces to single space
+        text = ' '.join(text.split())
+        return text.strip()
+
     def _fix_town_field_patterns(self, sql: str) -> str:
         """
         Fix town field comparisons to handle patterns like "ГРАД ВРАЦА" or "СЕЛО ВРАЦА".
 
         The town column contains values like "ГРАД ВРАЦА" or "СЕЛО ВРАЦА" (i.e., "ГРАД/СЕЛО <name>"),
         not just the town name. This method converts exact matches to pattern matches using ILIKE.
+
+        Also handles non-breaking spaces (0xa0) in town values by normalizing them.
 
         Args:
             sql: SQL query string
@@ -921,6 +942,8 @@ class SQLAgentService:
         def replace_exact_match1(match):
             table_prefix = match.group(1) or ""
             value = match.group(2)
+            # Normalize whitespace in the value (handle non-breaking spaces)
+            value = self._normalize_whitespace(value)
             # Use ILIKE with wildcards to match "ГРАД value", "СЕЛО value", or just "value"
             return f"{table_prefix}town ILIKE '%{value}%'"
 
@@ -935,6 +958,8 @@ class SQLAgentService:
         def replace_exact_match2(match):
             table_prefix = match.group(1) or ""
             value = match.group(2)
+            # Normalize whitespace in the value (handle non-breaking spaces)
+            value = self._normalize_whitespace(value)
             return f'{table_prefix}town ILIKE "%{value}%"'
 
         sql = pattern2.sub(replace_exact_match2, sql)
@@ -949,6 +974,8 @@ class SQLAgentService:
         def replace_ilike_no_wildcard1(match):
             table_prefix = match.group(1) or ""
             value = match.group(2)
+            # Normalize whitespace in the value (handle non-breaking spaces)
+            value = self._normalize_whitespace(value)
             # Only add wildcards if not already present
             if "%" not in value:
                 return f"{table_prefix}town ILIKE '%{value}%'"
@@ -964,6 +991,8 @@ class SQLAgentService:
         def replace_ilike_no_wildcard2(match):
             table_prefix = match.group(1) or ""
             value = match.group(2)
+            # Normalize whitespace in the value (handle non-breaking spaces)
+            value = self._normalize_whitespace(value)
             if "%" not in value:
                 return f'{table_prefix}town ILIKE "%{value}%"'
             return match.group(0)

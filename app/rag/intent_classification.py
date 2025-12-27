@@ -107,6 +107,23 @@ class RuleBasedIntentClassifier:
         "анализа",
         "данни",
         "данните",
+        # Field-specific queries (asking for specific database fields)
+        "адрес",
+        "адреси",
+        "адресите",
+        "кои адреси",
+        "кои адресите",
+        "на кои адреси",
+        "на кои адресите",
+        "имена",
+        "имената",
+        "кои имена",
+        "телефони",
+        "телефоните",
+        "кои телефони",
+        "имейли",
+        "имейлите",
+        "кои имейли",
     ]
 
     # Bulgarian keywords that indicate RAG/semantic queries
@@ -216,9 +233,24 @@ class RuleBasedIntentClassifier:
                 explanation="Празна заявка - използва се RAG по подразбиране",
             )
 
+        # Check for "кои + field name" pattern (SQL indicator)
+        # Pattern: "кои адреси", "кои имена", "кои телефони", etc.
+        # This indicates asking for specific field values, which should be SQL
+        has_field_query_pattern = False
+        field_keywords = ["адрес", "адреси", "имена", "телефони", "имейли", "градове", "региони"]
+        if "кои" in query_lower:
+            for field_kw in field_keywords:
+                if field_kw in query_lower:
+                    has_field_query_pattern = True
+                    break
+
         # Count keyword matches
         sql_matches = self._count_matches(query_lower, self.sql_keywords_lower)
         rag_matches = self._count_matches(query_lower, self.rag_keywords_lower)
+
+        # Boost SQL matches if "кои + field" pattern is detected
+        if has_field_query_pattern:
+            sql_matches += 2  # Boost SQL score significantly
 
         # Check for hybrid indicators
         has_hybrid_indicators = any(
