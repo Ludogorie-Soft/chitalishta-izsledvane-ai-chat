@@ -2,6 +2,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api.admin import router as admin_router
 from app.api.chat import router as chat_router
 from app.api.chitalishte import router as chitalishte_router
 from app.api.indexing import router as indexing_router
@@ -25,6 +26,7 @@ app.include_router(ingestion_router)
 app.include_router(indexing_router)
 app.include_router(vector_store_router)
 app.include_router(chat_router)
+app.include_router(admin_router)
 
 
 @app.on_event("startup")

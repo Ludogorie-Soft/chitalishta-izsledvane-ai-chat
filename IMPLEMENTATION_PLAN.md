@@ -677,7 +677,7 @@ poetry run pytest tests/test_evaluation.py -m ""
 ---
 
 ## Step 11.2 – Admin chat endpoints
-- [ ] Create `GET /admin/chat` endpoint
+- [x] Create `GET /admin/chat` endpoint
   - Returns brief chat data from `chat_logs` table
   - Groups by `conversation_id`
   - Returns summary for each conversation:
@@ -690,17 +690,57 @@ poetry run pytest tests/test_evaluation.py -m ""
     - `has_errors` (boolean, if any errors occurred)
   - Supports pagination (limit/offset)
   - Supports filtering by date range, has_errors, intent
-- [ ] Create `GET /admin/chat/{conversation_id}` endpoint
+- [x] Create `GET /admin/chat/{conversation_id}` endpoint
   - Returns detailed chat logs for specific conversation
   - Returns all `chat_logs` rows for the conversation_id
   - Includes full details: user messages, answers, SQL queries, LLM operations, costs, errors
   - Ordered by `request_timestamp` (chronological)
-- [ ] Add authentication/authorization checks (require administrator role)
-- [ ] Create Pydantic response schemas for both endpoints
-- [ ] Add proper error handling (404 for non-existent conversations)
+- [x] Add authentication/authorization checks (require administrator role - placeholder implemented)
+- [x] Create Pydantic response schemas for both endpoints
+- [x] Add proper error handling (404 for non-existent conversations)
 
 **Definition of Done**
 - Admin can view all conversations with summary data
 - Admin can view detailed logs for any specific conversation
-- Endpoints are protected (require authentication and administrator role)
+- Endpoints are protected (require authentication and administrator role - placeholder for now)
 - Response schemas are properly typed and documented
+
+---
+
+## Step 11.3 – Admin chat feedback
+- [ ] Create `chat_feedback` database table with schema:
+  - `id` (primary key)
+  - `request_id` (foreign key to chat_logs.request_id, unique - one feedback per request)
+  - `is_correct` (boolean - true if answer is correct, false if wrong)
+  - `correct_answer` (text, optional - provided when is_correct=false)
+  - `created_at`, `updated_at` (timestamps)
+  - `created_by` (VARCHAR, optional - admin username who provided feedback)
+- [ ] Create `chat_comments` database table with schema:
+  - `id` (primary key)
+  - `request_id` (foreign key to chat_logs.request_id - multiple comments per request)
+  - `comment` (text - comment content)
+  - `created_at` (timestamp)
+  - `created_by` (VARCHAR, optional - admin username who added comment)
+- [ ] Create `ChatFeedback` and `ChatComment` SQLAlchemy models
+- [ ] Create database migration scripts for both tables
+- [ ] Create Pydantic schemas for feedback requests/responses
+- [ ] Create `POST /admin/chat/{conversation_id}/{request_id}/feedback` endpoint
+  - Allows admin to mark answer as correct/wrong
+  - Optional `correct_answer` when marking as wrong
+- [ ] Create `POST /admin/chat/{conversation_id}/{request_id}/add-to-baseline` endpoint
+  - Adds chat log to `baseline_queries` table with `source='real_user_query'`
+  - Extracts query, intent, answer, SQL query (if any) from chat log
+- [ ] Create `POST /admin/chat/{conversation_id}/{request_id}/comments` endpoint
+  - Allows admin to add a comment to a chat message
+- [ ] Create `GET /admin/chat/{conversation_id}/{request_id}/comments` endpoint
+  - Returns all comments for a specific request_id
+- [ ] Update `GET /admin/chat/{conversation_id}` endpoint
+  - Include feedback data (is_correct, correct_answer) in ChatLogDetail response
+  - Include comments count or list in ChatLogDetail response
+
+**Definition of Done**
+- Admins can mark answers as correct or wrong with optional correct answer
+- Admins can add chat logs to baseline_queries for regression testing
+- Admins can add multiple comments to each chat message
+- Feedback and comments are stored in database with timestamps and creator tracking
+- All endpoints are protected (require authentication and administrator role - placeholder for now)
