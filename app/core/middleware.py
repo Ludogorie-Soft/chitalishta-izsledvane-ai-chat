@@ -1,15 +1,21 @@
 """FastAPI middleware for request/response logging and request ID tracking."""
 
+import json
 import time
 import uuid
 from typing import Callable
 
 import structlog
 from fastapi import Request, Response
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from app.core.config import settings
 from app.core.metrics import track_http_request, track_error
+from app.db.database import SessionLocal
+from app.services.rate_limiter import AbuseDetected, RateLimitExceeded, RateLimiter
 
 logger = structlog.get_logger(__name__)
 
@@ -152,3 +158,115 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             # Re-raise exception (FastAPI will handle it)
             raise
+
+
+class RateLimitingMiddleware(BaseHTTPMiddleware):
+    """Middleware for rate limiting and abuse protection."""
+
+    # Endpoints that should be rate limited
+    RATE_LIMITED_ENDPOINTS = ["/chat", "/chat/stream"]
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """
+        Check rate limits and abuse protection before processing request.
+
+        Args:
+            request: FastAPI request object
+            call_next: Next middleware/route handler
+
+        Returns:
+            Response (429 if rate limited, 403 if abuse detected, or normal response)
+        """
+        # Only apply to rate-limited endpoints
+        if request.url.path not in self.RATE_LIMITED_ENDPOINTS:
+            return await call_next(request)
+
+        # Only apply to POST requests
+        if request.method != "POST":
+            return await call_next(request)
+
+        # Get database session
+        db = SessionLocal()
+        try:
+            # Get client IP
+            client_ip = request.client.host if request.client else "unknown"
+            if not client_ip or client_ip == "unknown":
+                # Try to get from X-Forwarded-For header (for reverse proxy)
+                forwarded_for = request.headers.get("X-Forwarded-For")
+                if forwarded_for:
+                    client_ip = forwarded_for.split(",")[0].strip()
+
+            # Get user agent
+            user_agent = request.headers.get("user-agent")
+
+            # Get request body for abuse detection
+            # Note: We read the body here for abuse detection, then re-create it for FastAPI
+            request_body = None
+            if request.url.path in self.RATE_LIMITED_ENDPOINTS:
+                try:
+                    body_bytes = await request.body()
+                    if body_bytes:
+                        request_body = body_bytes.decode("utf-8", errors="ignore")
+                        # Re-create request body for downstream handlers
+                        # (FastAPI needs the body to be available)
+                        async def receive():
+                            return {"type": "http.request", "body": body_bytes}
+
+                        request._receive = receive
+                except Exception as e:
+                    # If body reading fails, continue without body-based abuse detection
+                    logger.debug("failed_to_read_request_body", error=str(e))
+                    request_body = None
+
+            # Initialize rate limiter
+            rate_limiter = RateLimiter(db)
+
+            try:
+                # Check abuse protection first (before rate limiting)
+                rate_limiter.check_abuse(
+                    identifier=client_ip,
+                    identifier_type="ip",
+                    endpoint=request.url.path,
+                    method=request.method,
+                    request_body=request_body,
+                    user_agent=user_agent,
+                )
+
+                # Check IP-based rate limit
+                rate_limiter.check_rate_limit(
+                    identifier=client_ip,
+                    identifier_type="ip",
+                    endpoint=request.url.path,
+                    method=request.method,
+                )
+
+            except RateLimitExceeded as e:
+                # Return 429 Too Many Requests
+                retry_after = e.retry_after
+                return JSONResponse(
+                    status_code=429,
+                    content={
+                        "error": "rate_limit_exceeded",
+                        "message": f"Превишен е лимитът за заявки. Моля, опитайте отново след {retry_after} секунди.",
+                        "retry_after": retry_after,
+                        "limit_type": e.limit_type,
+                    },
+                    headers={"Retry-After": str(retry_after)},
+                )
+
+            except AbuseDetected as e:
+                # Return 403 Forbidden
+                return JSONResponse(
+                    status_code=403,
+                    content={
+                        "error": "abuse_detected",
+                        "message": "Заявката е блокирана поради подозрителна активност.",
+                        "abuse_type": e.abuse_type,
+                    },
+                )
+
+            # Request is allowed, proceed
+            return await call_next(request)
+
+        finally:
+            db.close()

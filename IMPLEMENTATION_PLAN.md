@@ -12,8 +12,9 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 11 – Administrator Features
-- Current Step: Ready for Step 11.1 (User management)
+- Phase: Phase 8 – Auth & Public Access
+- Current Step: Step 8.1 (Anonymous access) - COMPLETED
+- Next Step: Step 8.2 (Authentication)
 - Blockers: none
 
 ---
@@ -393,11 +394,63 @@ Rules:
 # Phase 8 – Auth & Public Access
 
 ## Step 8.1 – Anonymous access
-- [ ] Rate limiting
-- [ ] Abuse protection
+- [x] Rate limiting
+- [x] Abuse protection
 
 **Definition of Done**
 - Public users can query safely
+
+**Implementation Details:**
+
+**Rate Limiting:**
+- Implemented dual rate limiting: per IP address AND per session/conversation_id
+- Limits for POST `/chat` and POST `/chat/stream` endpoints:
+  - 5 requests per minute
+  - 40 requests per hour
+  - 200 requests per day
+- Other endpoints have no rate limits (for now)
+- PostgreSQL-based storage for rate limit state (sliding window approach)
+- Rate limit state stored in `rate_limit_state` table
+- Violations logged in `rate_limit_violation` table for analysis
+- HTTP 429 (Too Many Requests) response with `Retry-After` header when limit exceeded
+- Bulgarian error messages for user-friendly responses
+
+**Abuse Protection:**
+- DoS protection: Detects rapid repeated requests (10+ requests in 5-second window)
+- Long query protection: Blocks queries exceeding 10,000 characters (configurable)
+- IP blocking: Temporary IP blocks (1 hour duration, configurable) for abuse violations
+- All abuse violations logged to `rate_limit_violations` table
+- HTTP 403 (Forbidden) response when abuse detected
+- Blocked IPs tracked in `blocked_ips` table with expiration timestamps
+
+**Database Tables Created:**
+- `rate_limit_state`: Tracks current rate limit counters per IP and session
+- `rate_limit_violations`: Logs all rate limit and abuse violations
+- `blocked_ips`: Tracks temporarily blocked IP addresses
+
+**Configuration:**
+- All limits configurable via environment variables:
+  - `RATE_LIMIT_ENABLED` (default: true)
+  - `RATE_LIMIT_PER_MINUTE` (default: 5)
+  - `RATE_LIMIT_PER_HOUR` (default: 40)
+  - `RATE_LIMIT_PER_DAY` (default: 200)
+  - `ABUSE_PROTECTION_ENABLED` (default: true)
+  - `ABUSE_MAX_QUERY_LENGTH` (default: 10000)
+  - `ABUSE_IP_BLOCK_DURATION_HOURS` (default: 1)
+  - `ABUSE_MAX_RAPID_REQUESTS` (default: 10)
+  - `ABUSE_RAPID_REQUESTS_WINDOW_SECONDS` (default: 5)
+
+**Implementation Notes:**
+- Custom implementation (not using library) for full control and PostgreSQL integration
+- Rate limiting middleware (`RateLimitingMiddleware`) applies to chat endpoints
+- Additional session-based rate limiting in endpoint handlers (conversation_id tracking)
+- SQL injection detection was considered but NOT implemented because:
+  - User queries are natural language (Bulgarian), not SQL
+  - The SQL agent (`sql_agent.py`) already provides comprehensive SQL security validation
+  - Pattern matching on natural language causes false positives
+  - SQL agent validation is the proper security layer for SQL safety
+- Cleanup function available for periodic maintenance of old records
+- Migration script: `scripts/create_rate_limiting_tables.py`
 
 ---
 

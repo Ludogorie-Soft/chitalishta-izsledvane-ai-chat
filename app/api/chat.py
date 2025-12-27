@@ -27,6 +27,7 @@ from app.rag.structured_output import (
 )
 from app.services.chat_logger import ChatLogger
 from app.services.chat_logger_callbacks import ChatLoggerCallbackHandler
+from app.services.rate_limiter import AbuseDetected, RateLimitExceeded, RateLimiter
 
 logger = structlog.get_logger(__name__)
 
@@ -81,6 +82,53 @@ async def chat(
 
         # Update conversation_id in logger
         conversation_id_placeholder = request.conversation_id
+
+        # Check conversation_id-based rate limit and abuse protection
+        rate_limiter = RateLimiter(db)
+        try:
+            # Check abuse protection for session
+            rate_limiter.check_abuse(
+                identifier=request.conversation_id,
+                identifier_type="session",
+                endpoint="/chat",
+                method="POST",
+                request_body=request.message,  # Use the parsed message from request
+                user_agent=user_agent,
+            )
+
+            # Check conversation_id-based rate limit
+            rate_limiter.check_rate_limit(
+                identifier=request.conversation_id,
+                identifier_type="session",
+                endpoint="/chat",
+                method="POST",
+            )
+        except RateLimitExceeded as e:
+            # Return 429 Too Many Requests
+            from fastapi.responses import JSONResponse
+            response = JSONResponse(
+                status_code=429,
+                content={
+                    "error": "rate_limit_exceeded",
+                    "message": f"Превишен е лимитът за заявки за тази сесия. Моля, опитайте отново след {e.retry_after} секунди.",
+                    "retry_after": e.retry_after,
+                    "limit_type": e.limit_type,
+                },
+                headers={"Retry-After": str(e.retry_after)},
+            )
+            return response
+        except AbuseDetected as e:
+            # Return 403 Forbidden
+            from fastapi.responses import JSONResponse
+            response = JSONResponse(
+                status_code=403,
+                content={
+                    "error": "abuse_detected",
+                    "message": "Заявката е блокирана поради подозрителна активност.",
+                    "abuse_type": e.abuse_type,
+                },
+            )
+            return response
 
         # Start logging request
         chat_logger.start_request(
@@ -251,7 +299,9 @@ async def chat(
 
 
 @router.post("/stream")
-async def chat_stream(request: ChatRequest):
+async def chat_stream(
+    request: ChatRequest, http_request: Request, db: Session = Depends(get_db)
+):
     """
     Streaming chat endpoint using Server-Sent Events (SSE).
 
@@ -263,6 +313,9 @@ async def chat_stream(request: ChatRequest):
     Returns:
         StreamingResponse with SSE format
     """
+    # Get user agent
+    user_agent = http_request.headers.get("user-agent")
+
     try:
         # Get or create conversation ID
         memory = get_chat_memory()
@@ -271,6 +324,51 @@ async def chat_stream(request: ChatRequest):
                 memory.create_conversation()
         else:
             request.conversation_id = memory.create_conversation()
+
+        # Check conversation_id-based rate limit and abuse protection
+        rate_limiter = RateLimiter(db)
+        try:
+            # Check abuse protection for session
+            rate_limiter.check_abuse(
+                identifier=request.conversation_id,
+                identifier_type="session",
+                endpoint="/chat/stream",
+                method="POST",
+                request_body=request.message,  # Use the parsed message from request
+                user_agent=user_agent,
+            )
+
+            # Check conversation_id-based rate limit
+            rate_limiter.check_rate_limit(
+                identifier=request.conversation_id,
+                identifier_type="session",
+                endpoint="/chat/stream",
+                method="POST",
+            )
+        except RateLimitExceeded as e:
+            # Return 429 Too Many Requests
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "error": "rate_limit_exceeded",
+                    "message": f"Превишен е лимитът за заявки за тази сесия. Моля, опитайте отново след {e.retry_after} секунди.",
+                    "retry_after": e.retry_after,
+                    "limit_type": e.limit_type,
+                },
+                headers={"Retry-After": str(e.retry_after)},
+            )
+        except AbuseDetected as e:
+            # Return 403 Forbidden
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": "abuse_detected",
+                    "message": "Заявката е блокирана поради подозрителна активност.",
+                    "abuse_type": e.abuse_type,
+                },
+            )
 
         # Add user message to history
         memory.add_message(

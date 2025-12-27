@@ -208,6 +208,50 @@ poetry install
 
    See `RAG_FALLBACK_FEATURE.md` for detailed documentation.
 
+   **Rate Limiting and Abuse Protection Configuration (Optional):**
+
+   The system includes rate limiting and abuse protection for anonymous users. All limits are configurable via environment variables:
+
+   **Rate Limiting Configuration:**
+   ```
+   # Enable/disable rate limiting (default: true)
+   RATE_LIMIT_ENABLED=true
+
+   # Rate limits for POST /chat and POST /chat/stream endpoints
+   RATE_LIMIT_PER_MINUTE=5      # Requests per minute (default: 5)
+   RATE_LIMIT_PER_HOUR=40       # Requests per hour (default: 40)
+   RATE_LIMIT_PER_DAY=200       # Requests per day (default: 200)
+
+   # Cleanup configuration
+   RATE_LIMIT_CLEANUP_INTERVAL_HOURS=24        # Cleanup old records every N hours (default: 24)
+   RATE_LIMIT_VIOLATION_RETENTION_DAYS=30      # Keep violation logs for N days (default: 30)
+   ```
+
+   **Abuse Protection Configuration:**
+   ```
+   # Enable/disable abuse protection (default: true)
+   ABUSE_PROTECTION_ENABLED=true
+
+   # Abuse detection thresholds
+   ABUSE_MAX_QUERY_LENGTH=10000                # Maximum query length in characters (default: 10000)
+   ABUSE_MIN_REQUEST_INTERVAL_SECONDS=0.5      # Minimum time between requests in seconds (default: 0.5)
+   ABUSE_IP_BLOCK_DURATION_HOURS=1            # Duration of IP block in hours (default: 1)
+   ABUSE_MAX_RAPID_REQUESTS=10                 # Max requests in short time window for DoS detection (default: 10)
+   ABUSE_RAPID_REQUESTS_WINDOW_SECONDS=5       # Time window for rapid request detection in seconds (default: 5)
+   ```
+
+   **How it works:**
+   - Rate limiting applies to both IP addresses and session/conversation IDs
+   - Limits are enforced per endpoint (currently only `/chat` and `/chat/stream`)
+   - When rate limit is exceeded, the API returns HTTP 429 (Too Many Requests) with a `Retry-After` header
+   - Abuse violations (DoS, long queries) result in HTTP 403 (Forbidden) and temporary IP blocking
+   - All violations are logged to the database for analysis
+
+   **Note**: Rate limiting requires database tables. Run the migration script if needed:
+   ```bash
+   poetry run python scripts/create_rate_limiting_tables.py
+   ```
+
 5. Run the application (Poetry 2.0+):
 ```bash
 poetry run uvicorn app.main:app --reload

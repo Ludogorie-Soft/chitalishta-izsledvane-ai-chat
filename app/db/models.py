@@ -271,3 +271,130 @@ class User(Base):
     last_login: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )  # Optional timestamp for last login
+
+
+class RateLimitState(Base):
+    """Rate limit state model - tracks current rate limit counters per IP and session."""
+
+    __tablename__ = "rate_limit_state"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Identification (can be IP address or session/conversation_id)
+    identifier: Mapped[str] = mapped_column(
+        String(255), nullable=False, index=True
+    )  # IP address or conversation_id
+    identifier_type: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # 'ip' or 'session'
+
+    # Rate limit counters (sliding window approach)
+    requests_minute: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    requests_hour: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    requests_day: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # Timestamps for sliding windows
+    first_request_minute: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # First request in current minute window
+    first_request_hour: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # First request in current hour window
+    first_request_day: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # First request in current day window
+
+    # Last request timestamp
+    last_request_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+
+
+class RateLimitViolation(Base):
+    """Rate limit violation model - logs all rate limit violations for analysis."""
+
+    __tablename__ = "rate_limit_violations"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Identification
+    identifier: Mapped[str] = mapped_column(
+        String(255), nullable=False, index=True
+    )  # IP address or conversation_id
+    identifier_type: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # 'ip' or 'session'
+
+    # Violation details
+    violation_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # 'rate_limit', 'abuse_dos', 'abuse_long_query', 'abuse_sql_injection', 'abuse_malformed'
+    limit_exceeded: Mapped[str] = mapped_column(
+        String(20), nullable=True
+    )  # 'minute', 'hour', 'day' (for rate limit violations)
+
+    # Request details
+    endpoint: Mapped[str] = mapped_column(String(255), nullable=False)
+    method: Mapped[str] = mapped_column(String(10), nullable=False)
+    user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
+    request_body_preview: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # First 500 chars of request body for debugging
+
+    # Additional context
+    violation_details: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True
+    )  # Additional context (e.g., query length, request count, etc.)
+
+    # Timestamp
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+
+
+class BlockedIP(Base):
+    """Blocked IP model - tracks temporarily blocked IP addresses."""
+
+    __tablename__ = "blocked_ips"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # IP address
+    ip_address: Mapped[str] = mapped_column(
+        String(45), nullable=False, unique=True, index=True
+    )  # IPv6 max length
+
+    # Block details
+    blocked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+    blocked_until: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )  # When the block expires
+    block_reason: Mapped[str] = mapped_column(
+        String(100), nullable=False
+    )  # Reason for blocking (e.g., 'rate_limit_violation', 'abuse_dos', etc.)
+
+    # Additional context
+    violation_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1
+    )  # Number of violations that led to block
+    block_details: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True
+    )  # Additional context about the block
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )

@@ -50,6 +50,26 @@ class Settings(BaseSettings):
     log_file_max_bytes: int = 10485760  # 10MB per log file
     log_file_backup_count: int = 5  # Number of backup log files to keep
 
+    # Rate limiting configuration
+    rate_limit_enabled: bool = True  # Enable/disable rate limiting
+    rate_limit_per_minute: int = 5  # Requests per minute for chat endpoints
+    rate_limit_per_hour: int = 40  # Requests per hour for chat endpoints
+    rate_limit_per_day: int = 200  # Requests per day for chat endpoints
+    rate_limit_cleanup_interval_hours: int = 24  # Cleanup old rate limit records every N hours
+    rate_limit_violation_retention_days: int = 30  # Keep violation logs for N days
+
+    # Abuse protection configuration
+    abuse_protection_enabled: bool = True  # Enable/disable abuse protection
+    # Note: SQL injection detection is NOT implemented in rate limiter because:
+    # - User queries are natural language (Bulgarian), not SQL
+    # - The SQL agent (sql_agent.py) provides comprehensive SQL security validation
+    # - Pattern matching on natural language causes false positives
+    abuse_max_query_length: int = 10000  # Maximum query length in characters
+    abuse_min_request_interval_seconds: float = 0.5  # Minimum time between requests (DoS protection)
+    abuse_ip_block_duration_hours: int = 1  # Duration of IP block in hours
+    abuse_max_rapid_requests: int = 10  # Max requests in short time window for DoS detection
+    abuse_rapid_requests_window_seconds: int = 5  # Time window for rapid request detection
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

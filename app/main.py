@@ -11,13 +11,18 @@ from app.api.vector_store import router as vector_store_router
 from app.core.config import settings
 from app.core.logging_config import configure_logging  # noqa: F401 - Initialize logging
 from app.core.metrics import get_metrics
-from app.core.middleware import RequestIDMiddleware, RequestLoggingMiddleware
+from app.core.middleware import (
+    RateLimitingMiddleware,
+    RequestIDMiddleware,
+    RequestLoggingMiddleware,
+)
 from app.db.database import get_db
 
 app = FastAPI(title="Chitalishta RAG System", version="0.1.0")
 
 # Add middleware (order matters: RequestIDMiddleware must come first)
 app.add_middleware(RequestIDMiddleware)
+app.add_middleware(RateLimitingMiddleware)  # Rate limiting before logging
 app.add_middleware(RequestLoggingMiddleware)
 
 # Register routers
