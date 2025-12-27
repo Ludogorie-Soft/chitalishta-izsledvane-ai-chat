@@ -236,3 +236,38 @@ class BaselineQuery(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )  # Enable/disable specific baselines
+
+
+class User(Base):
+    """User model - stores administrator and other user accounts."""
+
+    __tablename__ = "users"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Authentication fields
+    username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Role-based access control
+    role: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="administrator"
+    )  # Initially only 'administrator', but extensible for future roles (e.g., 'moderator', 'viewer')
+
+    # User status
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )  # Enable/disable users
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+    last_login: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )  # Optional timestamp for last login

@@ -12,8 +12,8 @@ Rules:
 ---
 
 ## Current Status
-- Phase: Phase 10 – Quality & Observability
-- Current Step: Step 10.6 Complete - All phases complete!
+- Phase: Phase 11 – Administrator Features
+- Current Step: Ready for Step 11.1 (User management)
 - Blockers: none
 
 ---
@@ -648,3 +648,59 @@ poetry run pytest -m ""
 # Run specific test file with all markers
 poetry run pytest tests/test_evaluation.py -m ""
 ```
+
+---
+
+# Phase 11 – Administrator Features
+
+## Step 11.1 – User management
+- [x] Create `users` database table with schema:
+  - `id` (primary key)
+  - `username` (unique, for login)
+  - `email` (unique, optional)
+  - `password_hash` (hashed password for authentication)
+  - `role` (VARCHAR, default: 'administrator')
+  - `is_active` (boolean, to enable/disable users)
+  - `created_at`, `updated_at` (timestamps)
+  - `last_login` (optional timestamp)
+- [x] Create `User` SQLAlchemy model
+- [x] Create database migration script for `users` table
+- [x] Add indexes for username, email, and role
+- [x] Add `passlib[bcrypt]` dependency for password hashing
+- [x] Note: Initially only 'administrator' role, but schema supports future roles (e.g., 'moderator', 'viewer')
+
+**Definition of Done**
+- Users table exists with proper schema
+- User model is available via SQLAlchemy
+- Table supports role-based access control (extensible for future roles)
+
+---
+
+## Step 11.2 – Admin chat endpoints
+- [ ] Create `GET /admin/chat` endpoint
+  - Returns brief chat data from `chat_logs` table
+  - Groups by `conversation_id`
+  - Returns summary for each conversation:
+    - `conversation_id`
+    - `first_message` (first user message in conversation)
+    - `last_message_timestamp` (most recent message time)
+    - `message_count` (total messages in conversation)
+    - `total_cost_usd` (sum of costs for all messages in conversation)
+    - `intents_used` (list of unique intents: sql/rag/hybrid)
+    - `has_errors` (boolean, if any errors occurred)
+  - Supports pagination (limit/offset)
+  - Supports filtering by date range, has_errors, intent
+- [ ] Create `GET /admin/chat/{conversation_id}` endpoint
+  - Returns detailed chat logs for specific conversation
+  - Returns all `chat_logs` rows for the conversation_id
+  - Includes full details: user messages, answers, SQL queries, LLM operations, costs, errors
+  - Ordered by `request_timestamp` (chronological)
+- [ ] Add authentication/authorization checks (require administrator role)
+- [ ] Create Pydantic response schemas for both endpoints
+- [ ] Add proper error handling (404 for non-existent conversations)
+
+**Definition of Done**
+- Admin can view all conversations with summary data
+- Admin can view detailed logs for any specific conversation
+- Endpoints are protected (require authentication and administrator role)
+- Response schemas are properly typed and documented
