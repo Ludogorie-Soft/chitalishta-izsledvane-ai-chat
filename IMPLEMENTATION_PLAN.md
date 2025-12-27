@@ -13,7 +13,7 @@ Rules:
 
 ## Current Status
 - Phase: Phase 10 – Quality & Observability
-- Current Step: Step 10.5 Complete - Ready for Step 10.6 (Evaluation)
+- Current Step: Step 10.6 Complete - All phases complete!
 - Blockers: none
 
 ---
@@ -581,9 +581,70 @@ Rules:
 ---
 
 ## Step 10.6 – Evaluation
-- [ ] Bulgarian test queries
-- [ ] Groundedness checks
-- [ ] Regression safety
+- [x] Bulgarian test queries
+  - Create comprehensive integration/e2e test suite with real Bulgarian queries against indexed data
+  - Cover SQL, RAG, and hybrid intent types with actual database and vector store
+  - Verify correct routing, intent classification, and answer quality
+  - Note: Unit tests with Bulgarian queries already exist but use mocks; need real end-to-end tests
+  - **Cost-conscious testing strategy**: Use pytest markers to separate test tiers
+    - Default `pytest` runs only mocked tests (no cost, fast execution)
+    - Integration tests use cheaper LLMs (`gpt-4o-mini` or local TGI) - opt-in via `pytest -m integration`
+    - Full e2e tests use production LLMs (`gpt-4o`) - opt-in via `pytest -m e2e`
+    - Mark integration tests with `@pytest.mark.integration` and e2e tests with `@pytest.mark.e2e`
+    - Configure `pytest.ini` to exclude `integration` and `e2e` markers by default
+- [x] Groundedness checks
+  - Implement validation to ensure RAG-generated answers are supported by retrieved context/documents
+  - Prevent hallucinations by verifying answers cite sources or are based on actual retrieved documents
+  - Add checks that answers don't contain information not present in the retrieved context
+  - Use cheaper LLMs (`gpt-4o-mini`) for groundedness validation in integration tests
+  - Full quality checks with production LLMs only in e2e test suite (opt-in)
+- [x] Regression safety
+  - Establish baseline of known-good query-answer pairs (stored in database table for UI management)
+  - Create `baseline_queries` database table with schema:
+    - `id` (primary key)
+    - `query` (Bulgarian query text)
+    - `expected_intent` (sql/rag/hybrid)
+    - `expected_answer` (expected answer text or pattern)
+    - `expected_sql_query` (optional, if SQL is expected)
+    - `expected_rag_executed` (boolean)
+    - `expected_sql_executed` (boolean)
+    - `metadata` (JSONB for flexible additional expectations)
+    - `created_at`, `updated_at` (timestamps)
+    - `created_by` (optional, for tracking who added the baseline)
+    - `is_active` (boolean, to enable/disable specific baselines)
+  - [x] Create `BaselineQuery` SQLAlchemy model
+  - [x] Create automated tests that run baseline queries on code changes and compare outputs
+  - [x] Implement comparison logic (exact match, pattern matching, or semantic similarity for answers)
+  - [x] Allow administrators to add/update baseline pairs via UI (database table enables easy CRUD operations)
+  - [x] When outputs change, either fix code (regression) or update baseline (intentional improvement)
+  - [x] Note: Similar to golden file testing - maintain a "golden" set of expected outputs for quality assurance
+  - [x] **Cost optimization**: Baseline tests can use snapshot/fixture approach (run real LLMs once, save outputs, compare against snapshots)
+  - [x] **UI-friendly**: Database table structure allows administrators to manage baselines through admin interface without code changes
 
 **Definition of Done**
 - Quality is measurable and stable
+- Bulgarian queries are tested end-to-end with real data
+- RAG answers are verified to be grounded in retrieved context
+- Baseline query-answer pairs prevent regressions and can be maintained by administrators
+- **Default `pytest` execution runs only free (mocked) tests - no LLM costs**
+- Integration and e2e tests are opt-in via pytest markers (`-m integration`, `-m e2e`)
+- Test execution is cost-conscious: cheaper LLMs for integration, production LLMs only for critical e2e tests
+
+**Test Execution Commands:**
+```bash
+# Default: Run only free (mocked) tests - no LLM costs
+# (configured in pytest.ini to exclude integration and e2e markers)
+poetry run pytest
+
+# Run integration tests (uses cheaper LLMs like gpt-4o-mini or local TGI)
+poetry run pytest -m integration
+
+# Run e2e tests (uses production LLMs like gpt-4o - most expensive)
+poetry run pytest -m e2e
+
+# Run all tests (including integration and e2e) - override default marker exclusion
+poetry run pytest -m ""
+
+# Run specific test file with all markers
+poetry run pytest tests/test_evaluation.py -m ""
+```

@@ -230,6 +230,23 @@ poetry run pytest
 
 Tests use a separate test database (port 5435) that is automatically set up and seeded with test data. See `tests/README.md` for more details.
 
+### Integration and E2E Tests
+
+By default, `pytest` runs only free (mocked) tests. Integration and e2e tests that use real LLMs are opt-in:
+
+```bash
+# Integration tests (uses cheaper LLMs like gpt-4o-mini or local TGI)
+USE_REAL_LLM=true TEST_LLM_MODEL=gpt-4o-mini poetry run pytest -m integration
+
+# E2E tests (uses production LLMs like gpt-4o - most expensive)
+USE_REAL_LLM=true TEST_LLM_MODEL=gpt-4o poetry run pytest -m e2e
+
+# Run all tests (including integration and e2e)
+USE_REAL_LLM=true poetry run pytest -m ""
+```
+
+**Note**: Integration and e2e tests require proper LLM configuration (API keys, etc.) and will incur costs. See `EVALUATION.md` for detailed information.
+
 ### Testing TGI Integration
 
 To test the TGI LLM integration:

@@ -179,3 +179,60 @@ class ChatLog(Base):
     # Client information
     client_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)  # IPv6 max length
     user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class BaselineQuery(Base):
+    """Baseline query model - stores known-good query-answer pairs for regression testing."""
+
+    __tablename__ = "baseline_queries"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Query information
+    query: Mapped[str] = mapped_column(Text, nullable=False)  # Bulgarian query text
+
+    # Expected results
+    expected_intent: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # sql/rag/hybrid
+    expected_answer: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # Expected answer text or pattern
+    expected_sql_query: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # Optional, if SQL is expected
+    expected_rag_executed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    expected_sql_executed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
+    # Flexible metadata (JSONB for additional expectations)
+    # Can store: answer_patterns, semantic_similarity_threshold, etc.
+    # Note: Named 'baseline_metadata' to avoid SQLAlchemy reserved 'metadata' attribute
+    baseline_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()"
+    )
+
+    # Source tracking
+    source: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="manual_test_query"
+    )  # Source of baseline: 'manual_test_query' (manual test baselines) or 'real_user_query' (from real user queries)
+
+    # Tracking
+    created_by: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )  # Optional, for tracking who added the baseline
+
+    # Management
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )  # Enable/disable specific baselines
