@@ -9,7 +9,7 @@ router = APIRouter(prefix="/vector-store", tags=["vector-store"])
 @router.get("/status")
 async def get_vector_store_status():
     """
-    Get vector store status and information.
+    Get vector store infrastructure status and health information, including collection name, document count, and storage path.
 
     Returns:
         Status information including collection name, document count, and persistence path

@@ -129,7 +129,7 @@ Rules:
 ---
 
 ## Step 2.4 – Ingestion preview endpoint
-- [x] `POST /ingest/preview`
+- [x] `POST /ingest/database`
 - [x] Limit number of documents
 - [x] Return JSON preview
 

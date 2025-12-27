@@ -41,7 +41,7 @@ poetry run pytest tests/test_ingestion_preview.py::TestIngestionPreviewBasic::te
 ## Test Structure
 
 - `conftest.py`: Pytest fixtures for database setup and test data seeding
-- `test_ingestion_preview.py`: Integration tests for `/ingest/preview` endpoint
+- `test_ingestion_preview.py`: Integration tests for `/ingest/database` endpoint
 
 ## Test Data
 

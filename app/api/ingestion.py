@@ -20,7 +20,7 @@ from app.services.document_processor import DocumentProcessor
 router = APIRouter(prefix="/ingest", tags=["ingestion"])
 
 
-@router.post("/preview", response_model=IngestionPreviewResponse)
+@router.post("/database", response_model=IngestionPreviewResponse)
 async def preview_ingestion(
     request: IngestionPreviewRequest,
     db: Session = Depends(get_db),
@@ -28,7 +28,7 @@ async def preview_ingestion(
     """
     Preview documents that would be ingested into the RAG system.
 
-    This endpoint shows what documents would be created from the database
+    This endpoint shows what documents would be created from the PostgreSQL database
     before actually ingesting them into the vector store.
 
     - **region**: Optional filter by region

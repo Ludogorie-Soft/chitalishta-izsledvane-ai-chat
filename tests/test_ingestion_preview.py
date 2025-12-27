@@ -1,4 +1,4 @@
-"""Integration tests for /ingest/preview endpoint."""
+"""Integration tests for /ingest/database endpoint."""
 import pytest
 from fastapi.testclient import TestClient
 
@@ -20,7 +20,7 @@ class TestIngestionPreviewBasic:
         self, test_app: TestClient, seeded_test_data, request_body, expected_min_docs
     ):
         """Test preview endpoint with various filter combinations."""
-        response = test_app.post("/ingest/preview", json=request_body)
+        response = test_app.post("/ingest/database", json=request_body)
 
         assert response.status_code == 200
         data = response.json()
@@ -31,7 +31,7 @@ class TestIngestionPreviewBasic:
 
     def test_preview_default_limit(self, test_app: TestClient, seeded_test_data):
         """Test that default limit is applied when not specified."""
-        response = test_app.post("/ingest/preview", json={})
+        response = test_app.post("/ingest/database", json={})
 
         assert response.status_code == 200
         data = response.json()
@@ -52,7 +52,7 @@ class TestIngestionPreviewBasic:
         self, test_app: TestClient, seeded_test_data, limit, expected_max
     ):
         """Test that limit parameter is respected and capped at 100."""
-        response = test_app.post("/ingest/preview", json={"limit": limit})
+        response = test_app.post("/ingest/database", json={"limit": limit})
 
         assert response.status_code == 200
         data = response.json()
@@ -65,7 +65,7 @@ class TestIngestionPreviewResponseStructure:
 
     def test_response_schema(self, test_app: TestClient, seeded_test_data):
         """Test that response matches expected schema."""
-        response = test_app.post("/ingest/preview", json={"limit": 2})
+        response = test_app.post("/ingest/database", json={"limit": 2})
 
         assert response.status_code == 200
         data = response.json()
@@ -78,7 +78,7 @@ class TestIngestionPreviewResponseStructure:
 
     def test_document_structure(self, test_app: TestClient, seeded_test_data):
         """Test that each document has required fields."""
-        response = test_app.post("/ingest/preview", json={"limit": 1})
+        response = test_app.post("/ingest/database", json={"limit": 1})
 
         assert response.status_code == 200
         data = response.json()
@@ -101,7 +101,7 @@ class TestIngestionPreviewResponseStructure:
 
     def test_metadata_structure(self, test_app: TestClient, seeded_test_data):
         """Test that metadata has required fields."""
-        response = test_app.post("/ingest/preview", json={"limit": 1})
+        response = test_app.post("/ingest/database", json={"limit": 1})
 
         assert response.status_code == 200
         data = response.json()
@@ -128,7 +128,7 @@ class TestIngestionPreviewResponseStructure:
 
     def test_size_info_structure(self, test_app: TestClient, seeded_test_data):
         """Test that size_info has required fields."""
-        response = test_app.post("/ingest/preview", json={"limit": 1})
+        response = test_app.post("/ingest/database", json={"limit": 1})
 
         assert response.status_code == 200
         data = response.json()
@@ -145,7 +145,7 @@ class TestIngestionPreviewResponseStructure:
 
     def test_statistics_structure(self, test_app: TestClient, seeded_test_data):
         """Test that statistics have required fields."""
-        response = test_app.post("/ingest/preview", json={"limit": 5})
+        response = test_app.post("/ingest/database", json={"limit": 5})
 
         assert response.status_code == 200
         data = response.json()
@@ -171,7 +171,7 @@ class TestIngestionPreviewDataIntegrity:
 
     def test_no_duplicate_documents(self, test_app: TestClient, seeded_test_data):
         """Test that no duplicate documents are returned."""
-        response = test_app.post("/ingest/preview", json={"limit": 10})
+        response = test_app.post("/ingest/database", json={"limit": 10})
 
         assert response.status_code == 200
         data = response.json()
@@ -204,7 +204,7 @@ class TestIngestionPreviewDataIntegrity:
     ):
         """Test that returned documents match applied filters."""
         response = test_app.post(
-            "/ingest/preview", json={filter_key: filter_value, "limit": 10}
+            "/ingest/database", json={filter_key: filter_value, "limit": 10}
         )
 
         assert response.status_code == 200
@@ -222,7 +222,7 @@ class TestIngestionPreviewDataIntegrity:
         self, test_app: TestClient, seeded_test_data
     ):
         """Test that exactly one document exists per Chitalishte per year."""
-        response = test_app.post("/ingest/preview", json={"limit": 10})
+        response = test_app.post("/ingest/database", json={"limit": 10})
 
         assert response.status_code == 200
         data = response.json()
@@ -239,7 +239,7 @@ class TestIngestionPreviewDataIntegrity:
 
     def test_statistics_match_documents(self, test_app: TestClient, seeded_test_data):
         """Test that statistics accurately reflect the document list."""
-        response = test_app.post("/ingest/preview", json={"limit": 10})
+        response = test_app.post("/ingest/database", json={"limit": 10})
 
         assert response.status_code == 200
         data = response.json()
@@ -271,7 +271,7 @@ class TestIngestionPreviewDataIntegrity:
         self, test_app: TestClient, seeded_test_data
     ):
         """Test that document content contains Bulgarian text."""
-        response = test_app.post("/ingest/preview", json={"limit": 1})
+        response = test_app.post("/ingest/database", json={"limit": 1})
 
         assert response.status_code == 200
         data = response.json()
@@ -302,7 +302,7 @@ class TestIngestionPreviewEdgeCases:
         self, test_app: TestClient, seeded_test_data, request_body
     ):
         """Test that filters with no matching data return empty results gracefully."""
-        response = test_app.post("/ingest/preview", json=request_body)
+        response = test_app.post("/ingest/database", json=request_body)
 
         assert response.status_code == 200
         data = response.json()
@@ -314,7 +314,7 @@ class TestIngestionPreviewEdgeCases:
 
     def test_empty_request_body(self, test_app: TestClient, seeded_test_data):
         """Test that empty request body works (uses defaults)."""
-        response = test_app.post("/ingest/preview", json={})
+        response = test_app.post("/ingest/database", json={})
 
         assert response.status_code == 200
         data = response.json()
@@ -325,7 +325,7 @@ class TestIngestionPreviewEdgeCases:
     def test_all_filters_combined(self, test_app: TestClient, seeded_test_data):
         """Test with all filters combined."""
         response = test_app.post(
-            "/ingest/preview",
+            "/ingest/database",
             json={
                 "region": "Пловдив",
                 "town": None,
@@ -346,7 +346,7 @@ class TestIngestionPreviewEdgeCases:
 
     def test_document_size_validation(self, test_app: TestClient, seeded_test_data):
         """Test that document size validation works correctly."""
-        response = test_app.post("/ingest/preview", json={"limit": 5})
+        response = test_app.post("/ingest/database", json={"limit": 5})
 
         assert response.status_code == 200
         data = response.json()

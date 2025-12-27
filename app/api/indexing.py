@@ -24,7 +24,7 @@ async def index_database_documents(
     """
     Index database documents into the vector store.
 
-    This endpoint extracts documents from the database, embeds them,
+    This endpoint extracts documents from the PostgreSQL database, embeds them,
     and stores them in Chroma for RAG retrieval.
 
     Query Parameters:
@@ -112,7 +112,7 @@ async def index_analysis_document(request: AnalysisDocumentIngestionRequest):
 @router.get("/stats")
 async def get_index_stats():
     """
-    Get statistics about the indexed documents.
+    Get detailed statistics about indexed documents, including total count and breakdown by source (database vs analysis document).
 
     Returns:
         Index statistics including total count and source distribution
@@ -131,27 +131,5 @@ async def get_index_stats():
             "message": f"Error getting index stats: {str(e)}",
             "total_documents": 0,
             "source_distribution": {},
-        }
-
-
-@router.post("/clear")
-async def clear_index():
-    """
-    Clear all documents from the index.
-
-    This deletes all indexed documents but keeps the collection structure.
-    """
-    try:
-        indexing_service = IndexingService()
-        indexing_service.clear_index()
-
-        return {
-            "status": "success",
-            "message": "Index cleared successfully.",
-        }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Error clearing index: {str(e)}",
         }
 
