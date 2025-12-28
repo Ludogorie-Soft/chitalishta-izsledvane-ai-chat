@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -22,6 +23,16 @@ from app.core.middleware import (
 from app.db.database import get_db
 
 app = FastAPI(title="Chitalishta RAG System", version="0.1.0")
+
+# Configure CORS (must be added before other middleware)
+cors_origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=settings.cors_allow_methods.split(","),
+    allow_headers=settings.cors_allow_headers.split(","),
+)
 
 # Add middleware (order matters: RequestIDMiddleware must come first)
 app.add_middleware(RequestIDMiddleware)

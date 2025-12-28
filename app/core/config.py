@@ -87,6 +87,12 @@ class Settings(BaseSettings):
     # API key authentication configuration
     api_key: str = ""  # API key for Public API and System API endpoints (empty = disabled)
 
+    # CORS configuration
+    cors_origins: str = "http://localhost:5173,http://localhost:5174"  # Comma-separated list of allowed origins
+    cors_allow_credentials: bool = True
+    cors_allow_methods: str = "GET,POST,PUT,DELETE,OPTIONS"
+    cors_allow_headers: str = "Content-Type,Authorization,X-API-Key"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
