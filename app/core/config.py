@@ -74,6 +74,19 @@ class Settings(BaseSettings):
     swagger_ui_username: str = ""  # Username for Swagger UI Basic Auth (empty = disabled)
     swagger_ui_password: str = ""  # Password for Swagger UI Basic Auth (empty = disabled)
 
+    # JWT authentication configuration
+    jwt_secret_key: str = ""  # JWT secret key (for HS256) - not used with RS256
+    jwt_algorithm: str = "RS256"  # JWT algorithm (RS256 for asymmetric)
+    jwt_access_token_expire_minutes: int = 30  # Access token expiration in minutes
+    jwt_refresh_token_expire_days: int = 7  # Refresh token expiration in days
+    # RSA key pair for RS256 (PEM format)
+    # If not provided, keys will be auto-generated (not recommended for production)
+    jwt_rsa_private_key: str = ""  # RSA private key in PEM format
+    jwt_rsa_public_key: str = ""  # RSA public key in PEM format
+
+    # API key authentication configuration
+    api_key: str = ""  # API key for Public API and System API endpoints (empty = disabled)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -252,6 +252,125 @@ poetry install
    poetry run python scripts/create_rate_limiting_tables.py
    ```
 
+   **Authentication Configuration:**
+
+   The system uses JWT tokens for Admin API and Setup API endpoints, and API keys for Public API and System API endpoints.
+
+   **Swagger UI Authentication:**
+   ```
+   SWAGGER_UI_USERNAME=admin
+   SWAGGER_UI_PASSWORD=your_secure_password
+   ```
+   - These credentials protect access to Swagger UI documentation (`/docs` and `/redoc`)
+   - The same credentials are used for JWT token generation via `/auth/login` endpoint
+
+   **JWT Authentication Configuration:**
+   ```
+   # JWT algorithm (RS256 for asymmetric encryption)
+   JWT_ALGORITHM=RS256
+
+   # Token expiration times
+   JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30      # Access token expires in 30 minutes
+   JWT_REFRESH_TOKEN_EXPIRE_DAYS=7         # Refresh token expires in 7 days
+
+   # RSA key pair for JWT signing/verification (PEM format)
+   # If not provided, keys will be auto-generated (development only - not recommended for production)
+   JWT_RSA_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----
+   ...
+   -----END PRIVATE KEY-----
+   JWT_RSA_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----
+   ...
+   -----END PUBLIC KEY-----
+   ```
+
+   **Generating RSA Keys:**
+
+   For production, you should generate your own RSA key pair. Here are several methods:
+
+   **Method 1: Using OpenSSL (Recommended)**
+   ```bash
+   # Generate private key (2048-bit RSA)
+   openssl genpkey -algorithm RSA -out jwt_private_key.pem -pkeyopt rsa_keygen_bits:2048
+
+   # Extract public key from private key
+   openssl rsa -pubout -in jwt_private_key.pem -out jwt_public_key.pem
+
+   # View the keys (copy to .env file)
+   cat jwt_private_key.pem
+   cat jwt_public_key.pem
+   ```
+
+   **Method 2: Using Python (cryptography library)**
+   ```python
+   from cryptography.hazmat.primitives.asymmetric import rsa
+   from cryptography.hazmat.primitives import serialization
+
+   # Generate private key
+   private_key = rsa.generate_private_key(
+       public_exponent=65537,
+       key_size=2048
+   )
+
+   # Serialize private key to PEM format
+   private_pem = private_key.private_bytes(
+       encoding=serialization.Encoding.PEM,
+       format=serialization.PrivateFormat.PKCS8,
+       encryption_algorithm=serialization.NoEncryption()
+   )
+
+   # Serialize public key to PEM format
+   public_pem = private_key.public_key().public_bytes(
+       encoding=serialization.Encoding.PEM,
+       format=serialization.PublicFormat.SubjectPublicKeyInfo
+   )
+
+   # Print keys (copy to .env file)
+   print("JWT_RSA_PRIVATE_KEY=" + private_pem.decode('utf-8'))
+   print("JWT_RSA_PUBLIC_KEY=" + public_pem.decode('utf-8'))
+   ```
+
+   **Method 3: Using online tools (for development only)**
+   - Visit https://8gwifi.org/rsagen.jsp
+   - Generate 2048-bit RSA key pair
+   - Copy private and public keys to `.env` file
+
+   **Important Notes:**
+   - **Development**: If RSA keys are not provided, the system will auto-generate them (not recommended for production)
+   - **Production**: Always generate and securely store your own RSA keys
+   - **Security**: Never commit RSA keys to version control. Store them securely (environment variables, secrets manager, etc.)
+   - **Format**: Keys must be in PEM format with proper headers/footers:
+     - Private key: `-----BEGIN PRIVATE KEY-----` ... `-----END PRIVATE KEY-----`
+     - Public key: `-----BEGIN PUBLIC KEY-----` ... `-----END PUBLIC KEY-----`
+   - **Multi-line values**: In `.env` files, you can use quotes or escape newlines:
+     ```
+     JWT_RSA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+     ```
+
+   **API Key Authentication Configuration:**
+   ```
+   API_KEY=your_api_key_here
+   ```
+   - This API key is required for Public API endpoints (chat) and System API endpoints (chitalishte data)
+   - Generate a secure random string (e.g., using `openssl rand -hex 32`)
+   - Share this key only with authorized applications (your React frontend apps)
+
+   **Example complete authentication configuration:**
+   ```
+   # Swagger UI credentials (also used for JWT login)
+   SWAGGER_UI_USERNAME=admin
+   SWAGGER_UI_PASSWORD=secure_password_123
+
+   # JWT configuration
+   JWT_ALGORITHM=RS256
+   JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+   JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+   JWT_RSA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...\n-----END PRIVATE KEY-----"
+   JWT_RSA_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...\n-----END PUBLIC KEY-----"
+
+   # API key for Public API and System API
+   API_KEY=your_secure_api_key_here
+   ```
+
 5. Run the application (Poetry 2.0+):
 ```bash
 poetry run uvicorn app.main:app --reload

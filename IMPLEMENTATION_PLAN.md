@@ -1,4 +1,4 @@
-# RAG System – Implementation Plan
+4# RAG System – Implementation Plan
 
 This document defines the step-by-step implementation plan for the RAG system.
 It is the **single source of truth** for development progress.
@@ -501,12 +501,32 @@ Rules:
 ---
 
 ## Step 8.3 – Authentication
-- [ ] Signup
-- [ ] Login
-- [ ] User context (optional)
+- [x] Database-backed user authentication:
+  - Updated `/auth/login` endpoint to authenticate against `users` table in PostgreSQL
+  - Password verification using bcrypt (direct bcrypt library, not passlib)
+  - User role from database included in JWT tokens
+  - `last_login` timestamp updated on successful login
+  - User must be active (`is_active = True`) to log in
+- [x] JWT token refresh:
+  - Updated `/auth/refresh` endpoint to verify user still exists and is active
+  - Uses current role from database (in case role changed)
+- [x] Persistent RSA keys:
+  - Generated persistent RSA key pair for JWT signing/verification
+  - Keys stored in `.env` file (JWT_RSA_PRIVATE_KEY, JWT_RSA_PUBLIC_KEY)
+  - Prevents token verification failures from key regeneration
+- [x] User management script:
+  - Created `scripts/create_user.py` to create/update users with hashed passwords
+  - Supports username, password, email, and role configuration
+- [x] Test updates:
+  - Created `test_user` fixture to create database user for tests
+  - Updated all authentication tests to use database-backed authentication
 
 **Definition of Done**
-- Authenticated and anonymous flows coexist
+- Login authenticates against PostgreSQL `users` table
+- JWT tokens include user role from database
+- User creation script available for admin user setup
+- All authentication tests pass with database-backed authentication
+- RSA keys are persistent (tokens work across application restarts)
 
 ---
 

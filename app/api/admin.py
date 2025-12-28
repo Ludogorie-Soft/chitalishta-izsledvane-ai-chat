@@ -14,31 +14,13 @@ from app.api.admin_schemas import (
     ConversationListResponse,
     ConversationSummary,
 )
+from app.core.auth import CurrentUser, require_administrator
 from app.db.database import get_db
 from app.db.models import ChatLog
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["Admin API"])
-
-
-def require_administrator(
-    # For now, this is a placeholder. In the future, this will check JWT tokens, session, etc.
-    # db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
-):
-    """
-    Dependency to require administrator role.
-
-    TODO: Implement proper authentication/authorization:
-    - Check JWT token or session
-    - Verify user has 'administrator' role
-    - Return current_user object
-    """
-    # Placeholder: For now, we'll allow access. In production, implement proper auth.
-    # if current_user.role != "administrator":
-    #     raise HTTPException(status_code=403, detail="Administrator access required")
-    pass
 
 
 @router.get("/chat", response_model=ConversationListResponse)
@@ -57,7 +39,7 @@ async def list_conversations(
     intent: Optional[str] = Query(
         None, description="Filter by intent type (sql, rag, hybrid)"
     ),
-    _admin: None = Depends(require_administrator),
+    current_user: CurrentUser = Depends(require_administrator),
     db: Session = Depends(get_db),
 ):
     """
@@ -156,7 +138,7 @@ async def list_conversations(
 @router.get("/chat/{conversation_id}", response_model=ConversationDetailResponse)
 async def get_conversation_details(
     conversation_id: str,
-    _admin: None = Depends(require_administrator),
+    current_user: CurrentUser = Depends(require_administrator),
     db: Session = Depends(get_db),
 ):
     """

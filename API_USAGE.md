@@ -5,8 +5,53 @@ This guide explains how to use the Chitalishta RAG System API, with a focus on t
 ## API Documentation
 
 Access the interactive API documentation:
-- **Swagger UI**: `/docs`
-- **ReDoc**: `/redoc`
+- **Swagger UI**: `/docs` (requires authentication - see Swagger UI Authentication below)
+- **ReDoc**: `/redoc` (requires authentication - see Swagger UI Authentication below)
+
+## Authentication
+
+### Public API Authentication (API Key)
+
+All Public API endpoints (chat endpoints) require API key authentication. Include your API key in the `X-API-Key` header with every request.
+
+**How to get an API key:**
+- Contact your system administrator to obtain an API key
+- The API key is configured via the `API_KEY` environment variable on the server
+
+**Using the API key:**
+```bash
+curl -X POST "https://your-api-domain.com/chat/" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
+  -d '{
+    "message": "Какво е читалище?",
+    "mode": "medium"
+  }'
+```
+
+**Error responses:**
+- **401 Unauthorized**: Missing or invalid API key
+  ```json
+  {
+    "detail": "API key required"
+  }
+  ```
+  or
+  ```json
+  {
+    "detail": "Invalid API key"
+  }
+  ```
+
+### Swagger UI Authentication
+
+The Swagger UI documentation (`/docs`) is protected with HTTP Basic Authentication. You'll need to enter credentials when accessing the documentation.
+
+**Credentials:**
+- Username and password are configured via `SWAGGER_UI_USERNAME` and `SWAGGER_UI_PASSWORD` environment variables
+- Contact your system administrator for credentials
+
+**Note:** Swagger UI authentication is separate from API authentication. You still need to provide an API key when making actual API calls through Swagger UI.
 
 ## Chat Endpoints
 
@@ -22,6 +67,7 @@ For the first message, **omit** `conversation_id` - the system will create one a
 ```bash
 curl -X POST "https://your-api-domain.com/chat/" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{
     "message": "Какво е читалище?",
     "mode": "medium"
@@ -56,6 +102,7 @@ Use the same `conversation_id` to maintain context across messages.
 ```bash
 curl -X POST "https://your-api-domain.com/chat/" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{
     "message": "Колко читалища има в Пловдив?",
     "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -95,6 +142,7 @@ Get real-time streaming responses using Server-Sent Events (SSE).
 ```bash
 curl -X POST "https://your-api-domain.com/chat/stream" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{
     "message": "Разкажи за читалищата в България",
     "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -123,6 +171,7 @@ Retrieve all messages from a conversation.
 ```bash
 curl -X POST "https://your-api-domain.com/chat/history" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{
     "conversation_id": "550e8400-e29b-41d4-a716-446655440000"
   }'
@@ -159,7 +208,8 @@ Delete a conversation and all its messages.
 
 **Request:**
 ```bash
-curl -X DELETE "https://your-api-domain.com/chat/history/550e8400-e29b-41d4-a716-446655440000"
+curl -X DELETE "https://your-api-domain.com/chat/history/550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-API-Key: your_api_key_here"
 ```
 
 **Response:**
@@ -185,6 +235,7 @@ The `mode` parameter controls how strict the AI is with facts:
 # Strict mode for factual queries
 curl -X POST "https://your-api-domain.com/chat/" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{
     "message": "Колко читалища има в София?",
     "mode": "low"
@@ -193,6 +244,7 @@ curl -X POST "https://your-api-domain.com/chat/" \
 # Creative mode for exploratory queries
 curl -X POST "https://your-api-domain.com/chat/" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{
     "message": "Разкажи интересна история за читалищата",
     "mode": "high"
@@ -212,12 +264,14 @@ curl -X POST "https://your-api-domain.com/chat/" \
 # 1. First message (no conversation_id)
 curl -X POST "https://your-api-domain.com/chat/" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{"message": "Здравей", "mode": "medium"}'
 # Response includes: "conversation_id": "abc-123"
 
 # 2. Continue conversation (use conversation_id)
 curl -X POST "https://your-api-domain.com/chat/" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{
     "message": "Колко читалища има?",
     "conversation_id": "abc-123",
@@ -227,6 +281,7 @@ curl -X POST "https://your-api-domain.com/chat/" \
 # 3. Stream response (use same conversation_id)
 curl -X POST "https://your-api-domain.com/chat/stream" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{
     "message": "Разкажи повече",
     "conversation_id": "abc-123",
@@ -236,6 +291,7 @@ curl -X POST "https://your-api-domain.com/chat/stream" \
 # 4. Get conversation history
 curl -X POST "https://your-api-domain.com/chat/history" \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
   -d '{"conversation_id": "abc-123"}'
 ```
 
@@ -280,6 +336,13 @@ The system automatically routes queries to the appropriate pipeline:
 **400 Bad Request:**
 - Invalid request format
 - Missing required fields
+
+**401 Unauthorized:**
+- Missing or invalid API key
+- Expired or invalid JWT token (for Admin/Setup APIs)
+
+**403 Forbidden:**
+- Insufficient permissions (for Admin/Setup APIs)
 
 **500 Internal Server Error:**
 - LLM service unavailable

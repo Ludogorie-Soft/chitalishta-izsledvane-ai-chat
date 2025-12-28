@@ -4,6 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.admin import router as admin_router
+from app.api.auth import router as auth_router
 from app.api.chat import router as chat_router
 from app.api.chitalishte import router as chitalishte_router
 from app.api.indexing import router as indexing_router
@@ -29,6 +30,7 @@ app.add_middleware(RateLimitingMiddleware)  # Rate limiting before logging
 app.add_middleware(RequestLoggingMiddleware)
 
 # Register routers
+app.include_router(auth_router)
 app.include_router(chitalishte_router)
 app.include_router(ingestion_router)
 app.include_router(indexing_router)
@@ -50,13 +52,12 @@ def custom_openapi():
     )
 
     # Define security schemes
-    # Note: Actual implementation of these schemes will be done in Step 8.3
     openapi_schema["components"]["securitySchemes"] = {
         "ApplicationAuth": {
             "type": "apiKey",
             "name": "X-API-Key",
             "in": "header",
-            "description": "API key for application authentication (Public API endpoints)",
+            "description": "API key for application authentication (Public API and System API endpoints)",
         },
         "BearerAuth": {
             "type": "http",
@@ -82,12 +83,42 @@ def custom_openapi():
         },
         {
             "name": "System API",
-            "description": "System endpoints for Chitalishte data access, health checks, and metrics. No authentication required.",
+            "description": "System endpoints for Chitalishte data access, health checks, and metrics. API key authentication required for data endpoints.",
+        },
+        {
+            "name": "Authentication",
+            "description": "Authentication endpoints for login and token refresh.",
         },
     ]
 
-    # Note: Security requirements per endpoint will be added in Step 8.3
-    # For now, we just define the security schemes
+    # Add security requirements to endpoints based on tags
+    for path, path_item in openapi_schema.get("paths", {}).items():
+        for method, operation in path_item.items():
+            if method in ["get", "post", "put", "delete", "patch", "options", "head"]:
+                tags = operation.get("tags", [])
+                security = []
+
+                # Public API endpoints require API key
+                if "Public API" in tags:
+                    security.append({"ApplicationAuth": []})
+
+                # Admin API and Setup API endpoints require JWT Bearer token
+                if "Admin API" in tags or "Setup API" in tags:
+                    security.append({"BearerAuth": []})
+
+                # System API endpoints (chitalishte) require API key
+                # Health and metrics endpoints are left without security (can be added if needed)
+                if "System API" in tags and not any(
+                    path.startswith(prefix) for prefix in ["/health", "/metrics", "/db/ping"]
+                ):
+                    security.append({"ApplicationAuth": []})
+
+                # Authentication endpoints don't require authentication
+                if "Authentication" in tags:
+                    security = []  # No security required
+
+                if security:
+                    operation["security"] = security
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema

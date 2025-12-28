@@ -29,6 +29,8 @@ structlog = "^24.1.0"
 prometheus-client = "^0.21.0"
 psutil = "^6.1.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+pyjwt = {extras = ["crypto"], version = "^2.9.0"}
+cryptography = "^43.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.12.0"

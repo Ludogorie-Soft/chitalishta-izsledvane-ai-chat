@@ -2,6 +2,85 @@
 
 This document explains how to use the important ingestion, indexing, and vector store management endpoints. The endpoints are ordered as a developer would use them when starting the project for the first time with an empty Chroma database.
 
+## Authentication
+
+### Setup API Authentication (JWT Token)
+
+All Setup API endpoints (ingestion, indexing, vector store management) require JWT token authentication. You must first obtain a JWT token by logging in, then include it in the `Authorization` header with every request.
+
+**Step 1: Login to get JWT token**
+
+```bash
+curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "your_swagger_ui_username",
+    "password": "your_swagger_ui_password"
+  }'
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800
+}
+```
+
+**Important:**
+- Save the `access_token` - it expires in 30 minutes
+- Save the `refresh_token` - use it to get a new access token when it expires
+- Use the same credentials as Swagger UI (`SWAGGER_UI_USERNAME` and `SWAGGER_UI_PASSWORD`)
+
+**Step 2: Use JWT token in requests**
+
+Include the access token in the `Authorization` header:
+
+```bash
+curl -X POST "http://localhost:8000/index/database" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Step 3: Refresh token when expired**
+
+When your access token expires (after 30 minutes), use the refresh token to get a new one:
+
+```bash
+curl -X POST "http://localhost:8000/auth/refresh" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }'
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800
+}
+```
+
+**Error responses:**
+- **401 Unauthorized**: Invalid or expired token
+  ```json
+  {
+    "detail": "Invalid or expired token"
+  }
+  ```
+- **403 Forbidden**: Insufficient permissions (not an administrator)
+  ```json
+  {
+    "detail": "Administrator access required"
+  }
+  ```
+
+**Note:** All Setup API endpoints require administrator role. Only users with administrator privileges can access these endpoints.
+
 ## Workflow Overview
 
 When setting up the project for the first time, follow this sequence:
@@ -46,6 +125,7 @@ Content-Type: application/json
 ```bash
 curl -X POST "http://localhost:8000/ingest/database" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your_jwt_token_here" \
   -d '{"limit": 5}'
 ```
 
@@ -74,6 +154,7 @@ Content-Type: application/json
 ```bash
 curl -X POST "http://localhost:8000/ingest/analysis-document" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your_jwt_token_here" \
   -d '{"document_name": "Chitalishta_demo_ver2.docx"}'
 ```
 
@@ -117,10 +198,12 @@ POST /index/database?region=Пловдив&year=2023&limit=100
 **Example:**
 ```bash
 # Index all documents
-curl -X POST "http://localhost:8000/index/database"
+curl -X POST "http://localhost:8000/index/database" \
+  -H "Authorization: Bearer your_jwt_token_here"
 
 # Index with filters
-curl -X POST "http://localhost:8000/index/database?region=Пловдив&year=2023&limit=100"
+curl -X POST "http://localhost:8000/index/database?region=Пловдив&year=2023&limit=100" \
+  -H "Authorization: Bearer your_jwt_token_here"
 ```
 
 **Note:** This endpoint:
@@ -161,6 +244,7 @@ Content-Type: application/json
 ```bash
 curl -X POST "http://localhost:8000/index/analysis-document" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your_jwt_token_here" \
   -d '{"document_name": "Chitalishta_demo_ver2.docx"}'
 ```
 
@@ -201,7 +285,8 @@ GET /index/stats
 
 **Example:**
 ```bash
-curl -X GET "http://localhost:8000/index/stats"
+curl -X GET "http://localhost:8000/index/stats" \
+  -H "Authorization: Bearer your_jwt_token_here"
 ```
 
 **Use Case:** Verify indexing was successful and see the distribution of documents by source.
@@ -230,7 +315,8 @@ GET /vector-store/status
 
 **Example:**
 ```bash
-curl -X GET "http://localhost:8000/vector-store/status"
+curl -X GET "http://localhost:8000/vector-store/status" \
+  -H "Authorization: Bearer your_jwt_token_here"
 ```
 
 **Use Case:** Health check to verify Chroma is operational and see where data is stored.
@@ -263,7 +349,8 @@ POST /vector-store/clear
 
 **Example:**
 ```bash
-curl -X POST "http://localhost:8000/vector-store/clear"
+curl -X POST "http://localhost:8000/vector-store/clear" \
+  -H "Authorization: Bearer your_jwt_token_here"
 ```
 
 **Use Case:**
@@ -295,7 +382,8 @@ POST /vector-store/reset
 
 **Example:**
 ```bash
-curl -X POST "http://localhost:8000/vector-store/reset"
+curl -X POST "http://localhost:8000/vector-store/reset" \
+  -H "Authorization: Bearer your_jwt_token_here"
 ```
 
 **Use Case:**
@@ -311,29 +399,36 @@ curl -X POST "http://localhost:8000/vector-store/reset"
 
 When starting with an empty Chroma database:
 
-1. **Preview (optional):**
+1. **Login to get JWT token:**
    ```bash
-   POST /ingest/database?limit=5          # Preview database records
-   POST /ingest/analysis-document         # Preview analysis document chunks
+   POST /auth/login                        # Get access and refresh tokens
    ```
 
-2. **Index:**
+2. **Preview (optional):**
    ```bash
-   POST /index/database                    # Index all database records
-   POST /index/analysis-document           # Index analysis document
+   POST /ingest/database?limit=5          # Preview database records (requires JWT)
+   POST /ingest/analysis-document         # Preview analysis document chunks (requires JWT)
    ```
 
-3. **Verify:**
+3. **Index:**
    ```bash
-   GET /index/stats                        # Check what was indexed
-   GET /vector-store/status                # Verify Chroma is working
+   POST /index/database                    # Index all database records (requires JWT)
+   POST /index/analysis-document           # Index analysis document (requires JWT)
    ```
 
-4. **If needed, reset and re-index:**
+4. **Verify:**
    ```bash
-   POST /vector-store/clear                # Clear all documents
+   GET /index/stats                        # Check what was indexed (requires JWT)
+   GET /vector-store/status                # Verify Chroma is working (requires JWT)
+   ```
+
+5. **If needed, reset and re-index:**
+   ```bash
+   POST /vector-store/clear                # Clear all documents (requires JWT)
    # Then re-run indexing endpoints
    ```
+
+**Note:** All Setup API endpoints require JWT authentication. Include `Authorization: Bearer <token>` header in all requests.
 
 ---
 

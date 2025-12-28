@@ -13,6 +13,7 @@ from app.api.schemas import (
     IngestionPreviewRequest,
     IngestionPreviewResponse,
 )
+from app.core.auth import CurrentUser, require_administrator
 from app.db.database import get_db
 from app.services.assembly import DocumentAssemblyService
 from app.services.document_processor import DocumentProcessor
@@ -23,6 +24,7 @@ router = APIRouter(prefix="/ingest", tags=["Setup API"])
 @router.post("/database", response_model=IngestionPreviewResponse)
 async def preview_ingestion(
     request: IngestionPreviewRequest,
+    current_user: CurrentUser = Depends(require_administrator),
     db: Session = Depends(get_db),
 ):
     """
@@ -75,7 +77,10 @@ async def preview_ingestion(
 
 
 @router.post("/analysis-document", response_model=AnalysisDocumentIngestionResponse)
-async def ingest_analysis_document(request: AnalysisDocumentIngestionRequest):
+async def ingest_analysis_document(
+    request: AnalysisDocumentIngestionRequest,
+    current_user: CurrentUser = Depends(require_administrator),
+):
     """
     Ingest an analysis document into the system.
 

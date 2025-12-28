@@ -1,13 +1,16 @@
 """API endpoints for vector store management."""
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from app.core.auth import CurrentUser, require_administrator
 from app.rag.vector_store import ChromaVectorStore
 
 router = APIRouter(prefix="/vector-store", tags=["Setup API"])
 
 
 @router.get("/status")
-async def get_vector_store_status():
+async def get_vector_store_status(
+    current_user: CurrentUser = Depends(require_administrator),
+):
     """
     Get vector store infrastructure status and health information, including collection name, document count, and storage path.
 
@@ -34,7 +37,9 @@ async def get_vector_store_status():
 
 
 @router.post("/clear")
-async def clear_vector_store():
+async def clear_vector_store(
+    current_user: CurrentUser = Depends(require_administrator),
+):
     """
     Clear all documents from the vector store collection.
 
@@ -58,7 +63,9 @@ async def clear_vector_store():
 
 
 @router.post("/reset")
-async def reset_vector_store():
+async def reset_vector_store(
+    current_user: CurrentUser = Depends(require_administrator),
+):
     """
     Reset the entire vector store collection.
 

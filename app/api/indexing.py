@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.schemas import AnalysisDocumentIngestionRequest
+from app.core.auth import CurrentUser, require_administrator
 from app.db.database import get_db
 from app.rag.indexing import IndexingService
 
@@ -19,6 +20,7 @@ async def index_database_documents(
     year: Optional[int] = None,
     limit: Optional[int] = None,
     offset: int = 0,
+    current_user: CurrentUser = Depends(require_administrator),
     db: Session = Depends(get_db),
 ):
     """
@@ -67,7 +69,10 @@ async def index_database_documents(
 
 
 @router.post("/analysis-document")
-async def index_analysis_document(request: AnalysisDocumentIngestionRequest):
+async def index_analysis_document(
+    request: AnalysisDocumentIngestionRequest,
+    current_user: CurrentUser = Depends(require_administrator),
+):
     """
     Index an analysis document into the vector store.
 
@@ -110,7 +115,9 @@ async def index_analysis_document(request: AnalysisDocumentIngestionRequest):
 
 
 @router.get("/stats")
-async def get_index_stats():
+async def get_index_stats(
+    current_user: CurrentUser = Depends(require_administrator),
+):
     """
     Get detailed statistics about indexed documents, including total count and breakdown by source (database vs analysis document).
 

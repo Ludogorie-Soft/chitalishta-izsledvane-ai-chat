@@ -4,7 +4,7 @@ import asyncio
 from typing import AsyncGenerator
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
@@ -16,6 +16,8 @@ from app.api.chat_schemas import (
     ChatRequest,
     ChatResponse,
 )
+from app.core.auth import verify_api_key
+from app.core.config import settings
 from app.db.database import get_db
 from app.rag.chat_memory import get_chat_memory
 from app.rag.hallucination_control import HallucinationConfig, HallucinationMode
@@ -38,6 +40,7 @@ router = APIRouter(prefix="/chat", tags=["Public API"])
 async def chat(
     request: ChatRequest,
     http_request: Request,
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
     db: Session = Depends(get_db),
 ):
     """
@@ -55,6 +58,9 @@ async def chat(
     Returns:
         ChatResponse with answer, metadata, and execution details
     """
+    # Verify API key
+    verify_api_key(x_api_key)
+
     # Get request ID from middleware
     request_id = getattr(http_request.state, "request_id", None)
     if not request_id:
@@ -300,7 +306,10 @@ async def chat(
 
 @router.post("/stream")
 async def chat_stream(
-    request: ChatRequest, http_request: Request, db: Session = Depends(get_db)
+    request: ChatRequest,
+    http_request: Request,
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+    db: Session = Depends(get_db),
 ):
     """
     Streaming chat endpoint using Server-Sent Events (SSE).
@@ -313,6 +322,9 @@ async def chat_stream(
     Returns:
         StreamingResponse with SSE format
     """
+    # Verify API key
+    verify_api_key(x_api_key)
+
     # Get user agent
     user_agent = http_request.headers.get("user-agent")
 
@@ -464,7 +476,10 @@ async def chat_stream(
 
 
 @router.post("/history", response_model=ChatHistoryResponse)
-async def get_chat_history(request: ChatHistoryRequest):
+async def get_chat_history(
+    request: ChatHistoryRequest,
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+):
     """
     Get chat history for a conversation.
 
@@ -474,6 +489,9 @@ async def get_chat_history(request: ChatHistoryRequest):
     Returns:
         ChatHistoryResponse with conversation messages
     """
+    # Verify API key
+    verify_api_key(x_api_key)
+
     try:
         memory = get_chat_memory()
 
@@ -509,7 +527,10 @@ async def get_chat_history(request: ChatHistoryRequest):
 
 
 @router.delete("/history/{conversation_id}")
-async def delete_chat_history(conversation_id: str):
+async def delete_chat_history(
+    conversation_id: str,
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+):
     """
     Delete chat history for a conversation.
 
@@ -519,6 +540,9 @@ async def delete_chat_history(conversation_id: str):
     Returns:
         Success message
     """
+    # Verify API key
+    verify_api_key(x_api_key)
+
     try:
         memory = get_chat_memory()
 
