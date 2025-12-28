@@ -8,7 +8,7 @@ from app.api.schemas import AnalysisDocumentIngestionRequest
 from app.db.database import get_db
 from app.rag.indexing import IndexingService
 
-router = APIRouter(prefix="/index", tags=["indexing"])
+router = APIRouter(prefix="/index", tags=["Setup API"])
 
 
 @router.post("/database")

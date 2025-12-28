@@ -14,7 +14,7 @@ from app.api.schemas import (
 from app.db.database import get_db
 from app.db.repositories import ChitalishteRepository, InformationCardRepository
 
-router = APIRouter(prefix="/chitalishte", tags=["chitalishte"])
+router = APIRouter(prefix="/chitalishte", tags=["System API"])
 
 
 @router.get("/{chitalishte_id}", response_model=ChitalishteResponse)

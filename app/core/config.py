@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     abuse_max_rapid_requests: int = 10  # Max requests in short time window for DoS detection
     abuse_rapid_requests_window_seconds: int = 5  # Time window for rapid request detection
 
+    # Swagger UI authentication configuration
+    swagger_ui_username: str = ""  # Username for Swagger UI Basic Auth (empty = disabled)
+    swagger_ui_password: str = ""  # Password for Swagger UI Basic Auth (empty = disabled)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -17,7 +17,7 @@ from app.db.database import get_db
 from app.services.assembly import DocumentAssemblyService
 from app.services.document_processor import DocumentProcessor
 
-router = APIRouter(prefix="/ingest", tags=["ingestion"])
+router = APIRouter(prefix="/ingest", tags=["Setup API"])
 
 
 @router.post("/database", response_model=IngestionPreviewResponse)

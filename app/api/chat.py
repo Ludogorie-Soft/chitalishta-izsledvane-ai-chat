@@ -31,7 +31,7 @@ from app.services.rate_limiter import AbuseDetected, RateLimitExceeded, RateLimi
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["Public API"])
 
 
 @router.post("/", response_model=ChatResponse)

@@ -3,7 +3,7 @@ from fastapi import APIRouter
 
 from app.rag.vector_store import ChromaVectorStore
 
-router = APIRouter(prefix="/vector-store", tags=["vector-store"])
+router = APIRouter(prefix="/vector-store", tags=["Setup API"])
 
 
 @router.get("/status")

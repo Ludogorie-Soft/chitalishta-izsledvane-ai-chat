@@ -1,5 +1,6 @@
 """FastAPI middleware for request/response logging and request ID tracking."""
 
+import base64
 import json
 import time
 import uuid
@@ -270,3 +271,69 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
 
         finally:
             db.close()
+
+
+class SwaggerUIAuthMiddleware(BaseHTTPMiddleware):
+    """Middleware to protect Swagger UI with HTTP Basic Authentication."""
+
+    # Endpoints that require Swagger UI authentication
+    PROTECTED_ENDPOINTS = ["/docs", "/redoc", "/openapi.json"]
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """
+        Check HTTP Basic Authentication for Swagger UI endpoints.
+
+        Args:
+            request: FastAPI request object
+            call_next: Next middleware/route handler
+
+        Returns:
+            Response (401 if unauthorized, or normal response)
+        """
+        # Only apply to Swagger UI endpoints
+        if request.url.path not in self.PROTECTED_ENDPOINTS:
+            return await call_next(request)
+
+        # Check if Swagger UI auth is enabled
+        if not settings.swagger_ui_username or not settings.swagger_ui_password:
+            # Auth is disabled, allow access
+            return await call_next(request)
+
+        # Check for Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return self._unauthorized_response()
+
+        # Parse Basic Auth
+        try:
+            # Remove "Basic " prefix
+            if not auth_header.startswith("Basic "):
+                return self._unauthorized_response()
+
+            # Decode base64 credentials
+            encoded_credentials = auth_header[6:]  # Remove "Basic "
+            decoded_credentials = base64.b64decode(encoded_credentials).decode("utf-8")
+            username, password = decoded_credentials.split(":", 1)
+
+            # Verify credentials
+            if (
+                username == settings.swagger_ui_username
+                and password == settings.swagger_ui_password
+            ):
+                # Authentication successful
+                return await call_next(request)
+            else:
+                return self._unauthorized_response()
+
+        except Exception as e:
+            logger.debug("swagger_ui_auth_error", error=str(e))
+            return self._unauthorized_response()
+
+    @staticmethod
+    def _unauthorized_response() -> Response:
+        """Return 401 Unauthorized response with WWW-Authenticate header."""
+        return Response(
+            status_code=401,
+            content="Unauthorized",
+            headers={"WWW-Authenticate": "Basic realm=\"Swagger UI\""},
+        )

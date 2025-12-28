@@ -14,7 +14,7 @@ Rules:
 ## Current Status
 - Phase: Phase 8 – Auth & Public Access
 - Current Step: Step 8.1 (Anonymous access) - COMPLETED
-- Next Step: Step 8.2 (Authentication)
+- Next Step: Step 8.2 (Organize Swagger)
 - Blockers: none
 
 ---
@@ -454,7 +454,53 @@ Rules:
 
 ---
 
-## Step 8.2 – Authentication
+## Step 8.2 – Organize Swagger
+- [ ] Implement global Swagger UI authentication:
+  - Add HTTP Basic Authentication middleware to protect `/docs` and `/redoc` endpoints
+  - Require username and password before users can view or interact with Swagger UI
+  - Configure credentials via environment variables (SWAGGER_UI_USERNAME, SWAGGER_UI_PASSWORD)
+  - Apply authentication to both Swagger UI (`/docs`) and ReDoc (`/redoc`) endpoints
+  - Show browser login prompt when accessing Swagger documentation
+- [ ] Organize FastAPI Swagger/OpenAPI documentation into 4 groups:
+  - **Public API** (protected, requires application authentication):
+    - `POST /chat` - Send chat message
+    - `POST /chat/stream` - Streaming chat endpoint
+    - `POST /chat/history` - Get chat history
+    - `DELETE /chat/history/{conversation_id}` - Delete conversation
+    - Note: These endpoints are restricted to the 2 React applications only (not open to general public)
+  - **Admin API** (protected, requires user authentication):
+    - `GET /admin/chat` - List conversations with pagination and filters
+    - `GET /admin/chat/{conversation_id}` - Get conversation details
+  - **Setup API** (protected, requires user authentication):
+    - All endpoints starting with `/ingest` (POST /ingest/database, POST /ingest/analysis-document)
+    - All endpoints starting with `/index` (POST /index/database, POST /index/analysis-document, GET /index/stats)
+    - All endpoints starting with `/vector-store` (GET /vector-store/status, POST /vector-store/clear, POST /vector-store/reset)
+  - **System API** (default group, title: "Chitalishte"):
+    - All other endpoints (GET /chitalishte, GET /chitalishte/{id}, etc.)
+    - Health check endpoints (GET /health, GET /db/ping, GET /metrics)
+- [ ] Use FastAPI's `tags` parameter to group endpoints in Swagger UI
+- [ ] Configure different security schemes for each group:
+  - Public API: Application authentication (API key or similar - to be implemented in Step 8.3)
+    - Restricts access to only the 2 React applications
+    - Prevents unauthorized applications from accessing chat endpoints
+  - Admin API: JWT token authentication (user-based, to be implemented in Step 8.3)
+  - Setup API: JWT token authentication (user-based, to be implemented in Step 8.3)
+  - System API: No authentication required (default)
+- [ ] Update OpenAPI schema to reflect security requirements per group
+- [ ] Test Swagger UI organization and grouping
+
+**Definition of Done**
+- Swagger UI requires username and password authentication before access
+- Both `/docs` and `/redoc` endpoints are protected
+- Swagger UI displays endpoints organized in 4 clear groups
+- Public API endpoints show application authentication requirements
+- Admin and Setup API endpoints show user authentication requirements
+- Security schemes are properly configured (implementation details defined later)
+- All endpoints are correctly categorized
+
+---
+
+## Step 8.3 – Authentication
 - [ ] Signup
 - [ ] Login
 - [ ] User context (optional)

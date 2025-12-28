@@ -19,7 +19,7 @@ from app.db.models import ChatLog
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["Admin API"])
 
 
 def require_administrator(
