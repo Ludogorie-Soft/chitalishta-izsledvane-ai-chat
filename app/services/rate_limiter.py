@@ -1,6 +1,6 @@
 """Rate limiting and abuse protection service."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import structlog
@@ -72,7 +72,7 @@ class RateLimiter:
         if not self.enabled:
             return True, None
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Get or create rate limit state
         state = (
@@ -213,7 +213,7 @@ class RateLimiter:
         if not self.abuse_protection_enabled:
             return
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Check if IP is blocked
         if identifier_type == "ip":
@@ -313,7 +313,7 @@ class RateLimiter:
             reason: Reason for blocking
             details: Additional context
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         blocked_until = now + timedelta(hours=settings.abuse_ip_block_duration_hours)
 
         # Check if IP is already blocked
@@ -403,7 +403,7 @@ class RateLimiter:
         if not self.enabled:
             return
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Clean up old rate limit state (older than 7 days with no recent activity)
         cutoff = now - timedelta(days=7)

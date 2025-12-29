@@ -1,7 +1,7 @@
 """Service for logging chat requests and responses to database."""
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import structlog
@@ -69,7 +69,7 @@ class ChatLogger:
         self._output_format = output_format
         self._client_ip = client_ip
         self._user_agent = user_agent
-        self._request_timestamp = datetime.now()
+        self._request_timestamp = datetime.now(timezone.utc)
 
     def add_llm_operation(
         self,
@@ -91,7 +91,7 @@ class ChatLogger:
         """
         operation = {
             "model": model,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         if input_tokens is not None:
