@@ -81,6 +81,10 @@ def custom_openapi():
     # Organize tags with descriptions
     openapi_schema["tags"] = [
         {
+            "name": "Authentication",
+            "description": "Authentication endpoints for login and token refresh.",
+        },
+        {
             "name": "Public API",
             "description": "Public API endpoints for chat functionality. Requires application authentication (API key). Restricted to authorized React applications only.",
         },
@@ -95,10 +99,6 @@ def custom_openapi():
         {
             "name": "System API",
             "description": "System endpoints for Chitalishte data access, health checks, and metrics. API key authentication required for data endpoints.",
-        },
-        {
-            "name": "Authentication",
-            "description": "Authentication endpoints for login and token refresh.",
         },
     ]
 
