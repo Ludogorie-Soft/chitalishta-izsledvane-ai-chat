@@ -1,7 +1,7 @@
 """Pydantic schemas for admin endpoints."""
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -93,8 +93,8 @@ class ChatLogDetail(BaseModel):
     total_tokens: Optional[int] = Field(None, description="Total tokens used")
     cost_usd: Optional[float] = Field(None, description="Cost in USD")
     llm_model: Optional[str] = Field(None, description="Primary LLM model used")
-    llm_operations: Optional[dict] = Field(
-        None, description="Detailed LLM operations (JSONB)"
+    llm_operations: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Detailed LLM operations (JSONB array)"
     )
     response_metadata: Optional[dict] = Field(
         None, description="Response metadata (routing explanation, etc.)"
