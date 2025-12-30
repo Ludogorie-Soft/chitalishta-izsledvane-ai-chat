@@ -255,13 +255,13 @@ scrape_configs:
 3. Query logs using LogQL:
 ```logql
 # All LLM calls
-{container="chitalishta_ai_chat_app"} |= "llm_start"
+{container="chitalishta_ai_chat_api"} |= "llm_start"
 
 # LLM calls for specific request
-{container="chitalishta_ai_chat_app"} | json | request_id="550e8400-e29b-41d4-a716-446655440000"
+{container="chitalishta_ai_chat_api"} | json | request_id="550e8400-e29b-41d4-a716-446655440000"
 
 # Average LLM latency
-{container="chitalishta_ai_chat_app"} | json | event="llm_end" | unwrap duration_ms | avg()
+{container="chitalishta_ai_chat_api"} | json | event="llm_end" | unwrap duration_ms | avg()
 ```
 
 **Benefits**:

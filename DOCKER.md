@@ -54,7 +54,7 @@ This project uses **two separate docker-compose files** for different use cases:
    docker-compose -f docker-compose.prod.yml up -d
    ```
 
-   **Note**: The production setup uses a pre-built image from Docker Hub (`ludogoriesoft/chitalishta_ai_chat_app:latest`).
+   **Note**: The production setup uses a pre-built image from Docker Hub (`ludogoriesoft/chitalishta_ai_chat_api:latest`).
    No build step is required on the server.
 
 3. **Access the API:**
@@ -78,18 +78,22 @@ This project uses **two separate docker-compose files** for different use cases:
 
 ## Building and Publishing the Docker Image
 
-The production docker-compose file uses a pre-built image from Docker Hub: `ludogoriesoft/chitalishta_ai_chat_app:latest`
+The production docker-compose file uses a pre-built image from Docker Hub: `ludogoriesoft/chitalishta_ai_chat_api:latest`
 
 ### Build and Push to Docker Hub
 
-1. **Build the image:**
+**Important**: If building on Apple Silicon (M1/M2/M3 Mac) for deployment on Linux servers (like AWS EC2), you need to build for the `linux/amd64` platform.
+
+#### Option 1: Build for Linux/AMD64 (Recommended for EC2/AWS)
+
+1. **Build the image for linux/amd64 platform:**
    ```bash
-   docker build -t ludogoriesoft/chitalishta_ai_chat_app:latest .
+   docker build --platform linux/amd64 -t ludogoriesoft/chitalishta_ai_chat_api:latest .
    ```
 
 2. **Tag for specific version (optional):**
    ```bash
-   docker tag ludogoriesoft/chitalishta_ai_chat_app:latest ludogoriesoft/chitalishta_ai_chat_app:v1.0.0
+   docker tag ludogoriesoft/chitalishta_ai_chat_api:latest ludogoriesoft/chitalishta_ai_chat_api:v1.0.0
    ```
 
 3. **Login to Docker Hub:**
@@ -100,11 +104,31 @@ The production docker-compose file uses a pre-built image from Docker Hub: `ludo
 4. **Push to Docker Hub:**
    ```bash
    # Push latest
-   docker push ludogoriesoft/chitalishta_ai_chat_app:latest
+   docker push ludogoriesoft/chitalishta_ai_chat_api:latest
 
    # Push versioned tag (optional)
-   docker push ludogoriesoft/chitalishta_ai_chat_app:v1.0.0
+   docker push ludogoriesoft/chitalishta_ai_chat_api:v1.0.0
    ```
+
+#### Option 2: Build Multi-Architecture Image (Supports both ARM64 and AMD64)
+
+1. **Set up Docker Buildx (if not already set up):**
+   ```bash
+   docker buildx create --use --name multiarch-builder
+   docker buildx inspect --bootstrap
+   ```
+
+2. **Build and push multi-architecture image:**
+   ```bash
+   docker buildx build \
+     --platform linux/amd64,linux/arm64 \
+     -t ludogoriesoft/chitalishta_ai_chat_api:latest \
+     -t ludogoriesoft/chitalishta_ai_chat_api:v1.0.0 \
+     --push \
+     .
+   ```
+
+   This will build for both architectures and push them to Docker Hub in a single command.
 
 ### Using a Specific Version
 
@@ -113,7 +137,7 @@ To use a specific version in production, update `docker-compose.prod.yml`:
 ```yaml
 services:
   app:
-    image: ludogoriesoft/chitalishta_ai_chat_app:v1.0.0  # Use specific version
+    image: ludogoriesoft/chitalishta_ai_chat_api:v1.0.0  # Use specific version
 ```
 
 Or set via environment variable:
@@ -127,8 +151,15 @@ Then update the docker-compose file to use `${IMAGE_TAG:-latest}`.
 ### Building Locally for Testing
 
 If you need to build locally for testing:
+
+**For local development (matches your machine's architecture):**
 ```bash
-docker build -t ludogoriesoft/chitalishta_ai_chat_app:latest .
+docker build -t ludogoriesoft/chitalishta_ai_chat_api:latest .
+```
+
+**For testing EC2 compatibility (linux/amd64):**
+```bash
+docker build --platform linux/amd64 -t ludogoriesoft/chitalishta_ai_chat_api:latest .
 ```
 
 ## Environment Configuration

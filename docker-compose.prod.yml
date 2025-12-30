@@ -12,8 +12,8 @@
 
 services:
   app:
-    image: ludogoriesoft/chitalishta_ai_chat_app:latest
-    container_name: chitalishta_ai_chat_app
+    image: ludogoriesoft/chitalishta_ai_chat_api:latest
+    container_name: chitalishta_ai_chat_api
     ports:
       - "${APP_PORT:-8000}:8000"
     environment:
@@ -74,50 +74,10 @@ services:
       - chitalishta_network
     restart: unless-stopped
 
-  # Optional: TGI service for local LLM
-  # tgi:
-  #   image: ghcr.io/huggingface/text-generation-inference:latest
-  #   platform: linux/amd64
-  #   container_name: chitalishta_tgi
-  #   shm_size: 1g
-  #   ports:
-  #     - "${TGI_PORT:-8080}:80"
-  #   volumes:
-  #     - tgi_model_cache:/data
-  #   environment:
-  #     - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
-  #   command:
-  #     - --model-id
-  #     - ${TGI_MODEL_NAME:-google/gemma-2b-it}
-  #     - --port
-  #     - "80"
-  #     - --max-input-length
-  #     - "1536"
-  #     - --max-total-tokens
-  #     - "2048"
-  #     - --disable-custom-kernels
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 6G
-  #       reservations:
-  #         memory: 4G
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #     start_period: 180s
-  #   restart: unless-stopped
-  #   networks:
-  #     - chitalishta_network
-  #   depends_on:
-  #     - app
 
 volumes:
   chitalishta-crawler_pg_data_chitalishta:
   chroma_db_data:
-  # tgi_model_cache:
 
 networks:
   chitalishta_network:

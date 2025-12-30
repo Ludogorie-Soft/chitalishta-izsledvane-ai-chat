@@ -7,7 +7,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: chitalishta_ai_chat_app
+    container_name: chitalishta_ai_chat_api
     ports:
       - "8000:8000"
     environment:
