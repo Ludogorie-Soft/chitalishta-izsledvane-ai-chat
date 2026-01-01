@@ -27,28 +27,6 @@ except ImportError as _e:  # pragma: no cover - guarded by tests
 else:
     _LLM_IMPORT_ERROR = None
 
-# Try to import Hugging Face support
-_HUGGINGFACE_PACKAGE = None
-try:
-    from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
-    _HUGGINGFACE_AVAILABLE = True
-    _HUGGINGFACE_PACKAGE = "langchain_huggingface"
-    logger.debug("Using langchain_huggingface package for Hugging Face support")
-except ImportError as e:
-    logger.debug(f"Failed to import from langchain_huggingface: {e}")
-    try:
-        from langchain_community.chat_models import ChatHuggingFace
-        from langchain_community.llms import HuggingFacePipeline
-        _HUGGINGFACE_AVAILABLE = True
-        _HUGGINGFACE_PACKAGE = "langchain_community"
-        logger.debug("Using langchain_community package for Hugging Face support (fallback)")
-    except ImportError as e2:
-        logger.debug(f"Failed to import from langchain_community: {e2}")
-        ChatHuggingFace = None  # type: ignore[assignment]
-        HuggingFacePipeline = None  # type: ignore[assignment]
-        _HUGGINGFACE_AVAILABLE = False
-
-
 class LLMIntentSchema(BaseModel):
     """
     Pydantic schema used for LangChain structured output.
@@ -129,13 +107,13 @@ class LLMIntentClassifier:
             ]
         )
 
-        # Try to use structured output if supported (OpenAI, some Hugging Face models)
+        # Try to use structured output if supported (OpenAI)
         # Otherwise, we'll parse JSON from the response
         try:
             structured_llm = llm.with_structured_output(LLMIntentSchema)
             return prompt | structured_llm
         except (AttributeError, NotImplementedError, TypeError):
-            # Fallback: parse JSON from text response (for Hugging Face models without structured output)
+            # Fallback: parse JSON from text response
             # Use RunnableLambda to properly wrap the parsing function
             return prompt | llm | RunnableLambda(self._parse_json_response)
 
@@ -265,16 +243,13 @@ def get_default_llm() -> BaseChatModel:
 
     Supports:
     - OpenAI via langchain-openai
-    - Hugging Face via langchain-huggingface or langchain-community (local)
     - TGI (Text Generation Inference) via OpenAI-compatible API (Docker)
     """
     if _LLM_IMPORT_ERROR is not None:
         raise ImportError(
             "LangChain LLM packages are required for get_default_llm.\n"
             "Install them with:\n"
-            "  poetry add langchain langchain-openai\n"
-            "  # OR for Hugging Face:\n"
-            "  poetry add langchain langchain-huggingface"
+            "  poetry add langchain langchain-openai"
         ) from _LLM_IMPORT_ERROR
 
     provider = settings.llm_provider.lower()
@@ -334,100 +309,10 @@ def get_default_llm() -> BaseChatModel:
             timeout=settings.tgi_timeout,
         )
 
-    elif provider == "huggingface":
-        if not _HUGGINGFACE_AVAILABLE or ChatHuggingFace is None:
-            raise ImportError(
-                "Hugging Face LLM support is required. "
-                "Install it with:\n"
-                "  poetry add langchain-community\n"
-                "\n"
-                "Note: langchain-community is already included in your dependencies. "
-                "If you see this error, make sure langchain-community is properly installed."
-            )
-
-        model_name = settings.huggingface_llm_model
-
-        # Log which package we're using
-        logger.info(
-            f"Initializing Hugging Face model '{model_name}' "
-            f"using package: {_HUGGINGFACE_PACKAGE}"
-        )
-
-        # Use different approaches based on which package is available
-        try:
-            if _HUGGINGFACE_PACKAGE == "langchain_huggingface":
-                # langchain_huggingface package - use HuggingFacePipeline directly
-                from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-
-                if HuggingFacePipeline is None:
-                    raise ImportError(
-                        "HuggingFacePipeline is not available. "
-                        "Make sure langchain-huggingface is installed."
-                    )
-
-                # Load model and tokenizer
-                tokenizer = AutoTokenizer.from_pretrained(model_name)
-                model = AutoModelForCausalLM.from_pretrained(model_name)
-
-                # Create pipeline
-                hf_pipeline = pipeline(
-                    "text-generation",
-                    model=model,
-                    tokenizer=tokenizer,
-                    temperature=0.0,
-                    max_new_tokens=512,
-                )
-
-                # Wrap pipeline with HuggingFacePipeline
-                llm = HuggingFacePipeline(pipeline=hf_pipeline)
-
-                # langchain_huggingface supports HuggingFacePipeline directly
-                return ChatHuggingFace(llm=llm)
-            else:
-                # langchain_community - ChatHuggingFace doesn't accept HuggingFacePipeline
-                # We need to use HuggingFaceHub or recommend langchain-huggingface
-                # For local models, langchain-huggingface is recommended
-                raise ValueError(
-                    f"langchain_community.chat_models.ChatHuggingFace doesn't support "
-                    f"local models with HuggingFacePipeline.\n"
-                    f"For local Hugging Face models, please install langchain-huggingface:\n"
-                    f"  poetry add langchain-huggingface\n"
-                    f"\n"
-                    f"Alternatively, you can use HuggingFaceHub (requires API access):\n"
-                    f"  from langchain_community.llms import HuggingFaceHub\n"
-                    f"  llm = HuggingFaceHub(repo_id='{model_name}')\n"
-                    f"  chat_model = ChatHuggingFace(llm=llm)\n"
-                    f"\n"
-                    f"Or use TGI (Text Generation Inference) for local models:\n"
-                    f"  Set LLM_PROVIDER=tgi in your .env file"
-                )
-        except ImportError as e:
-            raise ImportError(
-                f"Missing dependencies for Hugging Face model '{model_name}'. "
-                f"Error: {e}\n"
-                "Install required dependencies:\n"
-                "  poetry add transformers\n"
-                "  # For GPU support (optional, install separately):\n"
-                "  # pip install torch"
-            ) from e
-        except Exception as e:
-            raise ValueError(
-                f"Failed to initialize Hugging Face model '{model_name}'. "
-                f"Error: {e}\n"
-                "Make sure the model name is correct and you have the necessary "
-                "dependencies installed.\n"
-                "You may need to install additional dependencies:\n"
-                "  poetry add transformers\n"
-                "  # For GPU support (optional, install separately):\n"
-                "  # pip install torch\n"
-                "\n"
-                "Note: First run will download the model (may take several minutes)."
-            ) from e
-
     else:
         raise ValueError(
             f"Unsupported LLM provider: {settings.llm_provider}. "
-            "Supported providers: 'openai', 'huggingface', 'tgi'"
+            "Supported providers: 'openai', 'tgi'"
         )
 
 

@@ -13,7 +13,6 @@ sys.path.insert(0, str(project_root))
 
 from app.core.config import settings
 from app.rag.embeddings import (
-    HuggingFaceEmbeddingService,
     OpenAIEmbeddingService,
     get_embedding_service,
 )
@@ -71,40 +70,6 @@ def verify_current_config():
         return False
 
 
-def test_huggingface_embeddings():
-    """Test Hugging Face embedding service."""
-    print("Testing Hugging Face embedding service...")
-    print("-" * 50)
-
-    try:
-        service = HuggingFaceEmbeddingService()
-        print(f"[OK] Model loaded: {service.model_name}")
-        print(f"[OK] Embedding dimension: {service.get_dimension()}")
-
-        # Test single text
-        test_text = "Това е тестов текст на български език."
-        embedding = service.embed_text(test_text)
-        print(f"[OK] Single text embedding: {len(embedding)} dimensions")
-
-        # Test batch
-        test_texts = [
-            "Първи тестов текст.",
-            "Втори тестов текст.",
-            "Трети тестов текст.",
-        ]
-        embeddings = service.embed_texts(test_texts)
-        print(f"[OK] Batch embeddings: {len(embeddings)} texts, {len(embeddings[0])} dimensions each")
-
-        print("\n[SUCCESS] Hugging Face embeddings work correctly!")
-        return True
-
-    except Exception as e:
-        print(f"\n[ERROR] Error: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-
 def test_openai_embeddings():
     """Test OpenAI embedding service (requires API key)."""
     print("\nTesting OpenAI embedding service...")
@@ -151,10 +116,6 @@ def test_embedding_factory():
     print("-" * 50)
 
     try:
-        # Test Hugging Face via factory
-        service_hf = get_embedding_service("huggingface")
-        print(f"[OK] Factory returned HuggingFace service: {type(service_hf).__name__}")
-
         # Test OpenAI via factory (if API key is set)
         try:
             service_openai = get_embedding_service("openai")
@@ -190,9 +151,6 @@ def run_comprehensive_tests():
     print("=" * 50)
 
     results = []
-
-    # Test Hugging Face (should always work, no API key needed)
-    results.append(("Hugging Face", test_huggingface_embeddings()))
 
     # Test OpenAI (requires API key)
     results.append(("OpenAI", test_openai_embeddings()))

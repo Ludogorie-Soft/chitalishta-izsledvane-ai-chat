@@ -103,49 +103,12 @@ class OpenAIEmbeddingService(EmbeddingService):
         return self._dimension
 
 
-class HuggingFaceEmbeddingService(EmbeddingService):
-    """Hugging Face embedding service implementation."""
-
-    def __init__(self, model_name: str = None):
-        """
-        Initialize Hugging Face embedding service.
-
-        Args:
-            model_name: Hugging Face model name. If None, uses config default.
-        """
-        try:
-            from sentence_transformers import SentenceTransformer
-        except ImportError:
-            raise ImportError(
-                "sentence-transformers package is required for Hugging Face embeddings. "
-                "Install it with: poetry add sentence-transformers"
-            )
-
-        self.model_name = model_name or settings.huggingface_model_name
-        self.model = SentenceTransformer(self.model_name)
-        self._dimension = self.model.get_sentence_embedding_dimension()
-
-    def embed_text(self, text: str) -> List[float]:
-        """Generate embedding for a single text using Hugging Face."""
-        embedding = self.model.encode(text, convert_to_numpy=False)
-        return embedding.tolist()
-
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for multiple texts using Hugging Face (batch)."""
-        embeddings = self.model.encode(texts, convert_to_numpy=False)
-        return [emb.tolist() for emb in embeddings]
-
-    def get_dimension(self) -> int:
-        """Get the dimension of Hugging Face embeddings."""
-        return self._dimension
-
-
 def get_embedding_service(provider: str = None) -> EmbeddingService:
     """
     Factory function to get the appropriate embedding service.
 
     Args:
-        provider: Embedding provider name ("openai" or "huggingface").
+        provider: Embedding provider name ("openai").
                   If None, uses config default.
 
     Returns:
@@ -158,12 +121,10 @@ def get_embedding_service(provider: str = None) -> EmbeddingService:
 
     if provider.lower() == "openai":
         return OpenAIEmbeddingService()
-    elif provider.lower() == "huggingface":
-        return HuggingFaceEmbeddingService()
     else:
         raise ValueError(
             f"Unsupported embedding provider: {provider}. "
-            "Supported providers: 'openai', 'huggingface'"
+            "Supported providers: 'openai'"
         )
 
 

@@ -20,20 +20,6 @@ from app.rag.llm_intent_classification import (  # noqa: E402
 # Check which provider is configured
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", getattr(settings, "llm_provider", "openai")).lower()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY".lower())
-HUGGINGFACE_AVAILABLE = False
-
-# Check if Hugging Face support is available
-try:
-    from langchain_huggingface import ChatHuggingFace  # noqa: F401
-
-    HUGGINGFACE_AVAILABLE = True
-except ImportError:
-    try:
-        from langchain_community.chat_models import ChatHuggingFace  # noqa: F401
-
-        HUGGINGFACE_AVAILABLE = True
-    except ImportError:
-        pass
 
 # Skip tests if provider is not configured
 if LLM_PROVIDER == "openai":
@@ -43,16 +29,14 @@ if LLM_PROVIDER == "openai":
             allow_module_level=True,
         )
     pytest.importorskip("langchain_openai")
-elif LLM_PROVIDER == "huggingface":
-    if not HUGGINGFACE_AVAILABLE:
-        pytest.skip(
-            "Hugging Face LLM support is not installed - skipping tests. "
-            "Install with: poetry add langchain-huggingface",
-            allow_module_level=True,
-        )
+elif LLM_PROVIDER == "tgi":
+    pytest.skip(
+        "TGI provider tests not yet implemented - skipping tests.",
+        allow_module_level=True,
+    )
 else:
     pytest.skip(
-        f"Unknown LLM provider: {LLM_PROVIDER}. " "Set LLM_PROVIDER to 'openai' or 'huggingface'.",
+        f"Unknown LLM provider: {LLM_PROVIDER}. " "Set LLM_PROVIDER to 'openai' or 'tgi'.",
         allow_module_level=True,
     )
 

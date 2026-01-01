@@ -7,7 +7,7 @@ RAG (Retrieval-Augmented Generation) system for Bulgarian Chitalishta research d
 - FastAPI
 - PostgreSQL (read-first)
 - LangChain + Chroma
-- Multiple LLMs (OpenAI + Hugging Face)
+- Multiple LLMs (OpenAI + TGI)
 - Bulgarian-only interface
 
 ## Development
@@ -65,16 +65,6 @@ poetry install
    - `text-embedding-3-small` is the default model (cost-effective, 1536 dimensions)
    - Alternative models: `text-embedding-3-large` (3072 dimensions, higher quality)
 
-   **Option 2: Hugging Face Embeddings (No API key required)**
-   ```
-   EMBEDDING_PROVIDER=huggingface
-   HUGGINGFACE_MODEL_NAME=intfloat/multilingual-e5-base
-   ```
-   - No API key required (runs locally)
-   - `intfloat/multilingual-e5-base` is optimized for multilingual text including Bulgarian
-   - 768 dimensions, good quality for Bulgarian language
-   - Alternative models: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (faster, smaller)
-
    **LLM Configuration (for Intent Classification and Chat):**
 
    The system uses an LLM registry that supports task-based model selection. You can configure different models for different tasks:
@@ -103,34 +93,7 @@ poetry install
    - `gpt-4o-mini` is the default model (cost-effective, good quality)
    - Alternative models: `gpt-4o`, `gpt-4-turbo` (higher quality, more expensive)
 
-   **Option 2: Hugging Face LLM (No API key required, runs locally)**
-   ```
-   LLM_PROVIDER=huggingface
-   HUGGINGFACE_LLM_MODEL=HuggingFaceH4/zephyr-7b-beta
-   ```
-   - No API key required (runs locally in the same process)
-   - Default model: `HuggingFaceH4/zephyr-7b-beta` (good multilingual support, no authentication required)
-   - **For gated models** (like Llama): You need to authenticate with Hugging Face:
-     ```bash
-     pip install huggingface_hub
-     huggingface-cli login
-     ```
-     Then set: `HUGGINGFACE_LLM_MODEL=meta-llama/Llama-3.2-3B-Instruct`
-   - `transformers` and `langchain-community` are already included in the project dependencies
-   - **Optional**: For GPU acceleration, install PyTorch separately:
-     ```bash
-     pip install torch
-     ```
-     Note: PyTorch may have Python version compatibility issues with Poetry. Installing it separately with pip usually works better.
-     - For CPU-only: `pip install torch --index-url https://download.pytorch.org/whl/cpu`
-     - For CUDA: `pip install torch --index-url https://download.pytorch.org/whl/cu121`
-   - Alternative models:
-     - `mistralai/Mistral-7B-Instruct-v0.2` (larger, better quality)
-     - `HuggingFaceH4/zephyr-7b-beta` (good multilingual support)
-     - `google/gemma-2b-it` (smaller, faster)
-   - **Note**: Hugging Face models require significant RAM/VRAM. Ensure you have enough resources for the selected model.
-
-   **Option 3: TGI (Text Generation Inference) - Docker-based LLM (Recommended for local development)**
+   **Option 2: TGI (Text Generation Inference) - Docker-based LLM (Recommended for local development)**
    ```
    LLM_PROVIDER=tgi
    TGI_BASE_URL=http://localhost:8080/v1
@@ -141,18 +104,9 @@ poetry install
    - Uses OpenAI-compatible API (seamless integration with LangChain)
    - Default model: `google/gemma-2b-it` (2B params, lightweight, CPU-friendly)
    - **Setup**:
-     1. **Authenticate with Hugging Face** (required for gated models like `google/gemma-2b-it`):
-        - Visit https://huggingface.co/google/gemma-2b-it and accept the model's terms
-        - Go to https://huggingface.co/settings/tokens and create a new token with "Read" permission
-        - Add the token to your `.env` file:
-          ```
-          HUGGING_FACE_HUB_TOKEN=hf_your_token_here
-          ```
-        - Replace `hf_your_token_here` with your actual Hugging Face token
-     2. Start TGI service: `docker-compose up -d tgi`
-     3. Wait for model to load (first start may take 3-5 minutes to download model)
-     4. Check health: `curl http://localhost:8080/health`
-   - **Note**: If you see authentication errors, verify your token is correctly set in `.env` and restart the container: `docker-compose restart tgi`
+     1. Start TGI service: `docker-compose up -d tgi`
+     2. Wait for model to load (first start may take 3-5 minutes to download model)
+     3. Check health: `curl http://localhost:8080/health`
    - **Advantages**:
      - No dependency conflicts (runs in separate container)
      - Faster app restarts (model stays loaded)
@@ -183,9 +137,6 @@ poetry install
 
    # Fallback model for OpenAI (more powerful than default)
    OPENAI_CHAT_MODEL_FALLBACK=gpt-4o
-
-   # Fallback model for Hugging Face (optional, defaults to HUGGINGFACE_LLM_MODEL if empty)
-   HUGGINGFACE_LLM_MODEL_FALLBACK=
    ```
 
    **How it works:**

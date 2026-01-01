@@ -6,7 +6,7 @@ import pytest
 pytest.importorskip("langchain_chroma")
 pytest.importorskip("langchain_core")
 
-from app.rag.embeddings import HuggingFaceEmbeddingService
+from app.rag.embeddings import OpenAIEmbeddingService
 from app.rag.indexing import IndexingService
 from app.rag.langchain_integration import LangChainChromaFactory, get_langchain_retriever
 
@@ -16,9 +16,9 @@ def indexed_test_chroma(test_db_session, test_chroma_vector_store, seeded_test_d
     """
     Prepare a Chroma index with some database documents for LangChain tests.
 
-    Uses the same Hugging Face embedding service as other integration tests.
+    Uses OpenAI embedding service for testing.
     """
-    embedding_service = HuggingFaceEmbeddingService()
+    embedding_service = OpenAIEmbeddingService()
     indexing_service = IndexingService(
         vector_store=test_chroma_vector_store,
         embedding_service=embedding_service,

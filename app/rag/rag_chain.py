@@ -218,12 +218,8 @@ class RAGChainService:
                 # Get fallback model name based on provider
                 if fallback_provider == "openai":
                     fallback_model = settings.openai_chat_model_fallback
-                elif fallback_provider == "huggingface":
-                    fallback_model = (
-                        settings.huggingface_llm_model_fallback
-                        if settings.huggingface_llm_model_fallback
-                        else settings.huggingface_llm_model
-                    )
+                elif fallback_provider == "tgi":
+                    fallback_model = settings.tgi_model_name
                 else:
                     fallback_model = None
 

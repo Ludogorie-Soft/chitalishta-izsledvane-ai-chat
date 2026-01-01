@@ -21,11 +21,6 @@ WORKDIR /app
 # Copy Poetry files
 COPY pyproject.toml poetry.lock* ./
 
-# Install PyTorch CPU-only first (before other packages that depend on it)
-# This prevents installing the full PyTorch with CUDA support (~1.5GB savings)
-# Only install torch - torchvision/torchaudio will be installed if needed by dependencies
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch
-
 # Configure Poetry and install dependencies
 RUN poetry config virtualenvs.create false && \
     poetry install --only=main --no-interaction && \
