@@ -21,9 +21,25 @@ WORKDIR /app
 # Copy Poetry files
 COPY pyproject.toml poetry.lock* ./
 
+# Install PyTorch CPU-only first (before other packages that depend on it)
+# This prevents installing the full PyTorch with CUDA support (~1.5GB savings)
+# Only install torch - torchvision/torchaudio will be installed if needed by dependencies
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch
+
 # Configure Poetry and install dependencies
 RUN poetry config virtualenvs.create false && \
     poetry install --only=main --no-interaction && \
+    # Clean up pip cache
+    pip cache purge && \
+    # Remove Python cache files and .pyc files
+    find /usr/local/lib/python3.13/site-packages -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type f -name "*.pyc" -delete 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type f -name "*.pyo" -delete 2>/dev/null || true && \
+    # Remove test files and documentation from packages (safe to remove)
+    find /usr/local/lib/python3.13/site-packages -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type d -name "test" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type d -name "docs" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type d -name "*.egg" -exec rm -rf {} + 2>/dev/null || true && \
     rm -rf $POETRY_CACHE_DIR
 
 # Production stage
