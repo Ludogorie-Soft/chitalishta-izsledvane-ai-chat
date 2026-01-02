@@ -36,6 +36,12 @@ services:
       TGI_MODEL_NAME: ${TGI_MODEL_NAME:-google/gemma-2b-it}
       TGI_TIMEOUT: ${TGI_TIMEOUT:-30}
       TGI_ENABLED: ${TGI_ENABLED:-true}
+      # JWT configuration
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      JWT_RSA_PRIVATE_KEY: ${JWT_RSA_PRIVATE_KEY:-}
+      JWT_RSA_PUBLIC_KEY: ${JWT_RSA_PUBLIC_KEY:-}
     volumes:
       # Persist Chroma DB data
       - chroma_db_data:/app/chroma_db
