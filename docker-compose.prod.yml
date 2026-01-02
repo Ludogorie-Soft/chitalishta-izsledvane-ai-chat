@@ -8,7 +8,6 @@
 #   - POSTGRES_PASSWORD
 #   - POSTGRES_DB
 #   - OPENAI_API_KEY (if using OpenAI)
-#   - HUGGING_FACE_HUB_TOKEN (if using gated Hugging Face models)
 
 services:
   app:
@@ -26,21 +25,23 @@ services:
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
-      HUGGINGFACE_MODEL_NAME: ${HUGGINGFACE_MODEL_NAME:-intfloat/multilingual-e5-base}
       # LLM configuration
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_PROVIDER_CLASSIFICATION: ${LLM_PROVIDER_CLASSIFICATION:-}
       LLM_PROVIDER_GENERATION: ${LLM_PROVIDER_GENERATION:-}
       LLM_PROVIDER_SYNTHESIS: ${LLM_PROVIDER_SYNTHESIS:-}
       OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
-      HUGGINGFACE_LLM_MODEL: ${HUGGINGFACE_LLM_MODEL:-HuggingFaceH4/zephyr-7b-beta}
       # TGI configuration
       TGI_BASE_URL: ${TGI_BASE_URL:-http://tgi:80/v1}
       TGI_MODEL_NAME: ${TGI_MODEL_NAME:-google/gemma-2b-it}
       TGI_TIMEOUT: ${TGI_TIMEOUT:-30}
       TGI_ENABLED: ${TGI_ENABLED:-true}
-      # Hugging Face token (for gated models)
-      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+      # JWT configuration
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      JWT_RSA_PRIVATE_KEY: ${JWT_RSA_PRIVATE_KEY:-}
+      JWT_RSA_PUBLIC_KEY: ${JWT_RSA_PUBLIC_KEY:-}
     volumes:
       # Persist Chroma DB data
       - chroma_db_data:/app/chroma_db

@@ -24,6 +24,17 @@ COPY pyproject.toml poetry.lock* ./
 # Configure Poetry and install dependencies
 RUN poetry config virtualenvs.create false && \
     poetry install --only=main --no-interaction && \
+    # Clean up pip cache
+    pip cache purge && \
+    # Remove Python cache files and .pyc files
+    find /usr/local/lib/python3.13/site-packages -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type f -name "*.pyc" -delete 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type f -name "*.pyo" -delete 2>/dev/null || true && \
+    # Remove test files and documentation from packages (safe to remove)
+    find /usr/local/lib/python3.13/site-packages -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type d -name "test" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type d -name "docs" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.13/site-packages -type d -name "*.egg" -exec rm -rf {} + 2>/dev/null || true && \
     rm -rf $POETRY_CACHE_DIR
 
 # Production stage

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.api.indexing import router as indexing_router
 from app.db.database import get_db
-from app.rag.embeddings import HuggingFaceEmbeddingService
+from app.rag.embeddings import OpenAIEmbeddingService
 from app.rag.indexing import IndexingService
 
 
@@ -25,7 +25,7 @@ def test_indexing_app(test_db_session, test_chroma_vector_store):
             pass
 
     # Create test indexing service with test vector store
-    embedding_service = HuggingFaceEmbeddingService()
+    embedding_service = OpenAIEmbeddingService()
     test_indexing_service = IndexingService(
         vector_store=test_chroma_vector_store,
         embedding_service=embedding_service,

@@ -2,11 +2,17 @@
 
 This guide explains how to use the Chitalishta RAG System API, with a focus on the chat endpoints.
 
+## API Base URL
+
+The API is accessible at: **https://chat-api.narodnichitalishta.bg**
+
+All endpoints in this guide should be prefixed with this base URL.
+
 ## API Documentation
 
 Access the interactive API documentation:
-- **Swagger UI**: `/docs` (requires authentication - see Swagger UI Authentication below)
-- **ReDoc**: `/redoc` (requires authentication - see Swagger UI Authentication below)
+- **Swagger UI**: https://chat-api.narodnichitalishta.bg/docs (requires authentication - see Swagger UI Authentication below)
+- **ReDoc**: https://chat-api.narodnichitalishta.bg/redoc (requires authentication - see Swagger UI Authentication below)
 
 ## Authentication
 
@@ -20,7 +26,7 @@ All Public API endpoints (chat endpoints) require API key authentication. Includ
 
 **Using the API key:**
 ```bash
-curl -X POST "https://your-api-domain.com/chat/" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -65,7 +71,7 @@ For the first message, **omit** `conversation_id` - the system will create one a
 
 **Request:**
 ```bash
-curl -X POST "https://your-api-domain.com/chat/" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -88,9 +94,12 @@ curl -X POST "https://your-api-domain.com/chat/" \
     "routing_explanation": "RAG intent detected",
     "sql_query": null,
     "rag_metadata": {}
-  }
+  },
+  "structured_output": null
 }
 ```
+
+**Note:** If `output_format` is specified (other than `"text"`), the `structured_output` field will contain formatted data (tables, bullets, statistics).
 
 **Important:** Save the `conversation_id` from the response for follow-up messages.
 
@@ -100,7 +109,7 @@ Use the same `conversation_id` to maintain context across messages.
 
 **Request:**
 ```bash
-curl -X POST "https://your-api-domain.com/chat/" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -119,13 +128,14 @@ The system will include previous messages as context when generating the respons
 | `message` | string | Yes | - | User's message/question in Bulgarian |
 | `conversation_id` | string | No | Auto-created | Conversation ID for maintaining chat history |
 | `mode` | string | No | `"medium"` | Hallucination control mode: `"low"`, `"medium"`, or `"high"` |
+| `output_format` | string | No | `"text"` | Output format: `"text"`, `"table"`, `"bullets"`, or `"statistics"` |
 | `stream` | boolean | No | `false` | Whether to stream the response (not used in `/chat/`, use `/chat/stream` instead) |
 
 #### Response Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `answer` | string | Assistant's answer in Bulgarian |
+| `answer` | string | Assistant's answer in Bulgarian (formatted if `output_format` was specified) |
 | `conversation_id` | string | Conversation ID (use for follow-up messages) |
 | `intent` | string | Detected intent: `"sql"`, `"rag"`, or `"hybrid"` |
 | `routing_confidence` | float | Confidence in intent classification (0.0-1.0) |
@@ -133,6 +143,7 @@ The system will include previous messages as context when generating the respons
 | `sql_executed` | boolean | Whether SQL was executed |
 | `rag_executed` | boolean | Whether RAG was executed |
 | `metadata` | object | Additional metadata (SQL queries, routing explanation, etc.) |
+| `structured_output` | object | Structured output data (tables, bullets, statistics) if `output_format` was specified, otherwise `null` |
 
 ### POST /chat/stream - Streaming Chat Endpoint
 
@@ -140,7 +151,7 @@ Get real-time streaming responses using Server-Sent Events (SSE).
 
 **Request:**
 ```bash
-curl -X POST "https://your-api-domain.com/chat/stream" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/stream" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -169,7 +180,7 @@ Retrieve all messages from a conversation.
 
 **Request:**
 ```bash
-curl -X POST "https://your-api-domain.com/chat/history" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/history" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -208,7 +219,7 @@ Delete a conversation and all its messages.
 
 **Request:**
 ```bash
-curl -X DELETE "https://your-api-domain.com/chat/history/550e8400-e29b-41d4-a716-446655440000" \
+curl -X DELETE "https://chat-api.narodnichitalishta.bg/chat/history/550e8400-e29b-41d4-a716-446655440000" \
   -H "X-API-Key: your_api_key_here"
 ```
 
@@ -219,6 +230,34 @@ curl -X DELETE "https://your-api-domain.com/chat/history/550e8400-e29b-41d4-a716
   "message": "Conversation deleted"
 }
 ```
+
+## Structured Output Formats
+
+The `output_format` parameter allows you to request structured responses:
+
+| Format | Description | Use Case |
+|--------|-------------|----------|
+| `"text"` | Plain text answer (default) | General queries |
+| `"table"` | Formatted table | Statistical data, comparisons |
+| `"bullets"` | Bullet points | Lists, features, summaries |
+| `"statistics"` | Statistical summary | Numerical data, metrics |
+
+**Example:**
+```bash
+# Request table format for statistical data
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
+  -d '{
+    "message": "Колко читалища има по области?",
+    "mode": "low",
+    "output_format": "table"
+  }'
+```
+
+When `output_format` is specified, the response will include:
+- `answer`: The formatted answer (table, bullets, etc.)
+- `structured_output`: Additional structured data with formatting details
 
 ## Hallucination Control Modes
 
@@ -233,7 +272,7 @@ The `mode` parameter controls how strict the AI is with facts:
 **Example:**
 ```bash
 # Strict mode for factual queries
-curl -X POST "https://your-api-domain.com/chat/" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -242,7 +281,7 @@ curl -X POST "https://your-api-domain.com/chat/" \
   }'
 
 # Creative mode for exploratory queries
-curl -X POST "https://your-api-domain.com/chat/" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -258,18 +297,39 @@ curl -X POST "https://your-api-domain.com/chat/" \
 - **New conversation**: Omit `conversation_id` again → Creates a new conversation
 - **Invalid ID**: If you provide a non-existent ID, system creates a new conversation
 
+## Rate Limiting and Abuse Protection
+
+The API implements rate limiting and abuse detection to prevent misuse:
+
+- **Rate Limiting**: Each conversation/session has rate limits to prevent excessive requests
+- **Abuse Detection**: The system monitors for suspicious activity patterns
+
+**Rate Limit Exceeded (429):**
+- If you exceed the rate limit, you'll receive a `429 Too Many Requests` response
+- The response includes a `retry_after` field indicating when you can retry (in seconds)
+- Wait for the specified time before making another request
+
+**Abuse Detected (403):**
+- If suspicious activity is detected, the request will be blocked with a `403 Forbidden` response
+- Contact your system administrator if you believe this is a false positive
+
+**Best Practices:**
+- Don't send requests too rapidly
+- Use conversation IDs to maintain context instead of creating new conversations for each message
+- If you receive a 429 error, implement exponential backoff in your client
+
 ## Complete Example: Multi-Turn Conversation
 
 ```bash
 # 1. First message (no conversation_id)
-curl -X POST "https://your-api-domain.com/chat/" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{"message": "Здравей", "mode": "medium"}'
 # Response includes: "conversation_id": "abc-123"
 
 # 2. Continue conversation (use conversation_id)
-curl -X POST "https://your-api-domain.com/chat/" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -279,7 +339,7 @@ curl -X POST "https://your-api-domain.com/chat/" \
   }'
 
 # 3. Stream response (use same conversation_id)
-curl -X POST "https://your-api-domain.com/chat/stream" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/stream" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{
@@ -289,7 +349,7 @@ curl -X POST "https://your-api-domain.com/chat/stream" \
   }'
 
 # 4. Get conversation history
-curl -X POST "https://your-api-domain.com/chat/history" \
+curl -X POST "https://chat-api.narodnichitalishta.bg/chat/history" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: your_api_key_here" \
   -d '{"conversation_id": "abc-123"}'
@@ -307,6 +367,7 @@ The easiest way to test the API is using the built-in Swagger UI:
 3. **Enter your message:**
    - Leave `conversation_id` empty for first message
    - Select `mode`: `low`, `medium`, or `high`
+   - Select `output_format`: `text`, `table`, `bullets`, or `statistics` (optional)
    - Click "Execute"
 
 4. **Copy the `conversation_id`** from the response for follow-up messages
@@ -343,6 +404,21 @@ The system automatically routes queries to the appropriate pipeline:
 
 **403 Forbidden:**
 - Insufficient permissions (for Admin/Setup APIs)
+- Abuse detected (suspicious activity detected, request blocked)
+
+**404 Not Found:**
+- Conversation not found (when accessing history or deleting conversation)
+
+**429 Too Many Requests:**
+- Rate limit exceeded for the conversation/session
+  ```json
+  {
+    "error": "rate_limit_exceeded",
+    "message": "Превишен е лимитът за заявки за тази сесия. Моля, опитайте отново след 60 секунди.",
+    "retry_after": 60,
+    "limit_type": "session"
+  }
+  ```
 
 **500 Internal Server Error:**
 - LLM service unavailable

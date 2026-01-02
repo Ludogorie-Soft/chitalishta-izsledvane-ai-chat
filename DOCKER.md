@@ -188,7 +188,6 @@ DATABASE_URL=postgresql://myuser:mypassword@db:5432/mydatabase
 
 - **Production**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (or `DATABASE_URL`)
 - `OPENAI_API_KEY`: Required if using OpenAI for embeddings/LLM
-- `HUGGING_FACE_HUB_TOKEN`: Required for gated Hugging Face models
 
 ### Optional Environment Variables
 

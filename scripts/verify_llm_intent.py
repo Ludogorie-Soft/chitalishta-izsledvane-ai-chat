@@ -1,4 +1,4 @@
-"""Script to verify LLM-based intent classification with Hugging Face or OpenAI."""
+"""Script to verify LLM-based intent classification with OpenAI or TGI."""
 import os
 import sys
 from pathlib import Path
@@ -51,20 +51,19 @@ def main():
     provider = settings.llm_provider.lower()
     print(f"\nConfigured LLM Provider: {provider.upper()}")
 
-    if provider == "huggingface":
-        model_name = settings.huggingface_llm_model
-        print(f"Model: {model_name}")
-        print("\n⚠️  Note: First run may take time to download the model.")
-        print("   Subsequent runs will be faster.")
-    elif provider == "openai":
+    if provider == "openai":
         model_name = settings.openai_chat_model
         print(f"Model: {model_name}")
         if not settings.openai_api_key:
             print("\n❌ ERROR: OPENAI_API_KEY is not set in .env file!")
             return 1
+    elif provider == "tgi":
+        model_name = settings.tgi_model_name
+        print(f"Model: {model_name}")
+        print("\n⚠️  Note: TGI service must be running (docker-compose up -d tgi)")
     else:
         print(f"\n❌ ERROR: Unsupported LLM provider: {provider}")
-        print("   Supported providers: 'openai', 'huggingface'")
+        print("   Supported providers: 'openai', 'tgi'")
         return 1
 
     # Try to create classifier
@@ -75,15 +74,8 @@ def main():
     except ImportError as e:
         print(f"\n❌ ERROR: Missing dependencies")
         print(f"   {e}")
-        if provider == "huggingface":
-            print("\n   Install Hugging Face support with:")
-            print("   poetry add transformers")
-            print("   poetry add torch --optional")
-            print("\n   Note: If torch installation fails due to Python version,")
-            print("   you can install it separately: pip install torch")
-        else:
-            print("\n   Install OpenAI support with:")
-            print("   poetry add langchain-openai")
+        print("\n   Install OpenAI support with:")
+        print("   poetry add langchain-openai")
         return 1
     except ValueError as e:
         print(f"\n❌ ERROR: Configuration issue")
@@ -92,12 +84,10 @@ def main():
     except Exception as e:
         print(f"\n❌ ERROR: Failed to initialize LLM")
         print(f"   {e}")
-        if provider == "huggingface":
+        if provider == "tgi":
             print("\n   Common issues:")
-            print("   - Model name might be incorrect")
-            print("   - Insufficient RAM/VRAM for the model")
-            print("   - Missing transformers/torch dependencies")
-            print("\n   Try a smaller model like 'google/gemma-2b-it'")
+            print("   - TGI service not running (docker-compose up -d tgi)")
+            print("   - TGI service not healthy (check: curl http://localhost:8080/health)")
         return 1
 
     # Test queries
@@ -113,8 +103,7 @@ def main():
         ("Опиши как работи читалището", QueryIntent.RAG),
     ]
 
-    print(f"\nRunning {len(test_queries)} test queries...")
-    print("(This may take a while for Hugging Face models on first run)\n")
+    print(f"\nRunning {len(test_queries)} test queries...\n")
 
     results = []
     for i, (query, expected_intent) in enumerate(test_queries, 1):

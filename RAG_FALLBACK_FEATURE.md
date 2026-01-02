@@ -24,9 +24,6 @@ LLM_PROVIDER_FALLBACK=openai
 
 # Fallback model for OpenAI (more powerful than default)
 OPENAI_CHAT_MODEL_FALLBACK=gpt-4o
-
-# Fallback model for Hugging Face (optional, defaults to HUGGINGFACE_LLM_MODEL if empty)
-HUGGINGFACE_LLM_MODEL_FALLBACK=
 ```
 
 ### Example Configuration

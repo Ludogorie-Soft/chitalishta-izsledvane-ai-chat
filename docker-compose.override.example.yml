@@ -6,12 +6,11 @@ services:
   app:
     environment:
       # Override environment variables for local development
-      # Example: Use Hugging Face instead of OpenAI
-      # EMBEDDING_PROVIDER: huggingface
-      # LLM_PROVIDER: huggingface
-
-      # Or use OpenAI with your API key
+      # Example: Use OpenAI with your API key
       # OPENAI_API_KEY: your_key_here
+
+      # Or use TGI for local LLM
+      # LLM_PROVIDER: tgi
 
       # Enable debug mode (if supported)
       # DEBUG: "true"

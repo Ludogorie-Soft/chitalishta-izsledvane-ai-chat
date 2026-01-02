@@ -210,7 +210,7 @@ def test_indexing_app(test_db_session: Session, test_chroma_vector_store):
     from fastapi.testclient import TestClient
 
     from app.api.indexing import router as indexing_router
-    from app.rag.embeddings import HuggingFaceEmbeddingService
+    from app.rag.embeddings import OpenAIEmbeddingService
     from app.rag.indexing import IndexingService
 
     def override_get_db():
@@ -219,8 +219,8 @@ def test_indexing_app(test_db_session: Session, test_chroma_vector_store):
         finally:
             pass  # Session cleanup handled by fixture
 
-    # Create indexing service with test vector store and Hugging Face embeddings
-    embedding_service = HuggingFaceEmbeddingService()
+    # Create indexing service with test vector store and OpenAI embeddings
+    embedding_service = OpenAIEmbeddingService()
     indexing_service = IndexingService(
         vector_store=test_chroma_vector_store,
         embedding_service=embedding_service,

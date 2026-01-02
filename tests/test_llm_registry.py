@@ -170,10 +170,10 @@ class TestLLMRegistry:
             mock_create.return_value = mock_llm
 
             registry = LLMRegistry(default_provider="openai")
-            registry.get_llm(task=LLMTask.GENERATION, provider="huggingface")
+            registry.get_llm(task=LLMTask.GENERATION, provider="tgi")
 
             call_kwargs = mock_create.call_args[1]
-            assert call_kwargs.get("provider") == "huggingface"
+            assert call_kwargs.get("provider") == "tgi"
 
 
 class TestLLMRegistryConvenienceFunctions:

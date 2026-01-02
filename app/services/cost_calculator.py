@@ -19,10 +19,6 @@ PRICING_MODELS: Dict[str, Dict[str, float]] = {
     "text-embedding-3-small": {"input": 0.02, "output": 0.0},
     "text-embedding-3-large": {"input": 0.13, "output": 0.0},
     "text-embedding-ada-002": {"input": 0.10, "output": 0.0},
-    # Hugging Face models (if using API, typically free or very low cost)
-    "HuggingFaceH4/zephyr-7b-beta": {"input": 0.0, "output": 0.0},  # Local/self-hosted
-    "meta-llama/Llama-3.2-3B-Instruct": {"input": 0.0, "output": 0.0},  # Local/self-hosted
-    "google/gemma-2b-it": {"input": 0.0, "output": 0.0},  # Local/self-hosted
     # TGI models (local, no cost)
     "tgi": {"input": 0.0, "output": 0.0},
 }
@@ -51,12 +47,8 @@ def calculate_cost(
 
     # Normalize model name (remove provider prefix if present)
     model_normalized = model.lower()
-    if "/" in model_normalized:
-        # For Hugging Face models, use the full path
-        pass
-    else:
-        # Remove common prefixes
-        model_normalized = model_normalized.replace("openai/", "").replace("openai:", "")
+    # Remove common prefixes
+    model_normalized = model_normalized.replace("openai/", "").replace("openai:", "")
 
     # Try to find pricing for this model
     pricing = PRICING_MODELS.get(model_normalized)
