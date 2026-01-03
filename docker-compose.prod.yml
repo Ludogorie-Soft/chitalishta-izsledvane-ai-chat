@@ -42,6 +42,11 @@ services:
       JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
       JWT_RSA_PRIVATE_KEY: ${JWT_RSA_PRIVATE_KEY:-}
       JWT_RSA_PUBLIC_KEY: ${JWT_RSA_PUBLIC_KEY:-}
+      # CORS configuration
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://chat.narodnichitalishta.bg,http://localhost:5173,http://localhost:5174}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-true}
+      CORS_ALLOW_METHODS: ${CORS_ALLOW_METHODS:-GET,POST,PUT,DELETE,OPTIONS}
+      CORS_ALLOW_HEADERS: ${CORS_ALLOW_HEADERS:-Content-Type,Authorization,X-API-Key}
     volumes:
       # Persist Chroma DB data
       - chroma_db_data:/app/chroma_db
@@ -74,6 +79,23 @@ services:
     networks:
       - chitalishta_network
     restart: unless-stopped
+
+  frontend:
+    image: ludogoriesoft/chitalishta_ai_chat_fe:latest
+    container_name: chitalishta_ai_chat_fe
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    # Note: Environment variables (VITE_API_BASE_URL, VITE_API_KEY) are typically
+    # baked into the Docker image at build time. If you need to override them,
+    # rebuild the image with the desired values.
+    # The frontend expects:
+    # - VITE_API_BASE_URL: Backend API URL (e.g., https://chat-api.narodnichitalishta.bg)
+    # - VITE_API_KEY: API key for chat endpoints (must match backend API_KEY)
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - chitalishta_network
 
 
 volumes:
