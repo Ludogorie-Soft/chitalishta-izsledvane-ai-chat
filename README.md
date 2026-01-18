@@ -36,11 +36,17 @@ poetry install
    **Note**: For local development, the FastAPI app runs directly on your machine (not in Docker).
    For production deployment, use `docker-compose -f docker-compose.prod.yml` (see `DOCKER.md` for details).
 
-3. Initialize database schema (if using a fresh database):
+3. Initialize database schema:
+
+   **For a fresh database (creates all tables):**
    ```bash
    poetry run python scripts/init_db.py
    ```
-   Note: If you're reusing an existing database with data, skip this step.
+
+   **If you already have data tables (chitalishta, municipalities, etc.) and only need application tables:**
+   ```bash
+   poetry run python scripts/init_db_additional_tables.py
+   ```
 
 4. Configure environment variables:
    - Copy `.env.example` to `.env` (if it doesn't exist)

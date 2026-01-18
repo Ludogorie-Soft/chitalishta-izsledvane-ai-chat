@@ -1,4 +1,5 @@
 """Semantic transformation service - converts DB data to Bulgarian narrative text."""
+
 from typing import Optional
 
 
@@ -9,185 +10,170 @@ class SemanticTransformationService:
         """Initialize the semantic transformation service."""
         pass
 
-    def transform_chitalishte_to_text(self, chitalishte_data: dict) -> str:
+    def transform_chitalishta_to_text(self, chitalishta_data: dict) -> str:
         """
-        Transform Chitalishte data dictionary to Bulgarian narrative text.
+        Transform Chitalishta data dictionary to Bulgarian narrative text.
 
         Args:
-            chitalishte_data: Dictionary containing Chitalishte data
+            chitalishta_data: Dictionary containing Chitalishta data
 
         Returns:
-            Bulgarian narrative text describing the Chitalishte
+            Bulgarian narrative text describing the Chitalishta
         """
         parts = []
 
         # Basic information
-        if chitalishte_data.get("name"):
-            parts.append(f"Читалище: {chitalishte_data['name']}")
+        if chitalishta_data.get("name"):
+            parts.append(f"Читалище: {chitalishta_data['name']}")
 
-        if chitalishte_data.get("registration_number"):
-            parts.append(
-                f"Регистрационен номер: {chitalishte_data['registration_number']}"
-            )
+        if chitalishta_data.get("reg_n"):
+            parts.append(f"Регистрационен номер: {chitalishta_data['reg_n']}")
 
         # Location information
         location_parts = []
-        if chitalishte_data.get("region"):
-            location_parts.append(f"област {chitalishte_data['region']}")
-        if chitalishte_data.get("municipality"):
-            location_parts.append(f"община {chitalishte_data['municipality']}")
-        if chitalishte_data.get("town"):
-            location_parts.append(f"град {chitalishte_data['town']}")
-        if chitalishte_data.get("address"):
-            location_parts.append(f"адрес: {chitalishte_data['address']}")
+        if chitalishta_data.get("town"):
+            location_parts.append(f"град {chitalishta_data['town']}")
+        if chitalishta_data.get("village_city"):
+            location_parts.append(f"тип: {chitalishta_data['village_city']}")
+        if chitalishta_data.get("address"):
+            location_parts.append(f"адрес: {chitalishta_data['address']}")
+        if chitalishta_data.get("settlement_norm"):
+            location_parts.append(f"населено място: {chitalishta_data['settlement_norm']}")
 
         if location_parts:
             parts.append(f"Локация: {', '.join(location_parts)}")
 
         # Status
-        if chitalishte_data.get("status"):
-            parts.append(f"Статус: {chitalishte_data['status']}")
+        # Note: status is in year_data, not in chitalishta table
 
         # Contact information
         contact_parts = []
-        if chitalishte_data.get("chairman"):
-            contact_parts.append(f"председател: {chitalishte_data['chairman']}")
-        if chitalishte_data.get("secretary"):
-            contact_parts.append(f"секретар: {chitalishte_data['secretary']}")
-        if chitalishte_data.get("phone"):
-            contact_parts.append(f"телефон: {chitalishte_data['phone']}")
-        if chitalishte_data.get("email"):
-            contact_parts.append(f"имейл: {chitalishte_data['email']}")
+        if chitalishta_data.get("phone"):
+            contact_parts.append(f"телефон: {chitalishta_data['phone']}")
 
         if contact_parts:
             parts.append(f"Контакти: {', '.join(contact_parts)}")
 
         # Additional information
-        if chitalishte_data.get("bulstat"):
-            parts.append(f"БУЛСТАТ: {chitalishte_data['bulstat']}")
+        if chitalishta_data.get("is_munip_center"):
+            parts.append(f"Общински център: {chitalishta_data['is_munip_center']}")
 
-        if chitalishte_data.get("chitalishta_url"):
-            parts.append(f"Уебсайт на читалището: {chitalishte_data['chitalishta_url']}")
-
-        if chitalishte_data.get("url_to_libraries_site"):
-            parts.append(
-                f"Връзка към сайта на библиотеките: {chitalishte_data['url_to_libraries_site']}"
-            )
+        if chitalishta_data.get("empl_category"):
+            parts.append(f"Категория на служителите: {chitalishta_data['empl_category']}")
 
         return ". ".join(parts) + "."
 
-    def transform_information_card_to_text(
-        self, card_data: dict, chitalishte_name: Optional[str] = None
+    def transform_chitalishte_year_data_to_text(
+        self, year_data: dict, chitalishta_name: Optional[str] = None
     ) -> str:
         """
-        Transform InformationCard data dictionary to Bulgarian narrative text.
+        Transform ChitalishteYearData dictionary to Bulgarian narrative text.
 
         Args:
-            card_data: Dictionary containing InformationCard data
-            chitalishte_name: Optional name of the Chitalishte for context
+            year_data: Dictionary containing ChitalishteYearData
+            chitalishta_name: Optional name of the Chitalishta for context
 
         Returns:
-            Bulgarian narrative text describing the InformationCard
+            Bulgarian narrative text describing the ChitalishteYearData
         """
         parts = []
 
         # Year context
-        year = card_data.get("year")
+        year = year_data.get("year")
         if year:
             parts.append(f"Данни за {year} година")
-        if chitalishte_name:
-            parts.append(f"за читалище {chitalishte_name}")
+        if chitalishta_name:
+            parts.append(f"за читалище {chitalishta_name}")
 
         # Membership information
         membership_parts = []
-        if card_data.get("total_members_count") is not None:
-            count = int(card_data["total_members_count"])
-            membership_parts.append(
-                f"общо {self._format_number(count, 'член', 'члена', 'члена')}"
-            )
-        if card_data.get("new_members") is not None:
-            count = int(card_data["new_members"])
+        if year_data.get("total_members") is not None:
+            count = int(year_data["total_members"])
+            membership_parts.append(f"общо {self._format_number(count, 'член', 'члена', 'члена')}")
+        if year_data.get("new_members") is not None:
+            count = int(year_data["new_members"])
             membership_parts.append(
                 f"{self._format_number(count, 'нов', 'нови', 'нови')} {self._format_number(count, 'член', 'члена', 'члена')}"
             )
-        if card_data.get("membership_applications") is not None:
-            count = int(card_data["membership_applications"])
+        if year_data.get("membership_applications") is not None:
+            count = int(year_data["membership_applications"])
             membership_parts.append(
                 f"{self._format_number(count, 'кандидатура', 'кандидатури', 'кандидатури')} за членство"
             )
-        if card_data.get("rejected_members") is not None:
-            count = int(card_data["rejected_members"])
+        if year_data.get("rejected_applications") is not None:
+            count = int(year_data["rejected_applications"])
             membership_parts.append(
-                f"{self._format_number(count, 'отказан', 'отказани', 'отказани')} {self._format_number(count, 'член', 'члена', 'члена')}"
+                f"{self._format_number(count, 'отказана', 'отказани', 'отказани')} {self._format_number(count, 'кандидатура', 'кандидатури', 'кандидатури')}"
             )
 
         if membership_parts:
             parts.append(f"Членство: {', '.join(membership_parts)}")
 
-        # Employees
+        # Employees/Staff
         employee_parts = []
-        if card_data.get("employees_count") is not None:
-            count = float(card_data["employees_count"])
+        if year_data.get("staff_count") is not None:
+            count = int(year_data["staff_count"])
             employee_parts.append(
-                f"{self._format_decimal(count)} {self._format_number(int(count), 'служител', 'служители', 'служители')}"
+                f"{self._format_number(count, 'служител', 'служители', 'служители')}"
             )
-        if card_data.get("employees_with_higher_education") is not None:
-            count = int(card_data["employees_with_higher_education"])
+        if year_data.get("average_annual_staff") is not None:
+            count = float(year_data["average_annual_staff"])
+            employee_parts.append(f"средногодишен брой: {self._format_decimal(count)}")
+        if year_data.get("staff_higher_edu") is not None:
+            count = int(year_data["staff_higher_edu"])
             employee_parts.append(
                 f"{self._format_number(count, 'с', 'с', 'с')} висше образование: {count}"
             )
-        if card_data.get("employees_specialized") is not None:
-            count = int(card_data["employees_specialized"])
+        if year_data.get("specialized_positions") is not None:
+            count = int(year_data["specialized_positions"])
             employee_parts.append(
-                f"{self._format_number(count, 'специализиран', 'специализирани', 'специализирани')}: {count}"
+                f"{self._format_number(count, 'специализирана', 'специализирани', 'специализирани')} длъжност: {count}"
             )
-        if card_data.get("supporting_employees") is not None:
-            count = int(card_data["supporting_employees"])
+        if year_data.get("support_staff") is not None:
+            count = int(year_data["support_staff"])
             employee_parts.append(
                 f"{self._format_number(count, 'поддържащ', 'поддържащи', 'поддържащи')} персонал: {count}"
+            )
+        if year_data.get("subsidized_staff_count") is not None:
+            count = int(year_data["subsidized_staff_count"])
+            employee_parts.append(
+                f"{self._format_number(count, 'субсидиран', 'субсидирани', 'субсидирани')} персонал: {count}"
             )
 
         if employee_parts:
             parts.append(f"Персонал: {', '.join(employee_parts)}")
 
-        # Subsidiary count
-        if card_data.get("subsidiary_count") is not None:
-            count = float(card_data["subsidiary_count"])
-            parts.append(
-                f"Субсидирана бройка: {self._format_decimal(count)} {self._format_number(int(count), 'бройка', 'бройки', 'бройки')}"
-            )
-
         # Cultural activities
         activity_parts = []
-        if card_data.get("folklore_formations") is not None:
-            count = int(card_data["folklore_formations"])
+        if year_data.get("folklore_groups") is not None:
+            count = int(year_data["folklore_groups"])
             activity_parts.append(
-                f"{self._format_number(count, 'фолклорна', 'фолклорни', 'фолклорни')} формация"
+                f"{self._format_number(count, 'фолклорна', 'фолклорни', 'фолклорни')} група"
             )
-        if card_data.get("theatre_formations") is not None:
-            count = int(card_data["theatre_formations"])
+        if year_data.get("theater_groups") is not None:
+            count = int(year_data["theater_groups"])
             activity_parts.append(
-                f"{self._format_number(count, 'театрална', 'театрални', 'театрални')} формация"
+                f"{self._format_number(count, 'театрална', 'театрални', 'театрални')} група"
             )
-        if card_data.get("vocal_groups") is not None:
-            count = int(card_data["vocal_groups"])
+        if year_data.get("vocal_groups") is not None:
+            count = int(year_data["vocal_groups"])
             activity_parts.append(
                 f"{self._format_number(count, 'вокална', 'вокални', 'вокални')} група"
             )
-        if card_data.get("dancing_groups") is not None:
-            count = int(card_data["dancing_groups"])
+        if year_data.get("dance_groups") is not None:
+            count = int(year_data["dance_groups"])
             activity_parts.append(
                 f"{self._format_number(count, 'танцова', 'танцови', 'танцови')} група"
             )
-        if card_data.get("modern_ballet") is not None:
-            count = int(card_data["modern_ballet"])
+        if year_data.get("classical_dance_groups") is not None:
+            count = int(year_data["classical_dance_groups"])
             activity_parts.append(
-                f"{self._format_number(count, 'модерна', 'модерни', 'модерни')} балетна формация"
+                f"{self._format_number(count, 'класическа', 'класически', 'класически')} танцова група"
             )
-        if card_data.get("amateur_arts") is not None:
-            count = int(card_data["amateur_arts"])
+        if year_data.get("art_clubs") is not None:
+            count = int(year_data["art_clubs"])
             activity_parts.append(
-                f"{self._format_number(count, 'любителска', 'любителски', 'любителски')} художествена формация"
+                f"{self._format_number(count, 'художествен', 'художествени', 'художествени')} клуб"
             )
 
         if activity_parts:
@@ -195,164 +181,184 @@ class SemanticTransformationService:
 
         # Clubs and activities
         club_parts = []
-        if card_data.get("kraeznanie_clubs") is not None:
-            count = int(card_data["kraeznanie_clubs"])
+        if year_data.get("local_history_clubs") is not None:
+            count = int(year_data["local_history_clubs"])
             club_parts.append(
                 f"{self._format_number(count, 'краезначески', 'краезначески', 'краезначески')} клуб"
             )
-        if card_data.get("language_courses") is not None:
-            count = int(card_data["language_courses"])
+        if year_data.get("language_schools") is not None:
+            count = int(year_data["language_schools"])
             club_parts.append(
-                f"{self._format_number(count, 'езиков', 'езикови', 'езикови')} курс"
+                f"{self._format_number(count, 'езикова', 'езикови', 'езикови')} школа"
             )
-        if card_data.get("workshops_clubs_arts") is not None:
-            count = int(card_data["workshops_clubs_arts"])
-            club_parts.append(
-                f"{self._format_number(count, 'ателие', 'ателиета', 'ателиета')} по изкуства"
-            )
-        if card_data.get("other_clubs") is not None:
-            count = int(card_data["other_clubs"])
-            club_parts.append(
-                f"{self._format_number(count, 'друг', 'други', 'други')} клуб"
-            )
+        if year_data.get("other_clubs") is not None:
+            count = int(year_data["other_clubs"])
+            club_parts.append(f"{self._format_number(count, 'друг', 'други', 'други')} клуб")
 
         if club_parts:
             parts.append(f"Клубове и курсове: {', '.join(club_parts)}")
 
-        # Library activity
-        if card_data.get("library_activity") is not None:
-            count = int(card_data["library_activity"])
-            parts.append(
-                f"Библиотечна дейност: {self._format_number(count, 'активност', 'активности', 'активности')}"
+        # Library activity (now TEXT field, not INTEGER)
+        if year_data.get("library_activity"):
+            parts.append(f"Библиотечна дейност: {year_data['library_activity']}")
+
+        # Library statistics
+        library_parts = []
+        if year_data.get("library_units") is not None:
+            count = int(year_data["library_units"])
+            library_parts.append(
+                f"{self._format_number(count, 'библиотечна', 'библиотечни', 'библиотечни')} единица"
             )
+        if year_data.get("library_users") is not None:
+            count = int(year_data["library_users"])
+            library_parts.append(
+                f"{self._format_number(count, 'потребител', 'потребители', 'потребители')}"
+            )
+        if year_data.get("library_users_online") is not None:
+            count = int(year_data["library_users_online"])
+            library_parts.append(f"онлайн потребители: {count}")
+        if year_data.get("borrowed_documents") is not None:
+            count = int(year_data["borrowed_documents"])
+            library_parts.append(f"{self._format_number(count, 'зает', 'заети', 'заети')} документ")
+
+        if library_parts:
+            parts.append(f"Библиотека: {', '.join(library_parts)}")
 
         # Museum collections
-        if card_data.get("museum_collections") is not None:
-            count = int(card_data["museum_collections"])
+        if year_data.get("museum_collections") is not None:
+            count = int(year_data["museum_collections"])
             parts.append(
                 f"Музейни колекции: {self._format_number(count, 'колекция', 'колекции', 'колекции')}"
             )
 
         # Participation
         participation_parts = []
-        if card_data.get("participation_in_events") is not None:
-            count = int(card_data["participation_in_events"])
+        if year_data.get("event_participations") is not None:
+            count = int(year_data["event_participations"])
             participation_parts.append(
                 f"{self._format_number(count, 'участие', 'участия', 'участия')} в събития"
             )
-        if card_data.get("participation_in_trainings") is not None:
-            count = int(card_data["participation_in_trainings"])
+        if year_data.get("training_participation") is not None:
+            count = int(year_data["training_participation"])
             participation_parts.append(
                 f"{self._format_number(count, 'участие', 'участия', 'участия')} в обучения"
             )
-        if card_data.get("projects_participation_leading") is not None:
-            count = int(card_data["projects_participation_leading"])
+        if year_data.get("independent_projects") is not None:
+            count = int(year_data["independent_projects"])
             participation_parts.append(
-                f"{self._format_number(count, 'водещ', 'водещи', 'водещи')} проекти"
+                f"{self._format_number(count, 'независим', 'независими', 'независими')} проект"
             )
-        if card_data.get("projects_participation_partner") is not None:
-            count = int(card_data["projects_participation_partner"])
+        if year_data.get("collaborative_projects") is not None:
+            count = int(year_data["collaborative_projects"])
             participation_parts.append(
-                f"{self._format_number(count, 'партньорски', 'партньорски', 'партньорски')} проекти"
+                f"{self._format_number(count, 'партньорски', 'партньорски', 'партньорски')} проект"
+            )
+        if year_data.get("national_projects") is not None:
+            count = int(year_data["national_projects"])
+            participation_parts.append(
+                f"{self._format_number(count, 'национален', 'национални', 'национални')} проект"
+            )
+        if year_data.get("regional_projects") is not None:
+            count = int(year_data["regional_projects"])
+            participation_parts.append(
+                f"{self._format_number(count, 'регионален', 'регионални', 'регионални')} проект"
+            )
+        if year_data.get("international_projects") is not None:
+            count = int(year_data["international_projects"])
+            participation_parts.append(
+                f"{self._format_number(count, 'международен', 'международни', 'международни')} проект"
             )
 
         if participation_parts:
             parts.append(f"Участие в проекти и събития: {', '.join(participation_parts)}")
 
-        # Special programs
-        special_parts = []
-        if card_data.get("participation_in_live_human_treasures_national") is not None:
-            count = int(card_data["participation_in_live_human_treasures_national"])
-            special_parts.append(
-                f"{self._format_number(count, 'национално', 'национални', 'национални')} участие в програма 'Живи човешки съкровища'"
-            )
-        if card_data.get("participation_in_live_human_treasures_regional") is not None:
-            count = int(card_data["participation_in_live_human_treasures_regional"])
-            special_parts.append(
-                f"{self._format_number(count, 'регионално', 'регионални', 'регионални')} участие в програма 'Живи човешки съкровища'"
-            )
-        if card_data.get("disabilities_and_volunteers") is not None:
-            count = int(card_data["disabilities_and_volunteers"])
-            special_parts.append(
-                f"{self._format_number(count, 'дейност', 'дейности', 'дейности')} за хора с увреждания и доброволци"
-            )
-
-        if special_parts:
-            parts.append(f"Специални програми: {', '.join(special_parts)}")
-
         # Administrative positions
-        if card_data.get("administrative_positions") is not None:
-            count = int(card_data["administrative_positions"])
+        if year_data.get("administrative_positions") is not None:
+            count = int(year_data["administrative_positions"])
             parts.append(
                 f"Административни длъжности: {self._format_number(count, 'длъжност', 'длъжности', 'длъжности')}"
             )
 
-        # Other activities
-        if card_data.get("other_activities") is not None:
-            count = int(card_data["other_activities"])
-            parts.append(
-                f"Други дейности: {self._format_number(count, 'дейност', 'дейности', 'дейности')}"
-            )
+        # Other activities (now TEXT field)
+        if year_data.get("other_activities"):
+            parts.append(f"Други дейности: {year_data['other_activities']}")
 
         # Technology
-        if card_data.get("has_pc_and_internet_services"):
-            parts.append("Има компютри и интернет услуги")
-
-        # Town population context
-        if card_data.get("town_population") is not None:
-            pop = int(card_data["town_population"])
-            parts.append(f"Население на града: {self._format_number(pop, 'жител', 'жители', 'жители')}")
-
-        if card_data.get("town_users") is not None:
-            users = int(card_data["town_users"])
-            parts.append(
-                f"Потребители от града: {self._format_number(users, 'потребител', 'потребители', 'потребители')}"
-            )
+        if year_data.get("internet_access") is not None:
+            count = int(year_data["internet_access"])
+            if count > 0:
+                parts.append("Има интернет достъп")
+        if year_data.get("computerized_workstations") is not None:
+            count = int(year_data["computerized_workstations"])
+            if count > 0:
+                parts.append(
+                    f"Компютризирани работни места: {self._format_number(count, 'място', 'места', 'места')}"
+                )
 
         # Text fields
-        if card_data.get("kraeznanie_clubs_text"):
-            parts.append(f"Краезначески клубове: {card_data['kraeznanie_clubs_text']}")
+        if year_data.get("local_history_clubs_text"):
+            parts.append(f"Краезначески клубове: {year_data['local_history_clubs_text']}")
 
-        if card_data.get("language_courses_text"):
-            parts.append(f"Езикови курсове: {card_data['language_courses_text']}")
+        if year_data.get("language_schools_text"):
+            parts.append(f"Езикови школи: {year_data['language_schools_text']}")
 
-        if card_data.get("museum_collections_text"):
-            parts.append(f"Музейни колекции: {card_data['museum_collections_text']}")
+        if year_data.get("museum_collections_text"):
+            parts.append(f"Музейни колекции: {year_data['museum_collections_text']}")
 
-        if card_data.get("workshops_clubs_arts_text"):
-            parts.append(f"Ателиета по изкуства: {card_data['workshops_clubs_arts_text']}")
+        if year_data.get("art_clubs_text"):
+            parts.append(f"Художествени клубове: {year_data['art_clubs_text']}")
+
+        # Financial data (if available)
+        financial_parts = []
+        if year_data.get("total_income") is not None:
+            income = float(year_data["total_income"])
+            financial_parts.append(f"общ доход: {self._format_decimal(income)} лв")
+        if year_data.get("total_expenditure") is not None:
+            expenditure = float(year_data["total_expenditure"])
+            financial_parts.append(f"общ разход: {self._format_decimal(expenditure)} лв")
+        if year_data.get("profit") is not None:
+            profit = float(year_data["profit"])
+            financial_parts.append(f"печалба: {self._format_decimal(profit)} лв")
+        elif year_data.get("loss") is not None:
+            loss = float(year_data["loss"])
+            financial_parts.append(f"загуба: {self._format_decimal(loss)} лв")
+
+        if financial_parts:
+            parts.append(f"Финанси: {', '.join(financial_parts)}")
 
         return ". ".join(parts) + "."
 
-    def transform_chitalishte_with_cards_to_text(
-        self, chitalishte_data: dict, include_cards: bool = True
+    def transform_chitalishta_with_year_data_to_text(
+        self, chitalishta_data: dict, include_year_data: bool = True
     ) -> str:
         """
-        Transform Chitalishte with InformationCards to Bulgarian narrative text.
+        Transform Chitalishta with ChitalishteYearData to Bulgarian narrative text.
 
         Args:
-            chitalishte_data: Dictionary containing Chitalishte data with information_cards
-            include_cards: Whether to include InformationCard details
+            chitalishta_data: Dictionary containing Chitalishta data with chitalishte_year_data
+            include_year_data: Whether to include ChitalishteYearData details
 
         Returns:
-            Bulgarian narrative text describing the Chitalishte and its cards
+            Bulgarian narrative text describing the Chitalishta and its year data
         """
         parts = []
 
-        # Chitalishte basic info
-        chitalishte_text = self.transform_chitalishte_to_text(chitalishte_data)
-        parts.append(chitalishte_text)
+        # Chitalishta basic info
+        chitalishta_text = self.transform_chitalishta_to_text(chitalishta_data)
+        parts.append(chitalishta_text)
 
-        # Information cards
-        if include_cards and chitalishte_data.get("information_cards"):
-            cards = chitalishte_data["information_cards"]
-            chitalishte_name = chitalishte_data.get("name", "")
+        # Year data
+        if include_year_data and chitalishta_data.get("chitalishte_year_data"):
+            year_data_list = chitalishta_data["chitalishte_year_data"]
+            chitalishta_name = chitalishta_data.get("name", "")
 
             parts.append("\n\nДанни за дейността:")
 
-            for card in cards:
-                card_text = self.transform_information_card_to_text(card, chitalishte_name)
-                parts.append(card_text)
+            for year_data in year_data_list:
+                year_data_text = self.transform_chitalishte_year_data_to_text(
+                    year_data, chitalishta_name
+                )
+                parts.append(year_data_text)
 
         return "\n\n".join(parts)
 
@@ -415,4 +421,3 @@ class SemanticTransformationService:
         text = text.replace(",,", ",")
 
         return text.strip()
-
