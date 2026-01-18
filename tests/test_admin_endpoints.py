@@ -16,6 +16,8 @@ from app.db.models import ChatLog
 @pytest.fixture
 def test_admin_app(test_db_session: Session):
     """Create test FastAPI app with admin router and overridden database dependency."""
+    from app.core.auth import CurrentUser, require_administrator
+
     app = FastAPI()
     app.include_router(admin_router)
 
@@ -25,7 +27,12 @@ def test_admin_app(test_db_session: Session):
         finally:
             pass  # Session cleanup handled by fixture
 
+    # Mock administrator user for tests
+    async def override_require_administrator():
+        return CurrentUser(username="test_admin", role="administrator")
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[require_administrator] = override_require_administrator
     return TestClient(app)
 
 

@@ -16,6 +16,7 @@ def test_indexing_app(test_db_session, test_chroma_vector_store):
     from fastapi.testclient import TestClient
 
     from app.api.indexing import router as indexing_router
+    from app.core.auth import CurrentUser, require_administrator
     from app.db.database import get_db
 
     def override_get_db():
@@ -23,6 +24,10 @@ def test_indexing_app(test_db_session, test_chroma_vector_store):
             yield test_db_session
         finally:
             pass
+
+    # Mock administrator user for tests
+    async def override_require_administrator():
+        return CurrentUser(username="test_admin", role="administrator")
 
     # Create test indexing service with test vector store
     embedding_service = OpenAIEmbeddingService()
@@ -34,8 +39,9 @@ def test_indexing_app(test_db_session, test_chroma_vector_store):
     app = FastAPI()
     app.include_router(indexing_router)
 
-    # Override get_db dependency
+    # Override dependencies
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[require_administrator] = override_require_administrator
 
     return TestClient(app), test_indexing_service
 

@@ -70,8 +70,9 @@ class ChitalishteRepository:
             query = query.filter(Chitalishta.municipality_id == municipality_id)
         if town is not None:
             query = query.filter(Chitalishta.town == town)
-        if status is not None:
-            query = query.filter(Chitalishta.status == status)
+        # Note: Chitalishta model doesn't have a status field
+        # if status is not None:
+        #     query = query.filter(Chitalishta.status == status)
 
         # Year filter requires join with ChitalishteYearData
         if year is not None:
@@ -101,8 +102,9 @@ class ChitalishteRepository:
             query = query.filter(Chitalishta.municipality_id == municipality_id)
         if town is not None:
             query = query.filter(Chitalishta.town == town)
-        if status is not None:
-            query = query.filter(Chitalishta.status == status)
+        # Note: Chitalishta model doesn't have a status field
+        # if status is not None:
+        #     query = query.filter(Chitalishta.status == status)
 
         if year is not None:
             query = (

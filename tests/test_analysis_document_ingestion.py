@@ -13,8 +13,15 @@ DEFAULT_DOCUMENT_NAME = "Chitalishta_demo_ver2.docx"
 @pytest.fixture
 def test_app():
     """Create test FastAPI app for analysis document endpoint."""
+    from app.core.auth import CurrentUser, require_administrator
+
+    # Mock administrator user for tests
+    async def override_require_administrator():
+        return CurrentUser(username="test_admin", role="administrator")
+
     app = FastAPI()
     app.include_router(ingestion_router)
+    app.dependency_overrides[require_administrator] = override_require_administrator
     return TestClient(app)
 
 

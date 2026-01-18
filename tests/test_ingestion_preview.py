@@ -11,9 +11,8 @@ class TestIngestionPreviewBasic:
         [
             ({"limit": 5}, 1),  # No filters
             ({"year": 2023, "limit": 5}, 1),  # Year filter
-            ({"region": "Пловдив", "limit": 5}, 1),  # Region filter
-            ({"status": "Действащо", "limit": 5}, 1),  # Status filter
-            ({"region": "Пловдив", "year": 2023, "limit": 5}, 1),  # Combined filters
+            ({"town": "Пловдив", "limit": 5}, 1),  # Town filter
+            ({"town": "Пловдив", "year": 2023, "limit": 5}, 1),  # Combined filters
         ],
     )
     def test_preview_with_filters(
@@ -112,8 +111,8 @@ class TestIngestionPreviewResponseStructure:
             # Required metadata fields
             required_fields = [
                 "source",
-                "chitalishte_id",
-                "region",
+                "chitalishta_id",
+                "town",
                 "year",
                 "counts",
             ]
@@ -123,7 +122,7 @@ class TestIngestionPreviewResponseStructure:
 
             # Verify types
             assert metadata["source"] == "database"
-            assert isinstance(metadata["chitalishte_id"], int)
+            assert isinstance(metadata["chitalishta_id"], str)
             assert isinstance(metadata["counts"], dict)
 
     def test_size_info_structure(self, test_app: TestClient, seeded_test_data):
@@ -178,11 +177,11 @@ class TestIngestionPreviewDataIntegrity:
 
         documents = data["documents"]
 
-        # Check for duplicates (same chitalishte_id + year combination)
+        # Check for duplicates (same chitalishta_id + year combination)
         seen = set()
         for doc in documents:
             key = (
-                doc["metadata"]["chitalishte_id"],
+                doc["metadata"]["chitalishta_id"],
                 doc["metadata"]["year"],
             )
             assert key not in seen, f"Duplicate document found: {key}"
@@ -191,8 +190,8 @@ class TestIngestionPreviewDataIntegrity:
     @pytest.mark.parametrize(
         "filter_key,filter_value",
         [
-            ("region", "Пловдив"),
-            ("region", "София"),
+            ("town", "Пловдив"),
+            ("town", "София"),
             ("status", "Действащо"),
             ("status", "Закрито"),
             ("year", 2023),
@@ -213,8 +212,8 @@ class TestIngestionPreviewDataIntegrity:
         for doc in data["documents"]:
             if filter_key == "year":
                 assert doc["metadata"]["year"] == filter_value
-            elif filter_key == "region":
-                assert doc["metadata"]["region"] == filter_value
+            elif filter_key == "town":
+                assert doc["metadata"]["town"] == filter_value
             elif filter_key == "status":
                 assert doc["metadata"]["status"] == filter_value
 
@@ -227,10 +226,10 @@ class TestIngestionPreviewDataIntegrity:
         assert response.status_code == 200
         data = response.json()
 
-        # Group by chitalishte_id and year
+        # Group by chitalishta_id and year
         grouped = {}
         for doc in data["documents"]:
-            key = (doc["metadata"]["chitalishte_id"], doc["metadata"]["year"])
+            key = (doc["metadata"]["chitalishta_id"], doc["metadata"]["year"])
             grouped[key] = grouped.get(key, 0) + 1
 
         # Each combination should appear exactly once
@@ -292,10 +291,10 @@ class TestIngestionPreviewEdgeCases:
     @pytest.mark.parametrize(
         "request_body",
         [
-            {"region": "NonExistentRegion", "limit": 5},
+            {"town": "NonExistentTown", "limit": 5},
             {"year": 2099, "limit": 5},  # Future year
             {"year": 1900, "limit": 5},  # Very old year
-            {"region": "Пловдив", "year": 2099, "limit": 5},  # No matching data
+            {"town": "Пловдив", "year": 2099, "limit": 5},  # No matching data
         ],
     )
     def test_filters_with_no_results(
@@ -327,7 +326,7 @@ class TestIngestionPreviewEdgeCases:
         response = test_app.post(
             "/ingest/database",
             json={
-                "region": "Пловдив",
+                "town": "Пловдив",
                 "town": None,
                 "status": "Действащо",
                 "year": 2023,
@@ -340,7 +339,7 @@ class TestIngestionPreviewEdgeCases:
 
         # Verify all filters are applied
         for doc in data["documents"]:
-            assert doc["metadata"]["region"] == "Пловдив"
+            assert doc["metadata"]["town"] == "Пловдив"
             assert doc["metadata"]["status"] == "Действащо"
             assert doc["metadata"]["year"] == 2023
 
