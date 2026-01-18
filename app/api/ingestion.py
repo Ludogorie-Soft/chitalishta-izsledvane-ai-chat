@@ -93,7 +93,7 @@ async def ingest_analysis_document(
     - Step 3: Apply light overlap (10-15% overlap between chunks)
 
     Args:
-        request: Request containing the document name (e.g., "Chitalishta_demo_ver2.docx")
+        request: Request containing the document name (e.g., "Читалищната мрежа в България – анализ през призмата на данните.docx")
 
     Returns:
         Ingestion status, chunk count, and preview of created chunks

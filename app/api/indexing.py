@@ -1,4 +1,5 @@
 """API endpoints for document indexing."""
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/index", tags=["Setup API"])
 
 @router.post("/database")
 async def index_database_documents(
-    region: Optional[str] = None,
+    municipality_id: Optional[str] = None,
     town: Optional[str] = None,
     status: Optional[str] = None,
     year: Optional[int] = None,
@@ -30,7 +31,7 @@ async def index_database_documents(
     and stores them in Chroma for RAG retrieval.
 
     Query Parameters:
-        region: Optional filter by region (case-sensitive, must match database exactly)
+        municipality_id: Optional filter by municipality ID (UUID)
         town: Optional filter by town (case-sensitive, must match database exactly)
         status: Optional filter by status (case-sensitive, must match database exactly)
         year: Optional filter by year
@@ -44,7 +45,7 @@ async def index_database_documents(
         indexing_service = IndexingService()
         stats = indexing_service.index_database_documents(
             db=db,
-            region=region,
+            municipality_id=municipality_id,
             town=town,
             status=status,
             year=year,
@@ -80,7 +81,7 @@ async def index_analysis_document(
     and stores them in Chroma for RAG retrieval.
 
     Args:
-        request: Request containing the document name (e.g., "Chitalishta_demo_ver2.docx")
+        request: Request containing the document name (e.g., "Читалищната мрежа в България – анализ през призмата на данните.docx")
 
     Returns:
         Indexing statistics
@@ -139,4 +140,3 @@ async def get_index_stats(
             "total_documents": 0,
             "source_distribution": {},
         }
-
