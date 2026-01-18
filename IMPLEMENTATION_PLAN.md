@@ -863,3 +863,71 @@ poetry run pytest tests/test_evaluation.py -m ""
 - Admins can add multiple comments to each chat message
 - Feedback and comments are stored in database with timestamps and creator tracking
 - All endpoints are protected (require authentication and administrator role - placeholder for now)
+
+---
+
+# Phase 12 – Database Extensions
+
+## Step 12.1 – New database tables (municipalities, municipality_metrics, municipality_year_data, settlements)
+- [ ] Design schema for `municipalities` table
+- [ ] Design schema for `municipality_metrics` table
+- [ ] Design schema for `municipality_year_data` table
+- [ ] Design schema for `settlements` table
+- [ ] Create `Municipality` SQLAlchemy model
+- [ ] Create `MunicipalityMetric` SQLAlchemy model
+- [ ] Create `MunicipalityYearData` SQLAlchemy model
+- [ ] Create `Settlement` SQLAlchemy model
+- [ ] Define relationships between tables:
+  - municipalities ↔ municipality_metrics
+  - municipalities ↔ municipality_year_data
+  - municipalities ↔ settlements
+  - municipalities ↔ chitalishte
+  - settlements ↔ chitalishte (if applicable)
+- [ ] Create database migration script for all four tables
+- [ ] Add appropriate indexes for common queries on all tables
+- [ ] Add foreign key constraints and other database constraints
+- [ ] Test table creation and relationships
+- [ ] Update repositories if needed for new tables
+
+**Definition of Done**
+- `municipalities` table exists with proper schema
+- `municipality_metrics` table exists with proper schema
+- `municipality_year_data` table exists with proper schema
+- `settlements` table exists with proper schema
+- All four models are available via SQLAlchemy
+- Relationships are properly configured between all tables
+- Migration script successfully creates all tables
+- Indexes support efficient queries on all tables
+- All constraints are enforced at database level
+
+---
+
+## Step 12.2 – SQL agent support for new tables
+- [ ] Add all four new tables (`municipalities`, `municipality_metrics`, `municipality_year_data`, `settlements`) to SQLDatabase `include_tables` list in `sql_agent.py`
+- [ ] Add `custom_table_info` entries for all four new tables with detailed column information
+- [ ] Add `VALID_COLUMNS` entries for all four tables in `SQLValidator.VALID_COLUMNS` dictionary
+- [ ] Add `NULLABLE_COLUMNS` entries if any columns can be NULL (for proper IS NOT NULL filtering)
+- [ ] Update Bulgarian system message (`_get_bulgarian_system_message`) to include instructions about all new tables
+- [ ] Add JOIN relationship instructions:
+  - How to join municipalities with chitalishte
+  - How to join municipality_metrics with municipalities
+  - How to join municipality_year_data with municipalities
+  - How to join settlements with municipalities
+  - How to join settlements with chitalishte (if applicable)
+  - How to join new tables with information_card when needed
+- [ ] Update SQL post-processing logic if needed (e.g., case-insensitive comparisons, NULL handling)
+- [ ] Test SQL agent queries that use each of the new tables individually
+- [ ] Test SQL agent queries that use JOINs between new tables and existing tables
+- [ ] Verify that SQL agent can generate correct queries involving all four new tables
+
+**Definition of Done**
+- SQL agent can query `municipalities` table
+- SQL agent can query `municipality_metrics` table
+- SQL agent can query `municipality_year_data` table
+- SQL agent can query `settlements` table
+- SQL agent can generate JOIN queries between new tables and existing tables (chitalishte, information_card)
+- SQL agent can generate JOIN queries between the new tables themselves
+- Column validation works correctly for all new tables
+- Bulgarian language instructions include guidance for all new tables
+- All SQL queries involving new tables are validated and sanitized correctly
+- Test queries demonstrate successful querying of all new tables individually and in JOINs
