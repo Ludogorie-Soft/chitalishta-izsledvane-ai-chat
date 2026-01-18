@@ -1,4 +1,5 @@
 """Pytest configuration and fixtures for integration tests."""
+
 import os
 from datetime import datetime
 from typing import Generator
@@ -8,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.database import Base, get_db
-from app.db.models import Chitalishte, InformationCard
+from app.db.models import Chitalishta, ChitalishteYearData
 
 
 @pytest.fixture(scope="session")
@@ -239,4 +240,3 @@ def test_indexing_app(test_db_session: Session, test_chroma_vector_store):
     app.dependency_overrides[IndexingServiceType] = get_indexing_service
 
     return TestClient(app)
-

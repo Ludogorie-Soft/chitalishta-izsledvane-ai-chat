@@ -113,112 +113,414 @@ class SQLValidator:
 
     # Valid columns for each table (to prevent hallucinations)
     VALID_COLUMNS = {
-        "chitalishte": {
+        "chitalishta": {
             "id",
-            "registration_number",
-            "created_at",
             "address",
-            "bulstat",
-            "chairman",
-            "chitalishta_url",
-            "email",
-            "municipality",
+            "ekatte_code",
+            "empl_category",
+            "is_munip_center",
+            "mayorality_code",
             "name",
+            "national_list",
             "phone",
-            "region",
-            "secretary",
-            "status",
+            "reg_n",
+            "regional_list",
+            "settlement_norm",
+            "slug",
             "town",
-            "url_to_libraries_site",
+            "uic",
+            "village_city",
+            "municipality_id",
+            "ekatte",
         },
-        "information_card": {
-            "id",
-            "chitalishte_id",
+        "chitalishte_year_data": {
+            "reg_n",
             "year",
-            "created_at",
+            "absolute_liquidity",
+            "accumulated_loss",
+            "accumulated_profit",
             "administrative_positions",
-            "amateur_arts",
-            "dancing_groups",
-            "disabilities_and_volunteers",
-            "employees_count",
-            "employees_specialized",
-            "employees_with_higher_education",
-            "folklore_formations",
-            "kraeznanie_clubs",
-            "language_courses",
+            "art_clubs",
+            "art_clubs_text",
+            "asset_profitability",
+            "assets_per_staff",
+            "average_annual_staff",
+            "borrowed_documents",
+            "cash",
+            "chairman",
+            "classical_dance_groups",
+            "collaborative_projects",
+            "computerized_workstations",
+            "computerized_workstations_alt",
+            "current_assets",
+            "dance_groups",
+            "debt_to_tangible_assets",
+            "disability_work",
+            "equity",
+            "equity_profitability",
+            "event_participations",
+            "external_services_spending",
+            "fast_liquidity",
+            "financial_autonomy",
+            "financial_debt",
+            "fixed_assets",
+            "folklore_groups",
+            "home_visits",
+            "immediate_liquidity",
+            "imposed_sanctions",
+            "income_per_staff",
+            "income_profitability",
+            "independent_projects",
+            "intangible_assets",
+            "international_projects",
+            "internet_access",
+            "investment",
+            "language_schools",
+            "language_schools_text",
+            "liabilities",
+            "liabilities_per_staff",
             "library_activity",
+            "library_staff_higher_edu",
+            "library_staff_secondary_edu",
+            "library_staff_total",
+            "library_staff_training",
+            "library_units",
+            "library_users",
+            "library_users_online",
+            "local_history_clubs",
+            "local_history_clubs_text",
+            "long_term_liabilities",
+            "loss",
+            "material_reserves",
             "membership_applications",
-            "modern_ballet",
             "museum_collections",
+            "museum_collections_text",
+            "national_projects",
+            "net_income",
             "new_members",
+            "newly_acquired",
+            "newly_acquired_alt",
+            "operating_income",
             "other_activities",
             "other_clubs",
-            "participation_in_events",
-            "participation_in_live_human_treasures_national",
-            "participation_in_live_human_treasures_regional",
-            "participation_in_trainings",
-            "projects_participation_leading",
-            "projects_participation_partner",
-            "reg_number",
-            "registration_number",
-            "rejected_members",
-            "subsidiary_count",  # Note: NOT subsidized_count
-            "supporting_employees",
-            "theatre_formations",
-            "total_members_count",
-            "town_population",
-            "town_users",
+            "phone_registry",
+            "profit",
+            "profit_per_staff",
+            "reading_room_visits",
+            "receivables",
+            "regional_projects",
+            "rejected_applications",
+            "secretary",
+            "short_term_liabilities",
+            "short_term_liquidity",
+            "specialized_positions",
+            "staff_count",
+            "staff_expenses",
+            "staff_higher_edu",
+            "status",
+            "subsidized_staff_count",
+            "support_staff",
+            "theater_groups",
+            "total_assets",
+            "total_expenditure",
+            "total_income",
+            "total_members",
+            "total_staff_registry",
+            "trade_price",
+            "training_participation",
+            "turnover_count",
+            "turnover_time",
             "vocal_groups",
-            "workshops_clubs_arts",
-            "has_pc_and_internet_services",
-            "bulstat",
-            "email",
-            "kraeznanie_clubs_text",
-            "language_courses_text",
-            "museum_collections_text",
-            "sanctions_for31and33",
-            "url",
-            "webpage",
-            "workshops_clubs_arts_text",
+            "chitalishte_id",
+        },
+        "municipalities": {
+            "id",
+            "district",
+            "district_code",
+            "migration_coefficient",
+            "mrrb_category",
+            "municipality",
+            "municipality_code",
+            "municipality_norm",
+            "nuts1",
+            "nuts2",
+            "nuts3",
+            "population_over_65_aggregate",
+            "population_under_15_aggregate",
+            "share_bulgarian",
+            "share_others",
+            "share_roma",
+            "share_turkish",
+            "total_chitalishta",
+        },
+        "municipality_metrics": {
+            "id",
+            "additional_positions",
+            "average_insurance_income",
+            "chitalishta_no_training_percent",
+            "chitalishta_per_10k_residents",
+            "chitalishta_per_1k_children_under_15",
+            "chitalishta_per_1k_elderly",
+            "chitalishta_per_1k_kindergarten",
+            "chitalishta_per_1k_students",
+            "city_chitalishta",
+            "expenses_for_salaries_percent",
+            "expenses_other_percent",
+            "revenue_from_other_percent",
+            "revenue_from_rent_percent",
+            "revenue_from_subsidies_percent",
+            "secretaries_count",
+            "secretaries_higher_education_percent",
+            "staff_higher_education_percent",
+            "staff_secondary_education_percent",
+            "state_subsidy_amount",
+            "state_subsidy_per_capita",
+            "total_chitalishta",
+            "total_staff",
+            "unique_employment_contracts",
+            "village_chitalishta",
+            "municipality_id",
+        },
+        "municipality_year_data": {
+            "municipality_code",
+            "year",
+            "additional_positions",
+            "average_insurance_income",
+            "companies_number",
+            "companies_per_capita",
+            "employment_rate",
+            "expenses_salaries_thousands",
+            "expenses_social_security_thousands",
+            "gross_value_added_per_person",
+            "gross_wage_monthly",
+            "hospitals",
+            "kids_kindergartens",
+            "municipality_population",
+            "poor_health",
+            "revenue_from_rent_thousands",
+            "revenue_from_subsidies_thousands",
+            "secretaries_count",
+            "secretaries_higher_education_count",
+            "staff_higher_education_count",
+            "staff_secondary_education_count",
+            "students_number",
+            "students_per_1000",
+            "subsidized_positions",
+            "total_expenses_thousands",
+            "total_revenue_thousands",
+            "total_staff_count",
+            "unemployment_rate",
+            "unemployment_rate_15_29",
+            "unique_employment_contracts",
+            "urban_population_percent",
+            "municipality_id",
+        },
+        "settlements": {
+            "ekatte",
+            "elementary_education",
+            "higher_education",
+            "illiterate",
+            "literate",
+            "no_education",
+            "population_15_64",
+            "population_over_65",
+            "population_under_15",
+            "primary_education",
+            "secondary_education",
+            "settlement_norm",
+            "settlement_population",
+            "village_city",
+            "municipality_code",
         },
     }
 
     # Nullable columns that should be filtered when used in ORDER BY or important queries
     # These are columns that can be NULL and should have IS NOT NULL filter when queried
     NULLABLE_COLUMNS = {
-        "information_card": {
-            "subsidiary_count",
-            "employees_count",
-            "total_members_count",
-            "new_members",
-            "rejected_members",
-            "town_population",
-            "town_users",
+        "chitalishta": {
+            "address",
+            "ekatte_code",
+            "empl_category",
+            "is_munip_center",
+            "mayorality_code",
+            "name",
+            "national_list",
+            "phone",
+            "regional_list",
+            "settlement_norm",
+            "slug",
+            "town",
+            "uic",
+            "village_city",
+            "ekatte",
+        },
+        "chitalishte_year_data": {
+            "absolute_liquidity",
+            "accumulated_loss",
+            "accumulated_profit",
             "administrative_positions",
-            "amateur_arts",
-            "dancing_groups",
-            "disabilities_and_volunteers",
-            "employees_specialized",
-            "employees_with_higher_education",
-            "folklore_formations",
-            "kraeznanie_clubs",
-            "language_courses",
-            "library_activity",
+            "art_clubs",
+            "asset_profitability",
+            "assets_per_staff",
+            "average_annual_staff",
+            "borrowed_documents",
+            "cash",
+            "chairman",
+            "classical_dance_groups",
+            "collaborative_projects",
+            "computerized_workstations",
+            "current_assets",
+            "dance_groups",
+            "debt_to_tangible_assets",
+            "equity",
+            "equity_profitability",
+            "event_participations",
+            "external_services_spending",
+            "fast_liquidity",
+            "financial_autonomy",
+            "financial_debt",
+            "fixed_assets",
+            "folklore_groups",
+            "home_visits",
+            "immediate_liquidity",
+            "imposed_sanctions",
+            "income_per_staff",
+            "income_profitability",
+            "independent_projects",
+            "intangible_assets",
+            "international_projects",
+            "internet_access",
+            "investment",
+            "language_schools",
+            "liabilities",
+            "liabilities_per_staff",
+            "library_staff_higher_edu",
+            "library_staff_secondary_edu",
+            "library_staff_total",
+            "library_staff_training",
+            "library_units",
+            "library_users",
+            "library_users_online",
+            "local_history_clubs",
+            "long_term_liabilities",
+            "loss",
+            "material_reserves",
             "membership_applications",
-            "modern_ballet",
             "museum_collections",
+            "national_projects",
+            "net_income",
+            "new_members",
+            "newly_acquired",
+            "operating_income",
             "other_activities",
             "other_clubs",
-            "participation_in_events",
-            "participation_in_live_human_treasures_national",
-            "participation_in_live_human_treasures_regional",
-            "participation_in_trainings",
-            "projects_participation_leading",
-            "projects_participation_partner",
-            "supporting_employees",
-            "theatre_formations",
+            "profit",
+            "profit_per_staff",
+            "reading_room_visits",
+            "receivables",
+            "regional_projects",
+            "rejected_applications",
+            "secretary",
+            "short_term_liabilities",
+            "short_term_liquidity",
+            "specialized_positions",
+            "staff_count",
+            "staff_expenses",
+            "staff_higher_edu",
+            "status",
+            "subsidized_staff_count",
+            "support_staff",
+            "theater_groups",
+            "total_assets",
+            "total_expenditure",
+            "total_income",
+            "total_members",
+            "total_staff_registry",
+            "trade_price",
+            "training_participation",
+            "turnover_count",
+            "turnover_time",
             "vocal_groups",
-            "workshops_clubs_arts",
+        },
+        "municipalities": {
+            "migration_coefficient",
+            "population_over_65_aggregate",
+            "population_under_15_aggregate",
+            "share_bulgarian",
+            "share_others",
+            "share_roma",
+            "share_turkish",
+            "total_chitalishta",
+        },
+        "municipality_metrics": {
+            "additional_positions",
+            "average_insurance_income",
+            "chitalishta_no_training_percent",
+            "chitalishta_per_10k_residents",
+            "chitalishta_per_1k_children_under_15",
+            "chitalishta_per_1k_elderly",
+            "chitalishta_per_1k_kindergarten",
+            "chitalishta_per_1k_students",
+            "city_chitalishta",
+            "expenses_for_salaries_percent",
+            "expenses_other_percent",
+            "revenue_from_other_percent",
+            "revenue_from_rent_percent",
+            "revenue_from_subsidies_percent",
+            "secretaries_count",
+            "secretaries_higher_education_percent",
+            "staff_higher_education_percent",
+            "staff_secondary_education_percent",
+            "state_subsidy_amount",
+            "state_subsidy_per_capita",
+            "total_chitalishta",
+            "total_staff",
+            "unique_employment_contracts",
+            "village_chitalishta",
+        },
+        "municipality_year_data": {
+            "additional_positions",
+            "average_insurance_income",
+            "companies_number",
+            "companies_per_capita",
+            "employment_rate",
+            "expenses_salaries_thousands",
+            "expenses_social_security_thousands",
+            "gross_value_added_per_person",
+            "gross_wage_monthly",
+            "hospitals",
+            "kids_kindergartens",
+            "municipality_population",
+            "poor_health",
+            "revenue_from_rent_thousands",
+            "revenue_from_subsidies_thousands",
+            "secretaries_count",
+            "secretaries_higher_education_count",
+            "staff_higher_education_count",
+            "staff_secondary_education_count",
+            "students_number",
+            "students_per_1000",
+            "subsidized_positions",
+            "total_expenses_thousands",
+            "total_revenue_thousands",
+            "total_staff_count",
+            "unemployment_rate",
+            "unemployment_rate_15_29",
+            "unique_employment_contracts",
+            "urban_population_percent",
+        },
+        "settlements": {
+            "elementary_education",
+            "higher_education",
+            "illiterate",
+            "literate",
+            "no_education",
+            "population_15_64",
+            "population_over_65",
+            "population_under_15",
+            "primary_education",
+            "secondary_education",
+            "settlement_population",
         },
     }
 
@@ -262,7 +564,11 @@ class SQLValidator:
         # For now, we'll rely on the common mistakes check and schema info
 
         if invalid_columns:
-            return False, f"Invalid column names detected: {', '.join(invalid_columns)}", invalid_columns
+            return (
+                False,
+                f"Invalid column names detected: {', '.join(invalid_columns)}",
+                invalid_columns,
+            )
 
         return True, None, None
 
@@ -287,11 +593,17 @@ class SQLValidator:
             # Use word boundaries to avoid false positives
             pattern = r"\b" + re.escape(keyword) + r"\b"
             if re.search(pattern, sql_upper):
-                return False, f"Dangerous SQL keyword detected: {keyword}. Only SELECT queries are allowed."
+                return (
+                    False,
+                    f"Dangerous SQL keyword detected: {keyword}. Only SELECT queries are allowed.",
+                )
 
         # Ensure it starts with SELECT or WITH (for CTEs)
         if not (sql_upper.startswith("SELECT") or sql_upper.startswith("WITH")):
-            return False, "Query must start with SELECT or WITH (for CTEs). Only read operations are allowed."
+            return (
+                False,
+                "Query must start with SELECT or WITH (for CTEs). Only read operations are allowed.",
+            )
 
         # Check for semicolon injection attempts
         if ";" in sql and sql.count(";") > 1:
@@ -405,118 +717,317 @@ class SQLAgentService:
         # Create SQLDatabase instance (read-only)
         # Add custom instructions with detailed column information to prevent hallucinations
         custom_table_info = {
-            "chitalishte": (
-                "Table: chitalishte\n"
+            "chitalishta": (
+                "Table: chitalishta\n"
                 "COLUMNS (use ONLY these exact column names):\n"
-                "- id (INTEGER, primary key)\n"
-                "- registration_number (INTEGER)\n"
-                "- created_at (TIMESTAMP)\n"
-                "- address (VARCHAR)\n"
-                "- bulstat (VARCHAR)\n"
-                "- chairman (VARCHAR)\n"
-                "- chitalishta_url (VARCHAR)\n"
-                "- email (VARCHAR)\n"
-                "- municipality (VARCHAR)\n"
-                "- name (VARCHAR)\n"
-                "- phone (VARCHAR)\n"
-                "- region (VARCHAR)\n"
-                "- secretary (VARCHAR)\n"
-                "- status (VARCHAR)\n"
-                "- town (VARCHAR)\n"
-                "- url_to_libraries_site (VARCHAR)\n"
+                "- id (UUID, primary key)\n"
+                "- address (VARCHAR 300)\n"
+                "- ekatte_code (VARCHAR 10)\n"
+                "- empl_category (VARCHAR 50)\n"
+                "- is_munip_center (VARCHAR 10)\n"
+                "- mayorality_code (VARCHAR 10)\n"
+                "- name (VARCHAR 200)\n"
+                "- national_list (VARCHAR 500)\n"
+                "- phone (VARCHAR 300)\n"
+                "- reg_n (VARCHAR 50, unique)\n"
+                "- regional_list (VARCHAR 500)\n"
+                "- settlement_norm (VARCHAR 200)\n"
+                "- slug (VARCHAR 255)\n"
+                "- town (VARCHAR 200)\n"
+                "- uic (VARCHAR 50)\n"
+                "- village_city (VARCHAR 20)\n"
+                "- municipality_id (UUID, foreign key to municipalities.id)\n"
+                "- ekatte (VARCHAR 10, foreign key to settlements.ekatte)\n"
                 "\n"
                 "CRITICAL RULES:\n"
                 "1. NEVER invent column names that don't exist in the list above.\n"
-                "2. For text field comparisons (region, town, municipality, status, etc.), "
-                "ALWAYS use case-insensitive comparison:\n"
-                "   - Use ILIKE instead of = (e.g., WHERE region ILIKE 'Враца')\n"
-                "   - OR use LOWER() function: WHERE LOWER(region) = LOWER('Враца')\n"
-                "3. IMPORTANT - The 'town' column contains values like 'ГРАД ВРАЦА' or 'СЕЛО ВРАЦА' "
+                "2. For text field comparisons (town, name, village_city, etc.), ALWAYS use case-insensitive comparison:\n"
+                "   - Use ILIKE instead of = (e.g., WHERE town ILIKE 'Враца')\n"
+                "   - OR use LOWER() function: WHERE LOWER(town) = LOWER('Враца')\n"
+                "3. IMPORTANT - The 'town' column may contain values like 'ГРАД ВРАЦА' or 'СЕЛО ВРАЦА' "
                 "(i.e., 'ГРАД/СЕЛО <name>'), NOT just the town name.\n"
                 "   When filtering by town, ALWAYS use ILIKE with wildcards: WHERE town ILIKE '%Враца%'\n"
                 "   This will match 'ГРАД ВРАЦА', 'СЕЛО ВРАЦА', or just 'ВРАЦА'.\n"
                 "4. When query asks for 'извън град X' (outside city X), use 'town NOT ILIKE' instead of 'town ILIKE'.\n"
-                "5. This table does NOT contain subsidiary_count, subsidized_count, or any count fields.\n"
-                "   Those fields are in the information_card table.\n"
+                "5. To join with chitalishte_year_data: JOIN chitalishte_year_data ON chitalishta.id = chitalishte_year_data.chitalishte_id\n"
+                "6. To join with municipalities: JOIN municipalities ON chitalishta.municipality_id = municipalities.id\n"
+                "7. To join with settlements: JOIN settlements ON chitalishta.ekatte = settlements.ekatte\n"
             ),
-            "information_card": (
-                "Table: information_card\n"
+            "chitalishte_year_data": (
+                "Table: chitalishte_year_data\n"
                 "COLUMNS (use ONLY these exact column names):\n"
-                "- id (INTEGER, primary key)\n"
-                "- chitalishte_id (INTEGER, foreign key to chitalishte.id)\n"
-                "- year (INTEGER)\n"
-                "- created_at (TIMESTAMP)\n"
+                "- reg_n (VARCHAR 50, primary key part)\n"
+                "- year (INTEGER, primary key part)\n"
+                "- absolute_liquidity (NUMERIC)\n"
+                "- accumulated_loss (NUMERIC)\n"
+                "- accumulated_profit (NUMERIC)\n"
                 "- administrative_positions (INTEGER)\n"
-                "- amateur_arts (INTEGER)\n"
-                "- dancing_groups (INTEGER)\n"
-                "- disabilities_and_volunteers (INTEGER)\n"
-                "- employees_count (DOUBLE)\n"
-                "- employees_specialized (INTEGER)\n"
-                "- employees_with_higher_education (INTEGER)\n"
-                "- folklore_formations (INTEGER)\n"
-                "- kraeznanie_clubs (INTEGER)\n"
-                "- language_courses (INTEGER)\n"
-                "- library_activity (INTEGER)\n"
+                "- art_clubs (INTEGER)\n"
+                "- art_clubs_text (TEXT)\n"
+                "- asset_profitability (NUMERIC)\n"
+                "- assets_per_staff (NUMERIC)\n"
+                "- average_annual_staff (NUMERIC)\n"
+                "- borrowed_documents (INTEGER)\n"
+                "- cash (NUMERIC)\n"
+                "- chairman (TEXT)\n"
+                "- classical_dance_groups (INTEGER)\n"
+                "- collaborative_projects (INTEGER)\n"
+                "- computerized_workstations (INTEGER)\n"
+                "- computerized_workstations_alt (INTEGER)\n"
+                "- current_assets (NUMERIC)\n"
+                "- dance_groups (INTEGER)\n"
+                "- debt_to_tangible_assets (NUMERIC)\n"
+                "- disability_work (TEXT)\n"
+                "- equity (NUMERIC)\n"
+                "- equity_profitability (NUMERIC)\n"
+                "- event_participations (INTEGER)\n"
+                "- external_services_spending (NUMERIC)\n"
+                "- fast_liquidity (NUMERIC)\n"
+                "- financial_autonomy (NUMERIC)\n"
+                "- financial_debt (NUMERIC)\n"
+                "- fixed_assets (NUMERIC)\n"
+                "- folklore_groups (INTEGER)\n"
+                "- home_visits (INTEGER)\n"
+                "- immediate_liquidity (NUMERIC)\n"
+                "- imposed_sanctions (INTEGER)\n"
+                "- income_per_staff (NUMERIC)\n"
+                "- income_profitability (NUMERIC)\n"
+                "- independent_projects (INTEGER)\n"
+                "- intangible_assets (NUMERIC)\n"
+                "- international_projects (INTEGER)\n"
+                "- internet_access (INTEGER)\n"
+                "- investment (NUMERIC)\n"
+                "- language_schools (INTEGER)\n"
+                "- language_schools_text (TEXT)\n"
+                "- liabilities (NUMERIC)\n"
+                "- liabilities_per_staff (NUMERIC)\n"
+                "- library_activity (TEXT)\n"
+                "- library_staff_higher_edu (INTEGER)\n"
+                "- library_staff_secondary_edu (INTEGER)\n"
+                "- library_staff_total (INTEGER)\n"
+                "- library_staff_training (INTEGER)\n"
+                "- library_units (INTEGER)\n"
+                "- library_users (INTEGER)\n"
+                "- library_users_online (INTEGER)\n"
+                "- local_history_clubs (INTEGER)\n"
+                "- local_history_clubs_text (TEXT)\n"
+                "- long_term_liabilities (NUMERIC)\n"
+                "- loss (NUMERIC)\n"
+                "- material_reserves (NUMERIC)\n"
                 "- membership_applications (INTEGER)\n"
-                "- modern_ballet (INTEGER)\n"
                 "- museum_collections (INTEGER)\n"
-                "- new_members (INTEGER)\n"
-                "- other_activities (INTEGER)\n"
-                "- other_clubs (INTEGER)\n"
-                "- participation_in_events (INTEGER)\n"
-                "- participation_in_live_human_treasures_national (INTEGER)\n"
-                "- participation_in_live_human_treasures_regional (INTEGER)\n"
-                "- participation_in_trainings (INTEGER)\n"
-                "- projects_participation_leading (INTEGER)\n"
-                "- projects_participation_partner (INTEGER)\n"
-                "- reg_number (INTEGER)\n"
-                "- registration_number (INTEGER)\n"
-                "- rejected_members (INTEGER)\n"
-                "- subsidiary_count (DOUBLE) - NOTE: This is 'subsidiary_count', NOT 'subsidized_count'\n"
-                "- supporting_employees (INTEGER)\n"
-                "- theatre_formations (INTEGER)\n"
-                "- total_members_count (INTEGER)\n"
-                "- town_population (INTEGER)\n"
-                "- town_users (INTEGER)\n"
-                "- vocal_groups (INTEGER)\n"
-                "- workshops_clubs_arts (INTEGER)\n"
-                "- has_pc_and_internet_services (BOOLEAN)\n"
-                "- bulstat (VARCHAR)\n"
-                "- email (VARCHAR)\n"
-                "- kraeznanie_clubs_text (TEXT)\n"
-                "- language_courses_text (TEXT)\n"
                 "- museum_collections_text (TEXT)\n"
-                "- sanctions_for31and33 (VARCHAR)\n"
-                "- url (VARCHAR)\n"
-                "- webpage (VARCHAR)\n"
-                "- workshops_clubs_arts_text (TEXT)\n"
+                "- national_projects (INTEGER)\n"
+                "- net_income (NUMERIC)\n"
+                "- new_members (INTEGER)\n"
+                "- newly_acquired (INTEGER)\n"
+                "- newly_acquired_alt (INTEGER)\n"
+                "- operating_income (NUMERIC)\n"
+                "- other_activities (TEXT)\n"
+                "- other_clubs (INTEGER)\n"
+                "- phone_registry (TEXT)\n"
+                "- profit (NUMERIC)\n"
+                "- profit_per_staff (NUMERIC)\n"
+                "- reading_room_visits (INTEGER)\n"
+                "- receivables (NUMERIC)\n"
+                "- regional_projects (INTEGER)\n"
+                "- rejected_applications (INTEGER)\n"
+                "- secretary (TEXT)\n"
+                "- short_term_liabilities (NUMERIC)\n"
+                "- short_term_liquidity (NUMERIC)\n"
+                "- specialized_positions (INTEGER)\n"
+                "- staff_count (INTEGER)\n"
+                "- staff_expenses (NUMERIC)\n"
+                "- staff_higher_edu (INTEGER)\n"
+                "- status (VARCHAR 100)\n"
+                "- subsidized_staff_count (INTEGER)\n"
+                "- support_staff (INTEGER)\n"
+                "- theater_groups (INTEGER)\n"
+                "- total_assets (NUMERIC)\n"
+                "- total_expenditure (NUMERIC)\n"
+                "- total_income (NUMERIC)\n"
+                "- total_members (INTEGER)\n"
+                "- total_staff_registry (INTEGER)\n"
+                "- trade_price (NUMERIC)\n"
+                "- training_participation (INTEGER)\n"
+                "- turnover_count (NUMERIC)\n"
+                "- turnover_time (NUMERIC)\n"
+                "- vocal_groups (INTEGER)\n"
+                "- chitalishte_id (UUID, foreign key to chitalishta.id)\n"
                 "\n"
                 "CRITICAL RULES:\n"
                 "1. NEVER invent column names that don't exist in the list above.\n"
-                "2. The column is 'subsidiary_count' (NOT 'subsidized_count').\n"
-                "3. To access information_card columns, you MUST JOIN with chitalishte:\n"
-                "   JOIN information_card ON chitalishte.id = information_card.chitalishte_id\n"
-                "4. If a query needs subsidiary_count or other information_card fields, "
-                "you MUST include the JOIN.\n"
-                "5. IMPORTANT - Many columns in this table can be NULL (including subsidiary_count, "
-                "employees_count, total_members_count, etc.). When ordering by these columns or "
+                "2. Primary key is composite: (reg_n, year)\n"
+                "3. To access chitalishte_year_data columns, you MUST JOIN with chitalishta:\n"
+                "   JOIN chitalishte_year_data ON chitalishta.id = chitalishte_year_data.chitalishte_id\n"
+                "   OR: JOIN chitalishte_year_data ON chitalishta.reg_n = chitalishte_year_data.reg_n\n"
+                "4. IMPORTANT - Many columns in this table can be NULL. When ordering by these columns or "
                 "querying for meaningful results, ALWAYS add IS NOT NULL filter:\n"
-                "   Example: WHERE information_card.subsidiary_count IS NOT NULL\n"
+                "   Example: WHERE chitalishte_year_data.total_members IS NOT NULL\n"
                 "   This ensures you get records with actual values, not NULLs.\n"
-                "6. CRITICAL - Each chitalishte can have MULTIPLE information_card records (one per year). "
-                "When joining chitalishte with information_card and ordering by information_card columns, "
-                "you MUST use GROUP BY chitalishte.id and MAX() aggregation to avoid duplicate chitalishte records:\n"
-                "   Example: SELECT ch.name, MAX(ic.subsidiary_count) FROM chitalishte ch "
-                "JOIN information_card ic ON ch.id = ic.chitalishte_id "
-                "GROUP BY ch.id ORDER BY MAX(ic.subsidiary_count) DESC\n"
-                "   This ensures each chitalishte appears only once in results.\n"
+                "5. CRITICAL - Each chitalishta can have MULTIPLE chitalishte_year_data records (one per year). "
+                "When joining chitalishta with chitalishte_year_data and ordering by chitalishte_year_data columns, "
+                "you MUST use GROUP BY chitalishta.id and MAX() aggregation to avoid duplicate chitalishta records:\n"
+                "   Example: SELECT ch.name, MAX(cyd.total_members) FROM chitalishta ch "
+                "JOIN chitalishte_year_data cyd ON ch.id = cyd.chitalishte_id "
+                "GROUP BY ch.id ORDER BY MAX(cyd.total_members) DESC\n"
+                "   This ensures each chitalishta appears only once in results.\n"
+                "6. When filtering by year, use: WHERE chitalishte_year_data.year = 2023\n"
+            ),
+            "municipalities": (
+                "Table: municipalities\n"
+                "COLUMNS (use ONLY these exact column names):\n"
+                "- id (UUID, primary key)\n"
+                "- district (VARCHAR)\n"
+                "- district_code (VARCHAR)\n"
+                "- migration_coefficient (FLOAT8)\n"
+                "- mrrb_category (VARCHAR)\n"
+                "- municipality (VARCHAR)\n"
+                "- municipality_code (VARCHAR, unique)\n"
+                "- municipality_norm (VARCHAR)\n"
+                "- nuts1 (VARCHAR)\n"
+                "- nuts2 (VARCHAR)\n"
+                "- nuts3 (VARCHAR)\n"
+                "- population_over_65_aggregate (INTEGER)\n"
+                "- population_under_15_aggregate (INTEGER)\n"
+                "- share_bulgarian (FLOAT8)\n"
+                "- share_others (FLOAT8)\n"
+                "- share_roma (FLOAT8)\n"
+                "- share_turkish (FLOAT8)\n"
+                "- total_chitalishta (INTEGER)\n"
+                "\n"
+                "CRITICAL RULES:\n"
+                "1. NEVER invent column names that don't exist in the list above.\n"
+                "2. For text field comparisons (municipality, district, etc.), ALWAYS use case-insensitive comparison:\n"
+                "   - Use ILIKE instead of = (e.g., WHERE municipality ILIKE 'София')\n"
+                "   - OR use LOWER() function: WHERE LOWER(municipality) = LOWER('София')\n"
+                "3. To join with municipality_metrics: JOIN municipality_metrics ON municipalities.id = municipality_metrics.municipality_id\n"
+                "4. To join with municipality_year_data: JOIN municipality_year_data ON municipalities.id = municipality_year_data.municipality_id\n"
+                "5. To join with settlements: JOIN settlements ON municipalities.municipality_code = settlements.municipality_code\n"
+            ),
+            "municipality_metrics": (
+                "Table: municipality_metrics\n"
+                "COLUMNS (use ONLY these exact column names):\n"
+                "- id (UUID, primary key)\n"
+                "- additional_positions (FLOAT8)\n"
+                "- average_insurance_income (NUMERIC)\n"
+                "- chitalishta_no_training_percent (NUMERIC)\n"
+                "- chitalishta_per_10k_residents (NUMERIC)\n"
+                "- chitalishta_per_1k_children_under_15 (NUMERIC)\n"
+                "- chitalishta_per_1k_elderly (NUMERIC)\n"
+                "- chitalishta_per_1k_kindergarten (NUMERIC)\n"
+                "- chitalishta_per_1k_students (NUMERIC)\n"
+                "- city_chitalishta (INTEGER)\n"
+                "- expenses_for_salaries_percent (NUMERIC)\n"
+                "- expenses_other_percent (NUMERIC)\n"
+                "- revenue_from_other_percent (NUMERIC)\n"
+                "- revenue_from_rent_percent (NUMERIC)\n"
+                "- revenue_from_subsidies_percent (NUMERIC)\n"
+                "- secretaries_count (FLOAT8)\n"
+                "- secretaries_higher_education_percent (NUMERIC)\n"
+                "- staff_higher_education_percent (NUMERIC)\n"
+                "- staff_secondary_education_percent (NUMERIC)\n"
+                "- state_subsidy_amount (NUMERIC)\n"
+                "- state_subsidy_per_capita (NUMERIC)\n"
+                "- total_chitalishta (INTEGER)\n"
+                "- total_staff (FLOAT8)\n"
+                "- unique_employment_contracts (INTEGER)\n"
+                "- village_chitalishta (INTEGER)\n"
+                "- municipality_id (UUID, foreign key to municipalities.id, unique)\n"
+                "\n"
+                "CRITICAL RULES:\n"
+                "1. NEVER invent column names that don't exist in the list above.\n"
+                "2. This table has a ONE-TO-ONE relationship with municipalities (one metric record per municipality).\n"
+                "3. To join with municipalities: JOIN municipalities ON municipality_metrics.municipality_id = municipalities.id\n"
+                "4. IMPORTANT - Many columns in this table can be NULL. When ordering by these columns or querying for meaningful results, ALWAYS add IS NOT NULL filter:\n"
+                "   Example: WHERE municipality_metrics.total_chitalishta IS NOT NULL\n"
+            ),
+            "municipality_year_data": (
+                "Table: municipality_year_data\n"
+                "COLUMNS (use ONLY these exact column names):\n"
+                "- municipality_code (VARCHAR, primary key part)\n"
+                "- year (INTEGER, primary key part)\n"
+                "- additional_positions (FLOAT8)\n"
+                "- average_insurance_income (NUMERIC)\n"
+                "- companies_number (INTEGER)\n"
+                "- companies_per_capita (FLOAT8)\n"
+                "- employment_rate (FLOAT8)\n"
+                "- expenses_salaries_thousands (NUMERIC)\n"
+                "- expenses_social_security_thousands (NUMERIC)\n"
+                "- gross_value_added_per_person (FLOAT8)\n"
+                "- gross_wage_monthly (FLOAT8)\n"
+                "- hospitals (INTEGER)\n"
+                "- kids_kindergartens (INTEGER)\n"
+                "- municipality_population (INTEGER)\n"
+                "- poor_health (FLOAT8)\n"
+                "- revenue_from_rent_thousands (NUMERIC)\n"
+                "- revenue_from_subsidies_thousands (NUMERIC)\n"
+                "- secretaries_count (FLOAT8)\n"
+                "- secretaries_higher_education_count (FLOAT8)\n"
+                "- staff_higher_education_count (FLOAT8)\n"
+                "- staff_secondary_education_count (FLOAT8)\n"
+                "- students_number (INTEGER)\n"
+                "- students_per_1000 (FLOAT8)\n"
+                "- subsidized_positions (FLOAT8)\n"
+                "- total_expenses_thousands (NUMERIC)\n"
+                "- total_revenue_thousands (NUMERIC)\n"
+                "- total_staff_count (FLOAT8)\n"
+                "- unemployment_rate (FLOAT8)\n"
+                "- unemployment_rate_15_29 (FLOAT8)\n"
+                "- unique_employment_contracts (INTEGER)\n"
+                "- urban_population_percent (FLOAT8)\n"
+                "- municipality_id (UUID, foreign key to municipalities.id)\n"
+                "\n"
+                "CRITICAL RULES:\n"
+                "1. NEVER invent column names that don't exist in the list above.\n"
+                "2. This table has a ONE-TO-MANY relationship with municipalities (multiple year records per municipality).\n"
+                "3. Primary key is composite: (municipality_code, year)\n"
+                "4. To join with municipalities: JOIN municipalities ON municipality_year_data.municipality_id = municipalities.id\n"
+                "   OR: JOIN municipalities ON municipality_year_data.municipality_code = municipalities.municipality_code\n"
+                "5. IMPORTANT - Many columns in this table can be NULL. When ordering by these columns or querying for meaningful results, ALWAYS add IS NOT NULL filter:\n"
+                "   Example: WHERE municipality_year_data.municipality_population IS NOT NULL\n"
+                "6. When filtering by year, use: WHERE municipality_year_data.year = 2023\n"
+            ),
+            "settlements": (
+                "Table: settlements\n"
+                "COLUMNS (use ONLY these exact column names):\n"
+                "- ekatte (VARCHAR, primary key)\n"
+                "- elementary_education (INTEGER)\n"
+                "- higher_education (INTEGER)\n"
+                "- illiterate (INTEGER)\n"
+                "- literate (INTEGER)\n"
+                "- no_education (INTEGER)\n"
+                "- population_15_64 (INTEGER)\n"
+                "- population_over_65 (INTEGER)\n"
+                "- population_under_15 (INTEGER)\n"
+                "- primary_education (INTEGER)\n"
+                "- secondary_education (INTEGER)\n"
+                "- settlement_norm (VARCHAR)\n"
+                "- settlement_population (INTEGER)\n"
+                "- village_city (VARCHAR)\n"
+                "- municipality_code (VARCHAR, foreign key to municipalities.municipality_code)\n"
+                "\n"
+                "CRITICAL RULES:\n"
+                "1. NEVER invent column names that don't exist in the list above.\n"
+                "2. This table has a MANY-TO-ONE relationship with municipalities (multiple settlements per municipality).\n"
+                "3. To join with municipalities: JOIN municipalities ON settlements.municipality_code = municipalities.municipality_code\n"
+                "4. IMPORTANT - Many columns in this table can be NULL. When ordering by these columns or querying for meaningful results, ALWAYS add IS NOT NULL filter:\n"
+                "   Example: WHERE settlements.settlement_population IS NOT NULL\n"
+                "5. The 'village_city' column indicates if a settlement is a village or city (e.g., 'село', 'град').\n"
             ),
         }
 
         self.db = SQLDatabase(
             engine=engine,
             # Include only the tables we want to expose
-            include_tables=["chitalishte", "information_card"],
+            include_tables=[
+                "chitalishta",
+                "chitalishte_year_data",
+                "municipalities",
+                "municipality_metrics",
+                "municipality_year_data",
+                "settlements",
+            ],
             # Sample rows for schema understanding (limit to avoid large samples)
             sample_rows_in_table_info=3,
             custom_table_info=custom_table_info,
@@ -561,31 +1072,38 @@ class SQLAgentService:
             "1. ВИНАГИ проверявай точните имена на колоните в схемата преди да ги използваш.\n"
             "2. НИКОГА не измисляй имена на колони - използвай САМО тези, които са в схемата.\n"
             "3. Ако не си сигурен за име на колона, провери схемата отново.\n"
-            "4. ВАЖНО: Колоната е 'subsidiary_count' (НЕ 'subsidized_count') и е в таблицата 'information_card'.\n"
-            "5. Ако заявката изисква колони от 'information_card', ТРЯБВА да направиш JOIN:\n"
-            "   JOIN information_card ON chitalishte.id = information_card.chitalishte_id\n"
+            "4. Ако заявката изисква колони от 'chitalishte_year_data', ТРЯБВА да направиш JOIN:\n"
+            "   JOIN chitalishte_year_data ON chitalishta.id = chitalishte_year_data.chitalishte_id\n"
+            "   OR: JOIN chitalishte_year_data ON chitalishta.reg_n = chitalishte_year_data.reg_n\n"
             "\n"
             "ОСНОВНИ ПРАВИЛА:\n"
             "1. Генерирай САМО SELECT заявки. Никога не използвай DELETE, UPDATE, INSERT, DROP или други модифициращи команди.\n"
-            "2. Използвай таблиците 'chitalishte' и 'information_card'.\n"
+            "2. Използвай таблиците: 'chitalishta', 'chitalishte_year_data', 'municipalities', 'municipality_metrics', 'municipality_year_data', 'settlements'.\n"
             "3. За агрегации използвай COUNT, SUM, AVG, MIN, MAX.\n"
             "4. За JOIN операции използвай правилните ключове:\n"
-            "   - chitalishte.id = information_card.chitalishte_id\n"
+            "   - chitalishta.id = chitalishte_year_data.chitalishte_id (ONE-TO-MANY)\n"
+            "   - chitalishta.reg_n = chitalishte_year_data.reg_n (alternative join)\n"
+            "   - chitalishta.municipality_id = municipalities.id (MANY-TO-ONE)\n"
+            "   - chitalishta.ekatte = settlements.ekatte (MANY-TO-ONE)\n"
+            "   - municipalities.id = municipality_metrics.municipality_id (ONE-TO-ONE)\n"
+            "   - municipalities.id = municipality_year_data.municipality_id (ONE-TO-MANY)\n"
+            "   - municipalities.municipality_code = municipality_year_data.municipality_code (alternative join)\n"
+            "   - municipalities.municipality_code = settlements.municipality_code (ONE-TO-MANY)\n"
             "5. Бъди точен с имената на колоните - ВИНАГИ проверявай схемата.\n"
             "6. Ако потребителят пита за статистика, използвай GROUP BY.\n"
             "7. Връщай резултатите на български език, когато е възможно.\n"
-            "8. ВАЖНО - Много колони в information_card могат да бъдат NULL (subsidiary_count, "
-            "employees_count, total_members_count и др.). Когато сортираш по тези колони или търсиш "
+            "8. ВАЖНО - Много колони в chitalishte_year_data могат да бъдат NULL (total_members, "
+            "staff_count, total_income и др.). Когато сортираш по тези колони или търсиш "
             "смислени резултати, ВИНАГИ добави IS NOT NULL филтър:\n"
-            "   Пример: WHERE information_card.subsidiary_count IS NOT NULL\n"
+            "   Пример: WHERE chitalishte_year_data.total_members IS NOT NULL\n"
             "   Това гарантира, че получаваш записи с реални стойности, а не NULL.\n"
-            "9. КРИТИЧНО - Всяко chitalishte може да има МНОЖЕСТВО information_card записи (по един за всяка година). "
-            "Когато правиш JOIN между chitalishte и information_card и сортираш по колони от information_card, "
-            "ТРЯБВА да използваш GROUP BY chitalishte.id и MAX() агрегация, за да избегнеш дублирани chitalishte записи:\n"
-            "   Пример: SELECT ch.name, MAX(ic.subsidiary_count) FROM chitalishte ch "
-            "JOIN information_card ic ON ch.id = ic.chitalishte_id "
-            "GROUP BY ch.id ORDER BY MAX(ic.subsidiary_count) DESC\n"
-            "   Това гарантира, че всяко chitalishte се появява само веднъж в резултатите.\n"
+            "9. КРИТИЧНО - Всяко chitalishta може да има МНОЖЕСТВО chitalishte_year_data записи (по един за всяка година). "
+            "Когато правиш JOIN между chitalishta и chitalishte_year_data и сортираш по колони от chitalishte_year_data, "
+            "ТРЯБВА да използваш GROUP BY chitalishta.id и MAX() агрегация, за да избегнеш дублирани chitalishta записи:\n"
+            "   Пример: SELECT ch.name, MAX(cyd.total_members) FROM chitalishta ch "
+            "JOIN chitalishte_year_data cyd ON ch.id = cyd.chitalishte_id "
+            "GROUP BY ch.id ORDER BY MAX(cyd.total_members) DESC\n"
+            "   Това гарантира, че всяко chitalishta се появява само веднъж в резултатите.\n"
             "10. ВАЖНО - Колоната 'town' съдържа стойности като 'ГРАД ВРАЦА' или 'СЕЛО ВРАЦА' "
             "(т.е. 'ГРАД/СЕЛО <име>'), НЕ само името на града.\n"
             "   Когато филтрираш по town, ВИНАГИ използвай ILIKE с wildcards: WHERE town ILIKE '%Враца%'\n"
@@ -668,19 +1186,28 @@ class SQLAgentService:
                 parts = col_ref_clean.split(".")
                 if len(parts) == 2:
                     table_or_alias, col_name = parts[0].lower(), parts[1].lower()
-                    # Check if this column is nullable in information_card
-                    # We check both the actual table name and common aliases (ic, information_card)
-                    # Only add filter if it's an information_card column
-                    if (
-                        col_name in self.validator.NULLABLE_COLUMNS.get("information_card", set())
-                        and table_or_alias in ["information_card", "ic", "card"]
-                    ):
-                        # Check if IS NOT NULL filter already exists for this column
-                        # Look for the column reference with IS NOT NULL in WHERE clause
-                        # Use case-insensitive search
-                        where_pattern = rf"{re.escape(col_ref_clean)}\s+IS\s+NOT\s+NULL"
-                        if not re.search(where_pattern, sql_upper):
-                            filters_to_add.append(f"{col_ref_clean} IS NOT NULL")
+                    # Check if this column is nullable in any table
+                    # Check all tables and their common aliases
+                    nullable_tables = {
+                        "chitalishta": ["chitalishta", "ch"],
+                        "chitalishte_year_data": ["chitalishte_year_data", "cyd", "year_data"],
+                        "municipalities": ["municipalities", "mun", "m"],
+                        "municipality_metrics": ["municipality_metrics", "mm", "metrics"],
+                        "municipality_year_data": ["municipality_year_data", "myd", "year_data"],
+                        "settlements": ["settlements", "sett", "s"],
+                    }
+                    for table_name, aliases in nullable_tables.items():
+                        if (
+                            col_name in self.validator.NULLABLE_COLUMNS.get(table_name, set())
+                            and table_or_alias in aliases
+                        ):
+                            # Check if IS NOT NULL filter already exists for this column
+                            # Look for the column reference with IS NOT NULL in WHERE clause
+                            # Use case-insensitive search
+                            where_pattern = rf"{re.escape(col_ref_clean)}\s+IS\s+NOT\s+NULL"
+                            if not re.search(where_pattern, sql_upper):
+                                filters_to_add.append(f"{col_ref_clean} IS NOT NULL")
+                            break  # Found matching table, no need to check others
 
         # Add filters if needed
         if filters_to_add:
@@ -710,11 +1237,11 @@ class SQLAgentService:
 
     def _fix_duplicate_chitalishte(self, sql: str) -> str:
         """
-        Fix duplicate chitalishte records when joining with information_card.
+        Fix duplicate chitalishta records when joining with chitalishte_year_data.
 
-        When joining chitalishte with information_card and ordering by information_card columns,
-        we get duplicates because each chitalishte can have multiple information_card records.
-        This method automatically adds GROUP BY and MAX() aggregation to get one record per chitalishte.
+        When joining chitalishta with chitalishte_year_data and ordering by chitalishte_year_data columns,
+        we get duplicates because each chitalishta can have multiple chitalishte_year_data records.
+        This method automatically adds GROUP BY and MAX() aggregation to get one record per chitalishta.
 
         Args:
             sql: SQL query string
@@ -724,13 +1251,13 @@ class SQLAgentService:
         """
         sql_upper = sql.upper()
 
-        # Check if query joins with information_card
-        has_information_card_join = re.search(
-            r"JOIN\s+information_card|JOIN\s+\w+\s+(?:ic|card)\s+ON",
+        # Check if query joins with chitalishte_year_data
+        has_year_data_join = re.search(
+            r"JOIN\s+chitalishte_year_data|JOIN\s+\w+\s+(?:cyd|year_data)\s+ON",
             sql_upper,
         )
 
-        if not has_information_card_join:
+        if not has_year_data_join:
             return sql
 
         # Check if query already has GROUP BY
@@ -739,7 +1266,7 @@ class SQLAgentService:
             # Already has GROUP BY, assume it's handled correctly
             return sql
 
-        # Check if query orders by an information_card column
+        # Check if query orders by a chitalishte_year_data column
         order_by_match = re.search(r"ORDER\s+BY\s+([^,\n]+)", sql_upper)
         if not order_by_match:
             return sql
@@ -750,53 +1277,53 @@ class SQLAgentService:
             r"(\w+\.\w+|\w+)(?:\s+(?:ASC|DESC))?", order_by_clause, re.IGNORECASE
         )
 
-        # Check if any ORDER BY column is from information_card
-        ic_order_by_col = None
+        # Check if any ORDER BY column is from chitalishte_year_data
+        cyd_order_by_col = None
         for col_ref in order_by_cols:
             col_ref_clean = col_ref.strip()
             if "." in col_ref_clean:
                 parts = col_ref_clean.split(".")
                 if len(parts) == 2:
                     table_or_alias, col_name = parts[0].lower(), parts[1].lower()
-                    if table_or_alias in ["information_card", "ic", "card"]:
-                        ic_order_by_col = col_ref_clean
+                    if table_or_alias in ["chitalishte_year_data", "cyd", "year_data"]:
+                        cyd_order_by_col = col_ref_clean
                         break
 
-        if not ic_order_by_col:
+        if not cyd_order_by_col:
             return sql
 
-        # Find chitalishte table alias
-        chitalishte_alias = None
+        # Find chitalishta table alias
+        chitalishta_alias = None
         alias_match = re.search(
-            r"FROM\s+chitalishte\s+(\w+)|FROM\s+(\w+)\s+chitalishte",
+            r"FROM\s+chitalishta\s+(\w+)|FROM\s+(\w+)\s+chitalishta",
             sql_upper,
         )
         if alias_match:
-            chitalishte_alias = alias_match.group(1) or alias_match.group(2)
+            chitalishta_alias = alias_match.group(1) or alias_match.group(2)
 
-        # Determine chitalishte identifier for GROUP BY
-        if chitalishte_alias:
-            chitalishte_id_col = f"{chitalishte_alias}.id"
+        # Determine chitalishta identifier for GROUP BY
+        if chitalishta_alias:
+            chitalishta_id_col = f"{chitalishta_alias}.id"
         else:
-            chitalishte_id_col = "chitalishte.id"
+            chitalishta_id_col = "chitalishta.id"
 
-        # Wrap the information_card column in MAX() in SELECT if it's there
+        # Wrap the chitalishte_year_data column in MAX() in SELECT if it's there
         select_match = re.search(r"SELECT\s+(.+?)\s+FROM", sql_upper, re.DOTALL)
         if select_match:
             select_clause = select_match.group(1)
             # Check if the order by column appears in SELECT
-            select_col_pattern = rf"\b{re.escape(ic_order_by_col)}\b"
+            select_col_pattern = rf"\b{re.escape(cyd_order_by_col)}\b"
             if re.search(select_col_pattern, select_clause, re.IGNORECASE):
                 # Check if it's already wrapped in an aggregate function
                 if not re.search(
-                    rf"(MAX|SUM|AVG|MIN|COUNT)\s*\(\s*{re.escape(ic_order_by_col)}\s*\)",
+                    rf"(MAX|SUM|AVG|MIN|COUNT)\s*\(\s*{re.escape(cyd_order_by_col)}\s*\)",
                     select_clause,
                     re.IGNORECASE,
                 ):
                     # Replace with MAX(column)
                     select_clause_new = re.sub(
                         select_col_pattern,
-                        f"MAX({ic_order_by_col})",
+                        f"MAX({cyd_order_by_col})",
                         select_clause,
                         flags=re.IGNORECASE,
                     )
@@ -804,7 +1331,7 @@ class SQLAgentService:
 
         # Add GROUP BY before ORDER BY
         order_by_pos = order_by_match.start()
-        sql = sql[:order_by_pos] + f" GROUP BY {chitalishte_id_col} " + sql[order_by_pos:]
+        sql = sql[:order_by_pos] + f" GROUP BY {chitalishta_id_col} " + sql[order_by_pos:]
 
         # Update ORDER BY to use MAX() as well
         sql_upper = sql.upper()
@@ -813,14 +1340,14 @@ class SQLAgentService:
             order_by_clause_new = order_by_match_new.group(1)
             # Check if MAX() is already there
             if not re.search(
-                rf"MAX\s*\(\s*{re.escape(ic_order_by_col)}\s*\)",
+                rf"MAX\s*\(\s*{re.escape(cyd_order_by_col)}\s*\)",
                 order_by_clause_new,
                 re.IGNORECASE,
             ):
                 # Replace the column with MAX(column) in ORDER BY
                 order_by_new = re.sub(
-                    rf"\b{re.escape(ic_order_by_col)}\b",
-                    f"MAX({ic_order_by_col})",
+                    rf"\b{re.escape(cyd_order_by_col)}\b",
+                    f"MAX({cyd_order_by_col})",
                     order_by_clause_new,
                     flags=re.IGNORECASE,
                 )
@@ -914,11 +1441,11 @@ class SQLAgentService:
             Text with normalized whitespace (non-breaking spaces converted to regular spaces)
         """
         # Replace non-breaking space (U+00A0, 0xa0) with regular space
-        text = text.replace('\xa0', ' ')
+        text = text.replace("\xa0", " ")
         # Normalize all Unicode whitespace characters to regular space
-        text = ''.join(' ' if unicodedata.category(c)[0] == 'Z' else c for c in text)
+        text = "".join(" " if unicodedata.category(c)[0] == "Z" else c for c in text)
         # Collapse multiple spaces to single space
-        text = ' '.join(text.split())
+        text = " ".join(text.split())
         return text.strip()
 
     def _fix_town_field_patterns(self, sql: str) -> str:
@@ -1147,13 +1674,19 @@ class SQLAgentService:
                                 if not generated_sql:
                                     for key, value in tool_input.items():
                                         if isinstance(value, str) and "SELECT" in value.upper():
-                                            sql_match = re.search(r"SELECT.*?(?:;|$)", value, re.IGNORECASE | re.DOTALL)
+                                            sql_match = re.search(
+                                                r"SELECT.*?(?:;|$)",
+                                                value,
+                                                re.IGNORECASE | re.DOTALL,
+                                            )
                                             if sql_match:
                                                 generated_sql = sql_match.group(0)
                                                 break
                             elif isinstance(tool_input, str):
                                 # Try to extract SQL from string
-                                sql_match = re.search(r"SELECT.*?(?:;|$)", tool_input, re.IGNORECASE | re.DOTALL)
+                                sql_match = re.search(
+                                    r"SELECT.*?(?:;|$)", tool_input, re.IGNORECASE | re.DOTALL
+                                )
                                 if sql_match:
                                     generated_sql = sql_match.group(0)
 
@@ -1162,7 +1695,9 @@ class SQLAgentService:
                             tool_name = str(action.tool) if hasattr(action, "tool") else ""
                             if "sql" in tool_name.lower():
                                 action_str = str(action)
-                                sql_match = re.search(r"SELECT.*?(?:;|$)", action_str, re.IGNORECASE | re.DOTALL)
+                                sql_match = re.search(
+                                    r"SELECT.*?(?:;|$)", action_str, re.IGNORECASE | re.DOTALL
+                                )
                                 if sql_match:
                                     generated_sql = sql_match.group(0)
 
@@ -1170,14 +1705,18 @@ class SQLAgentService:
                         if not generated_sql and observation:
                             if isinstance(observation, str):
                                 # Look for SQL in observation
-                                sql_match = re.search(r"SELECT.*?(?:;|$)", observation, re.IGNORECASE | re.DOTALL)
+                                sql_match = re.search(
+                                    r"SELECT.*?(?:;|$)", observation, re.IGNORECASE | re.DOTALL
+                                )
                                 if sql_match:
                                     generated_sql = sql_match.group(0)
                             elif isinstance(observation, (list, tuple)) and len(observation) > 0:
                                 # Check first element if it's a list/tuple
                                 first_elem = observation[0]
                                 if isinstance(first_elem, str) and "SELECT" in first_elem.upper():
-                                    sql_match = re.search(r"SELECT.*?(?:;|$)", first_elem, re.IGNORECASE | re.DOTALL)
+                                    sql_match = re.search(
+                                        r"SELECT.*?(?:;|$)", first_elem, re.IGNORECASE | re.DOTALL
+                                    )
                                 if sql_match:
                                     generated_sql = sql_match.group(0)
 
@@ -1185,7 +1724,9 @@ class SQLAgentService:
                         if not generated_sql:
                             action_str = str(action)
                             if "SELECT" in action_str.upper() or "sql_db_query" in action_str:
-                                sql_match = re.search(r"SELECT.*?(?:;|$)", action_str, re.IGNORECASE | re.DOTALL)
+                                sql_match = re.search(
+                                    r"SELECT.*?(?:;|$)", action_str, re.IGNORECASE | re.DOTALL
+                                )
                                 if sql_match:
                                     generated_sql = sql_match.group(0)
 
@@ -1198,7 +1739,9 @@ class SQLAgentService:
                                 # Check all values for SQL
                                 for value in args.values():
                                     if isinstance(value, str) and "SELECT" in value.upper():
-                                        sql_match = re.search(r"SELECT.*?(?:;|$)", value, re.IGNORECASE | re.DOTALL)
+                                        sql_match = re.search(
+                                            r"SELECT.*?(?:;|$)", value, re.IGNORECASE | re.DOTALL
+                                        )
                                         if sql_match:
                                             generated_sql = sql_match.group(0)
                                             break
@@ -1384,4 +1927,3 @@ def get_sql_agent_service(
         hallucination_config=hallucination_config,
         callbacks=callbacks,
     )
-

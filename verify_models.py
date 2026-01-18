@@ -11,7 +11,7 @@ if sys.platform == "win32":
     os.system("chcp 65001 > nul 2>&1")
 
 from app.db.database import get_db
-from app.db.models import Chitalishte, InformationCard
+from app.db.models import Chitalishta, ChitalishteYearData
 
 
 def test_models():
