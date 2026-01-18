@@ -51,7 +51,9 @@ services:
       # Persist Chroma DB data
       - chroma_db_data:/app/chroma_db
       # Mount documents directory (for analysis document ingestion)
-      - ./documents:/app/documents:ro
+      # OPTIONAL: Uncomment to override documents from Docker image with host documents
+      # If commented, documents are copied from the image during build
+      # - ./documents:/app/documents:ro
     depends_on:
       db:
         condition: service_healthy
