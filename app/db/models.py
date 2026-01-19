@@ -34,6 +34,7 @@ class ChatLog(Base):
     answer: Mapped[str | None] = mapped_column(Text, nullable=True)  # Nullable for failed requests
     intent: Mapped[str | None] = mapped_column(String(20), nullable=True)
     routing_confidence: Mapped[float | None] = mapped_column(Numeric(3, 2), nullable=True)
+    reply_certainty: Mapped[float | None] = mapped_column(Numeric(3, 2), nullable=True)
 
     # Execution flags
     sql_executed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -62,7 +63,7 @@ class ChatLog(Base):
     # Format: [{"model": "gpt-4o-mini", "input_tokens": 100, "output_tokens": 50, "latency_ms": 500, "timestamp": "..."}, ...]
     llm_operations: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    # Response metadata (routing_explanation, rag_metadata, etc.)
+    # Response metadata (routing_explanation, rag_metadata, certainty_breakdown, etc.)
     response_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     # Structured output (if requested)

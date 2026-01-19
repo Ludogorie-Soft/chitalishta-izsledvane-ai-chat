@@ -113,6 +113,8 @@ class ChatLogger:
         sql_executed: bool,
         rag_executed: bool,
         sql_query: Optional[str] = None,
+        reply_certainty: Optional[float] = None,
+        certainty_breakdown: Optional[Dict[str, Any]] = None,
         metadata: Optional[Dict[str, Any]] = None,
         structured_output: Optional[Dict[str, Any]] = None,
     ) -> None:
@@ -126,6 +128,8 @@ class ChatLogger:
             sql_executed: Whether SQL was executed
             rag_executed: Whether RAG was executed
             sql_query: SQL query if executed (will use self._sql_query if None)
+            reply_certainty: Confidence that the answer is correct (0.0-1.0)
+            certainty_breakdown: Detailed breakdown of reply certainty calculation
             metadata: Additional metadata
             structured_output: Structured output if requested
         """
@@ -153,6 +157,11 @@ class ChatLogger:
         # Calculate cost and determine primary model
         cost_usd, primary_model = calculate_total_cost_from_operations(self._llm_operations)
 
+        # Merge certainty_breakdown into metadata for storage
+        final_metadata = metadata.copy() if metadata else {}
+        if certainty_breakdown:
+            final_metadata["certainty_breakdown"] = certainty_breakdown
+
         chat_log = ChatLog(
             request_id=self._request_id,
             conversation_id=self._conversation_id,
@@ -163,6 +172,7 @@ class ChatLogger:
             answer=answer,
             intent=intent,
             routing_confidence=float(routing_confidence),
+            reply_certainty=float(reply_certainty) if reply_certainty is not None else None,
             sql_executed=sql_executed,
             rag_executed=rag_executed,
             sql_query=final_sql_query,
@@ -173,7 +183,7 @@ class ChatLogger:
             cost_usd=cost_usd if cost_usd > 0 else None,
             llm_model=primary_model,
             llm_operations=self._llm_operations if self._llm_operations else None,
-            response_metadata=metadata,
+            response_metadata=final_metadata,
             structured_output=structured_output,
             error_occurred=False,
             client_ip=self._client_ip,

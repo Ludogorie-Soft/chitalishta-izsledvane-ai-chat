@@ -1092,12 +1092,30 @@ class SQLAgentService:
         # Create agent with custom prompt for Bulgarian
         # Note: create_sql_agent API may vary by LangChain version
         # Using the standard parameters that work across versions
-        agent = create_sql_agent(
-            llm=self.llm,
-            toolkit=self.toolkit,
-            verbose=True,  # Enable verbose logging for debugging
-            agent_type="openai-tools",  # Use OpenAI tools format
-        )
+
+        # Get Bulgarian system message with explicit LIMIT rules
+        system_message = self._get_bulgarian_system_message()
+
+        # Try to pass custom prefix/suffix if supported
+        try:
+            agent = create_sql_agent(
+                llm=self.llm,
+                toolkit=self.toolkit,
+                verbose=True,  # Enable verbose logging for debugging
+                agent_type="openai-tools",  # Use OpenAI tools format
+                prefix=system_message,  # Custom Bulgarian instructions
+            )
+        except TypeError:
+            # Fallback if prefix parameter is not supported
+            logger.warning(
+                "SQL agent does not support custom prefix parameter. Using default prompt."
+            )
+            agent = create_sql_agent(
+                llm=self.llm,
+                toolkit=self.toolkit,
+                verbose=True,
+                agent_type="openai-tools",
+            )
 
         return agent
 
@@ -1143,7 +1161,7 @@ class SQLAgentService:
             "   - municipalities.municipality_code = settlements.municipality_code (ONE-TO-MANY)\n"
             "5. Бъди точен с имената на колоните - ВИНАГИ проверявай схемата.\n"
             "6. Ако потребителят пита за статистика, използвай GROUP BY.\n"
-            "7. Връщай резултатите на български език, когато е възможно.\n"
+            "7. КРИТИЧНО ВАЖНО - ВИНАГИ отговаряй на БЪЛГАРСКИ ЕЗИК. Всички обяснения, числа и текст трябва да са на български.\n"
             "8. ВАЖНО - Много колони в chitalishte_year_data могат да бъдат NULL (total_members, "
             "staff_count, total_income и др.). Когато сортираш по тези колони или търсиш "
             "смислени резултати, ВИНАГИ добави IS NOT NULL филтър:\n"
@@ -1173,6 +1191,17 @@ class SQLAgentService:
             "   - Когато изброяваш списък, преброй точно колко елемента има в списъка преди да кажеш броя\n"
             "   - Пример: Ако резултатът съдържа 8 града и 50 села, и заявката пита за градове, кажи '8 града', НЕ '10 града'\n"
             "   - ВИНАГИ провери броя преди да го кажеш в отговора\n"
+            "14. КРИТИЧНО ВАЖНО - ПРАВИЛА ЗА LIMIT И ПРЕБРОЯВАНЕ:\n"
+            "   - Когато потребителят пита 'КОЛКО' (how many), 'БРОЙ' (count), 'В КОЛКО', използвай COUNT(*) или COUNT(DISTINCT column), НЕ LIMIT!\n"
+            "   - НИКОГА не използвай LIMIT когато броиш или преброяваш! LIMIT води до грешни резултати!\n"
+            "   - Примери за преброяване (БЕЗ LIMIT):\n"
+            "     * 'Колко читалища има?' → SELECT COUNT(*) FROM chitalishta\n"
+            "     * 'В колко града има читалища?' → SELECT COUNT(DISTINCT town) FROM chitalishta WHERE town ILIKE 'ГРАД%'\n"
+            "     * 'Колко читалища има в област Враца?' → SELECT COUNT(*) FROM chitalishta JOIN municipalities ... WHERE district ILIKE 'Враца'\n"
+            "   - Използвай LIMIT САМО когато потребителят иска примери, списък, топ N:\n"
+            "     * 'Покажи ми 5 читалища' → SELECT ... LIMIT 5\n"
+            "     * 'Топ 10 читалища с най-много членове' → SELECT ... ORDER BY ... LIMIT 10\n"
+            "   - За преброяване на уникални стойности: COUNT(DISTINCT column), НЕ SELECT DISTINCT + LIMIT\n"
         )
 
         # Enhance with hallucination control instructions
@@ -1621,6 +1650,66 @@ class SQLAgentService:
 
         return sql
 
+    def _fix_incorrect_limits(self, sql: str) -> str:
+        """
+        Remove LIMIT clause when it's incorrectly used for counting queries.
+
+        LIMIT should NOT be used when:
+        - Query uses COUNT(*) or COUNT(DISTINCT ...) - we're counting, not listing
+        - Query uses SELECT DISTINCT for counting purposes (should use COUNT(DISTINCT) instead)
+        - The query is clearly for counting (e.g., "how many", "в колко", etc.)
+
+        Args:
+            sql: SQL query string
+
+        Returns:
+            SQL query with LIMIT removed if inappropriate
+        """
+        sql_upper = sql.upper()
+
+        # Check if query has LIMIT
+        has_limit = re.search(r"\bLIMIT\s+\d+", sql_upper)
+        if not has_limit:
+            return sql
+
+        # Case 1: Query uses COUNT(*) or COUNT(DISTINCT ...) - LIMIT is wrong here
+        # Example: SELECT COUNT(*) FROM ... LIMIT 10 (makes no sense - COUNT returns 1 row)
+        if re.search(r"\bCOUNT\s*\(", sql_upper):
+            # Remove LIMIT
+            sql = re.sub(r"\s*LIMIT\s+\d+\s*;?\s*$", "", sql, flags=re.IGNORECASE)
+            logger.info("Removed LIMIT from COUNT query - LIMIT is not needed for COUNT(*)")
+            return sql
+
+        # Case 2: Query uses SELECT DISTINCT on a single column (likely for counting unique values)
+        # Example: SELECT DISTINCT town FROM ... LIMIT 10 (should be COUNT(DISTINCT town))
+        # This is trickier - we'll check if it's a simple DISTINCT query without ORDER BY or other columns
+        distinct_match = re.search(r"SELECT\s+DISTINCT\s+(\w+(?:\.\w+)?)\s+FROM", sql_upper)
+        if distinct_match:
+            # Check if there's no ORDER BY (which would suggest listing, not counting)
+            has_order_by = re.search(r"\bORDER\s+BY\b", sql_upper)
+
+            # Check if there are multiple columns (which would suggest listing)
+            select_clause = re.search(r"SELECT\s+DISTINCT\s+(.+?)\s+FROM", sql_upper, re.DOTALL)
+            if select_clause:
+                columns = select_clause.group(1)
+                # Count commas to estimate number of columns (rough heuristic)
+                num_columns = columns.count(",") + 1
+
+                # If it's a single column DISTINCT without ORDER BY, likely for counting
+                if num_columns == 1 and not has_order_by:
+                    # Remove LIMIT - this is likely a counting query
+                    sql = re.sub(r"\s*LIMIT\s+\d+\s*;?\s*$", "", sql, flags=re.IGNORECASE)
+                    logger.info(
+                        "Removed LIMIT from SELECT DISTINCT single-column query - "
+                        "appears to be for counting, not listing"
+                    )
+                    return sql
+
+        # Case 3: Keep LIMIT if query has ORDER BY and multiple columns (suggests listing/ranking)
+        # This is OK - user wants top N results
+
+        return sql
+
     def _validate_and_sanitize_sql(self, sql: str) -> tuple[str, Optional[str]]:
         """
         Validate and sanitize SQL query.
@@ -1669,6 +1758,9 @@ class SQLAgentService:
 
         # Fix missing NOT in conditions (handle "извън" / outside conditions)
         sanitized = self._fix_not_conditions(sanitized)
+
+        # Fix incorrect LIMIT usage (remove LIMIT from COUNT and DISTINCT counting queries)
+        sanitized = self._fix_incorrect_limits(sanitized)
 
         # Add IS NOT NULL filters for nullable columns used in ORDER BY
         sanitized = self._add_null_filters(sanitized)

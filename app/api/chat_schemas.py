@@ -44,11 +44,17 @@ class ChatResponse(BaseModel):
     routing_confidence: float = Field(
         ..., description="Confidence in intent classification (0.0-1.0)"
     )
+    reply_certainty: float = Field(
+        ..., description="Confidence that the answer is correct (0.0-1.0)"
+    )
     mode: HallucinationMode = Field(..., description="Hallucination mode used")
     sql_executed: bool = Field(..., description="Whether SQL was executed")
     rag_executed: bool = Field(..., description="Whether RAG was executed")
     metadata: Optional[Dict[str, Any]] = Field(
         None, description="Additional metadata about the response"
+    )
+    certainty_breakdown: Optional[Dict[str, Any]] = Field(
+        None, description="Detailed breakdown of reply certainty calculation"
     )
     structured_output: Optional[Dict[str, Any]] = Field(
         None, description="Structured output (table, bullets, statistics) if requested"

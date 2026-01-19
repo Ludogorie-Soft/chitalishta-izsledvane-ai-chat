@@ -212,6 +212,7 @@ async def chat(
             conversation_id=request.conversation_id,
             intent=result.get("intent", "rag"),
             routing_confidence=result.get("routing_confidence", 0.5),
+            reply_certainty=result.get("reply_certainty", 0.5),
             mode=request.mode,
             sql_executed=result.get("sql_executed", False),
             rag_executed=result.get("rag_executed", False),
@@ -220,6 +221,7 @@ async def chat(
                 "sql_query": result.get("sql_query"),
                 "rag_metadata": result.get("rag_metadata"),
             },
+            certainty_breakdown=result.get("certainty_breakdown"),
             structured_output=structured_output,
         )
 
@@ -234,6 +236,8 @@ async def chat(
             answer=answer,
             intent=result.get("intent", "rag"),
             routing_confidence=result.get("routing_confidence", 0.5),
+            reply_certainty=result.get("reply_certainty", 0.5),
+            certainty_breakdown=result.get("certainty_breakdown"),
             sql_executed=result.get("sql_executed", False),
             rag_executed=result.get("rag_executed", False),
             sql_query=sql_query,
