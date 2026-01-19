@@ -1365,7 +1365,7 @@ class SQLAgentService:
             if "." in col_ref_clean:
                 parts = col_ref_clean.split(".")
                 if len(parts) == 2:
-                    table_or_alias, col_name = parts[0].lower(), parts[1].lower()
+                    table_or_alias = parts[0].lower()
                     if table_or_alias in ["chitalishte_year_data", "cyd", "year_data"]:
                         cyd_order_by_col = col_ref_clean
                         break

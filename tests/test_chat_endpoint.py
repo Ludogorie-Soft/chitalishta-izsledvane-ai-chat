@@ -23,7 +23,7 @@ class TestChatEndpoint:
 
     @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_basic(self, mock_verify_api_key, mock_get_pipeline):
+    def test_chat_endpoint_basic(self, mock_get_pipeline, mock_verify_api_key):
         """Test basic chat endpoint functionality."""
         mock_verify_api_key.return_value = True
         # Mock pipeline
@@ -341,7 +341,10 @@ class TestChatEndpoint:
         assert data["structured_output"]["format"] == "bullets"
         assert "formatted_answer" in data["structured_output"]
         # Check that formatted answer contains bullet points
-        assert "-" in data["structured_output"]["formatted_answer"] or "•" in data["structured_output"]["formatted_answer"]
+        assert (
+            "-" in data["structured_output"]["formatted_answer"]
+            or "•" in data["structured_output"]["formatted_answer"]
+        )
 
     @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
@@ -410,6 +413,3 @@ class TestChatEndpoint:
         data = response.json()
         # When format is "text", structured_output should be None or not present
         assert data.get("structured_output") is None or data["structured_output"] is None
-
-
-
