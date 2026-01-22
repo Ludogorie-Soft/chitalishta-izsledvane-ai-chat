@@ -1,7 +1,7 @@
 """Hybrid pipeline that combines SQL and RAG for comprehensive query answering."""
 
 import structlog
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.rag.hybrid_router import HybridIntentRouter, get_hybrid_router
 from app.rag.intent_classification import QueryIntent
@@ -131,13 +131,18 @@ class HybridPipelineService:
             hallucination_config=self.hallucination_config,
             callbacks=callbacks,
         )
+        # Note: rag_debug_logger will be set via set_rag_debug_logger if needed
         self.rag_chain = rag_chain or get_rag_chain_service(
             hallucination_config=self.hallucination_config,
             callbacks=callbacks,
         )
+        self._rag_debug_logger = None  # Will be set if needed
 
-        # Configure synthesis LLM with hallucination settings
-        base_llm = llm or self.rag_chain.llm
+        # Initialize synthesis LLM and chain
+        # Use provided llm, or fall back to rag_chain's llm, or create default
+        from app.rag.llm_intent_classification import get_default_llm
+
+        base_llm = llm or (self.rag_chain.llm if self.rag_chain else get_default_llm())
         self.llm = self.hallucination_config.get_llm_with_config(base_llm)
 
         # Create synthesis chain for combining SQL and RAG results
@@ -145,6 +150,18 @@ class HybridPipelineService:
 
         # Initialize reply certainty service
         self.reply_certainty_service = get_reply_certainty_service()
+
+    def set_rag_debug_logger(self, rag_debug_logger: Any) -> None:
+        """
+        Set RAG debug logger for capturing debug information.
+
+        Args:
+            rag_debug_logger: RagDebugLogger instance
+        """
+        self._rag_debug_logger = rag_debug_logger
+        # Pass it to the RAG chain
+        if self.rag_chain:
+            self.rag_chain.rag_debug_logger = rag_debug_logger
 
     def _create_synthesis_chain(self):
         """Create LangChain chain for synthesizing SQL and RAG results with hallucination control."""

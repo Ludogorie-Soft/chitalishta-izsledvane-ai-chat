@@ -13,10 +13,13 @@ from app.api.admin_schemas import (
     ConversationDetailResponse,
     ConversationListResponse,
     ConversationSummary,
+    RagDebugLogDetail,
+    RagDebugLogListResponse,
+    RagDebugLogSummary,
 )
 from app.core.auth import CurrentUser, require_administrator
 from app.db.database import get_db
-from app.db.models import ChatLog
+from app.db.models import ChatLog, RagDebugLog
 
 logger = structlog.get_logger(__name__)
 
@@ -214,5 +217,137 @@ async def get_conversation_details(
         )
         raise HTTPException(
             status_code=500, detail=f"Error getting conversation details: {str(e)}"
+        )
+
+
+@router.get("/rag-debug/{request_id}", response_model=RagDebugLogDetail)
+async def get_rag_debug_log(
+    request_id: str,
+    current_user: CurrentUser = Depends(require_administrator),
+    db: Session = Depends(get_db),
+):
+    """
+    Get full RAG debug log for a specific request.
+
+    Returns complete debug information including retrieved documents, prompts, and responses.
+
+    **Authentication**: Requires administrator role (placeholder for now).
+    """
+    try:
+        rag_debug_log = (
+            db.query(RagDebugLog).filter(RagDebugLog.request_id == request_id).first()
+        )
+
+        if not rag_debug_log:
+            raise HTTPException(
+                status_code=404, detail=f"RAG debug log not found for request_id: {request_id}"
+            )
+
+        return RagDebugLogDetail(
+            id=rag_debug_log.id,
+            request_id=rag_debug_log.request_id,
+            conversation_id=rag_debug_log.conversation_id,
+            user_query=rag_debug_log.user_query,
+            retrieved_documents=rag_debug_log.retrieved_documents,
+            formatted_context=rag_debug_log.formatted_context,
+            prompt_template_used=rag_debug_log.prompt_template_used,
+            llm_prompt_sent=rag_debug_log.llm_prompt_sent,
+            retrieval_metadata=rag_debug_log.retrieval_metadata,
+            db_doc_count=rag_debug_log.db_doc_count,
+            analysis_doc_count=rag_debug_log.analysis_doc_count,
+            retrieval_duration_ms=float(rag_debug_log.retrieval_duration_ms)
+            if rag_debug_log.retrieval_duration_ms is not None
+            else None,
+            llm_response_received=rag_debug_log.llm_response_received,
+            fallback_llm_used=rag_debug_log.fallback_llm_used,
+            created_at=rag_debug_log.created_at,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "error_getting_rag_debug_log",
+            request_id=request_id,
+            error=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Error getting RAG debug log: {str(e)}"
+        )
+
+
+@router.get("/rag-debug", response_model=RagDebugLogListResponse)
+async def list_rag_debug_logs(
+    limit: int = Query(default=50, ge=1, le=100, description="Number of results per page"),
+    offset: int = Query(default=0, ge=0, description="Number of results to skip"),
+    conversation_id: Optional[str] = Query(
+        None, description="Filter by conversation ID"
+    ),
+    start_date: Optional[datetime] = Query(
+        None, description="Filter debug logs from this date (ISO format)"
+    ),
+    end_date: Optional[datetime] = Query(
+        None, description="Filter debug logs until this date (ISO format)"
+    ),
+    current_user: CurrentUser = Depends(require_administrator),
+    db: Session = Depends(get_db),
+):
+    """
+    Get list of RAG debug logs with summary data.
+
+    Supports pagination and filtering by conversation_id and date range.
+
+    **Authentication**: Requires administrator role (placeholder for now).
+    """
+    try:
+        # Build base query
+        query = db.query(RagDebugLog)
+
+        # Apply filters
+        if conversation_id:
+            query = query.filter(RagDebugLog.conversation_id == conversation_id)
+        if start_date:
+            query = query.filter(RagDebugLog.created_at >= start_date)
+        if end_date:
+            query = query.filter(RagDebugLog.created_at <= end_date)
+
+        # Get total count
+        total = query.count()
+
+        # Apply pagination and ordering
+        debug_logs = (
+            query.order_by(RagDebugLog.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
+
+        # Convert to summary models
+        debug_log_summaries = [
+            RagDebugLogSummary(
+                id=log.id,
+                request_id=log.request_id,
+                conversation_id=log.conversation_id,
+                user_query=log.user_query,
+                db_doc_count=log.db_doc_count,
+                analysis_doc_count=log.analysis_doc_count,
+                created_at=log.created_at,
+            )
+            for log in debug_logs
+        ]
+
+        return RagDebugLogListResponse(
+            debug_logs=debug_log_summaries, total=total, limit=limit, offset=offset
+        )
+
+    except Exception as e:
+        logger.error(
+            "error_listing_rag_debug_logs",
+            error=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Error listing RAG debug logs: {str(e)}"
         )
 

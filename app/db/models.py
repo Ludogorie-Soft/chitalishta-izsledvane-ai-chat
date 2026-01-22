@@ -608,3 +608,53 @@ class ChitalishteYearData(Base):
     chitalishta: Mapped["Chitalishta"] = relationship(
         "Chitalishta", back_populates="chitalishte_year_data"
     )
+
+
+class RagDebugLog(Base):
+    """RAG debug log model - stores detailed RAG execution information for debugging."""
+
+    __tablename__ = "rag_debug_logs"
+
+    # Primary key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Foreign key to chat_logs
+    request_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("chat_logs.request_id"), nullable=False, unique=True, index=True
+    )  # UUID as string, one debug log per request
+
+    # Conversation tracking
+    conversation_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)  # UUID as string
+
+    # Request data
+    user_query: Mapped[str] = mapped_column(Text, nullable=False)  # Original user question
+
+    # Retrieved documents (JSONB - array with summaries)
+    # Format: [{"content_summary": str (first 500 chars), "full_length": int, "metadata": dict, "source": str}, ...]
+    retrieved_documents: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Context and prompts
+    formatted_context: Mapped[str | None] = mapped_column(Text, nullable=True)  # Full formatted context sent to LLM
+    prompt_template_used: Mapped[str | None] = mapped_column(Text, nullable=True)  # Prompt template that was used
+    llm_prompt_sent: Mapped[str | None] = mapped_column(Text, nullable=True)  # Actual prompt sent to LLM (with context)
+
+    # Retrieval metadata (JSONB)
+    retrieval_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # Retrieval scores, sources, etc.
+
+    # Document counts
+    db_doc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Number of DB documents
+    analysis_doc_count: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Number of analysis documents
+
+    # Performance
+    retrieval_duration_ms: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)  # Retrieval time
+
+    # LLM response
+    llm_response_received: Mapped[str | None] = mapped_column(Text, nullable=True)  # Raw LLM response before post-processing
+
+    # Fallback usage
+    fallback_llm_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # Whether fallback LLM was used
+
+    # Timestamp
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default="now()", index=True
+    )

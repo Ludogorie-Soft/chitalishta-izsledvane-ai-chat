@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     openai_chat_model_fallback: str = "gpt-4o"  # More powerful model for fallback (e.g., gpt-4o, gpt-4-turbo)
     rag_enable_fallback: bool = True  # Enable fallback retry for RAG queries when answer is "no information"
 
+    # RAG debug logging configuration
+    rag_debug_logging_enabled: bool = True  # Enable RAG debug logging to rag_debug_logs table
+
     # TGI (Text Generation Inference) configuration (for local Docker-based LLM)
     tgi_base_url: str = "http://localhost:8080/v1"  # OpenAI-compatible API endpoint
     tgi_model_name: str = "google/gemma-2b-it"  # Model name (must match docker-compose.yml)

@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.config import settings
 from app.core.metrics import track_rag_query
@@ -179,6 +179,7 @@ class RAGChainService:
         prefer_db_for_factual: bool = True,
         hallucination_config: Optional[HallucinationConfig] = None,
         callbacks: Optional[List[BaseCallbackHandler]] = None,
+        rag_debug_logger: Optional[Any] = None,  # Optional RagDebugLogger instance
     ):
         """
         Initialize RAG chain service.
@@ -190,6 +191,7 @@ class RAGChainService:
             prefer_db_for_factual: If True, prioritize DB content for factual queries
             hallucination_config: Optional hallucination control configuration. If None, uses default (MEDIUM_TOLERANCE).
             callbacks: Optional list of LangChain callback handlers for observability.
+            rag_debug_logger: Optional RagDebugLogger instance for debug logging.
         """
         if _LANGCHAIN_IMPORT_ERROR is not None:
             raise ImportError(
@@ -271,6 +273,9 @@ class RAGChainService:
         if callbacks is None:
             callbacks = [get_langchain_callback_handler()]
         self.callbacks = callbacks
+
+        # Store debug logger
+        self.rag_debug_logger = rag_debug_logger
 
         # Build the chain
         self.chain = self._build_chain()
@@ -379,6 +384,27 @@ class RAGChainService:
             else:
                 answer = str(result)
 
+            # Capture LLM response for debug logging
+            if self.rag_debug_logger:
+                self.rag_debug_logger.set_llm_response(answer)
+                # Try to capture the actual prompt sent to LLM
+                # This is tricky because LangChain doesn't expose it directly
+                # We'll construct it from the prompt template and context
+                if hasattr(self, "prompt_template") and self.prompt_template:
+                    try:
+                        # Format the prompt template with context and question
+                        # This is an approximation - the actual prompt might differ slightly
+                        formatted_prompt = self.prompt_template.format(
+                            context=self.context_assembler.format_context(
+                                self.context_assembler.assemble_context(question, k_db=4, k_analysis=4, use_analysis=use_analysis)[0]
+                            ),
+                            question=question,
+                        )
+                        self.rag_debug_logger.set_llm_prompt(formatted_prompt)
+                    except Exception:
+                        # If we can't construct the prompt, that's okay
+                        pass
+
             # Get context metadata by retrieving again
             # (The chain doesn't preserve metadata in the final output)
             _, metadata = self.context_assembler.assemble_context(
@@ -427,6 +453,10 @@ class RAGChainService:
                         answer = fallback_answer
                         used_fallback = True
                         logger.info("Fallback LLM provided a better answer")
+                        # Update debug logger with fallback response
+                        if self.rag_debug_logger:
+                            self.rag_debug_logger.set_llm_response(fallback_answer)
+                            self.rag_debug_logger.set_fallback_used(True)
                     else:
                         logger.info("Fallback LLM also returned no information")
                 except Exception as e:
@@ -452,15 +482,33 @@ class RAGChainService:
         """Create retrieve_and_format function for chain."""
         def retrieve_and_format(inputs: Dict[str, str]) -> Dict[str, str]:
             """Retrieve documents and format context."""
+            import time
+
             query = inputs.get("question", inputs.get("query", ""))
 
             # Retrieve and assemble context
+            retrieval_start = time.time()
             documents, metadata = self.context_assembler.assemble_context(
                 query, k_db=4, k_analysis=4, use_analysis=use_analysis
             )
+            retrieval_duration_ms = (time.time() - retrieval_start) * 1000
 
             # Format context
             formatted_context = self.context_assembler.format_context(documents)
+
+            # Capture debug information if logger is available
+            if self.rag_debug_logger:
+                self.rag_debug_logger.set_retrieved_documents(
+                    documents=documents,
+                    retrieval_metadata=metadata,
+                    retrieval_duration_ms=retrieval_duration_ms,
+                )
+                self.rag_debug_logger.set_formatted_context(formatted_context)
+                # Set prompt template
+                if hasattr(self, "prompt_template"):
+                    prompt_template_str = str(self.prompt_template) if self.prompt_template else None
+                    if prompt_template_str:
+                        self.rag_debug_logger.set_prompt_template(prompt_template_str)
 
             return {
                 "context": formatted_context,
@@ -510,6 +558,7 @@ def get_rag_chain_service(
     prefer_db_for_factual: bool = True,
     hallucination_config: Optional[HallucinationConfig] = None,
     callbacks: Optional[List[BaseCallbackHandler]] = None,
+    rag_debug_logger: Optional[Any] = None,
 ) -> RAGChainService:
     """
     Factory function to get a default RAGChainService.
@@ -519,6 +568,7 @@ def get_rag_chain_service(
         prefer_db_for_factual: If True, prioritize DB content for factual queries
         hallucination_config: Optional hallucination control configuration
         callbacks: Optional list of LangChain callback handlers
+        rag_debug_logger: Optional RagDebugLogger instance for debug logging
 
     Returns:
         RAGChainService instance
@@ -528,5 +578,6 @@ def get_rag_chain_service(
         prefer_db_for_factual=prefer_db_for_factual,
         hallucination_config=hallucination_config,
         callbacks=callbacks,
+        rag_debug_logger=rag_debug_logger,
     )
 
