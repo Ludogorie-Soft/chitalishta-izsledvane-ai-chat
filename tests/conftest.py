@@ -1,5 +1,7 @@
 """Pytest configuration and fixtures for integration tests."""
+
 import os
+import uuid
 from datetime import datetime
 from typing import Generator
 
@@ -8,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.database import Base, get_db
-from app.db.models import Chitalishte, InformationCard
+from app.db.models import Chitalishta, ChitalishteYearData, Municipality
 
 
 @pytest.fixture(scope="session")
@@ -59,106 +61,108 @@ def test_db_session(test_engine) -> Generator[Session, None, None]:
 @pytest.fixture
 def seeded_test_data(test_db_session: Session):
     """Seed test database with minimal test data."""
-    # Create test Chitalishte records
-    chitalishte1 = Chitalishte(
-        id=1,
-        registration_number=100,
-        created_at=datetime.now(),
-        name="Тестово читалище 1",
-        region="Пловдив",
+    # Create test Municipality records first (required for Chitalishta)
+    municipality1_id = str(uuid.uuid4())
+    municipality1 = Municipality(
+        id=municipality1_id,
+        municipality_code="PLV01",
         municipality="Пловдив",
-        town="Пловдив",
-        status="Действащо",
-        address="ул. Тестова 1",
-        email="test1@example.com",
+        district="Пловдив",
     )
 
-    chitalishte2 = Chitalishte(
-        id=2,
-        registration_number=200,
-        created_at=datetime.now(),
-        name="Тестово читалище 2",
-        region="София",
+    municipality2_id = str(uuid.uuid4())
+    municipality2 = Municipality(
+        id=municipality2_id,
+        municipality_code="SOF01",
         municipality="София",
-        town="София",
-        status="Действащо",
-        address="ул. Тестова 2",
+        district="София",
     )
 
-    chitalishte3 = Chitalishte(
-        id=3,
-        registration_number=300,
-        created_at=datetime.now(),
+    test_db_session.add_all([municipality1, municipality2])
+    test_db_session.flush()
+
+    # Create test Chitalishte records
+    chitalishte1_id = str(uuid.uuid4())
+    chitalishte1 = Chitalishta(
+        id=chitalishte1_id,
+        reg_n="100",
+        name="Тестово читалище 1",
+        town="Пловдив",
+        address="ул. Тестова 1",
+        municipality_id=municipality1_id,
+    )
+
+    chitalishte2_id = str(uuid.uuid4())
+    chitalishte2 = Chitalishta(
+        id=chitalishte2_id,
+        reg_n="200",
+        name="Тестово читалище 2",
+        town="София",
+        address="ул. Тестова 2",
+        municipality_id=municipality2_id,
+    )
+
+    chitalishte3_id = str(uuid.uuid4())
+    chitalishte3 = Chitalishta(
+        id=chitalishte3_id,
+        reg_n="300",
         name="Тестово читалище 3",
-        region="Пловдив",
-        municipality="Пловдив",
         town="Асеновград",
-        status="Закрито",
         address="ул. Тестова 3",
+        municipality_id=municipality1_id,
     )
 
     test_db_session.add_all([chitalishte1, chitalishte2, chitalishte3])
     test_db_session.flush()
 
-    # Create test InformationCard records
-    card1_2023 = InformationCard(
-        id=1,
-        chitalishte_id=1,
+    # Create test ChitalishteYearData records
+    card1_2023 = ChitalishteYearData(
+        reg_n="100",
         year=2023,
-        created_at=datetime.now(),
-        total_members_count=50,
-        employees_count=2.0,
-        subsidiary_count=1.5,
-        folklore_formations=2,
-        theatre_formations=1,
+        chitalishte_id=chitalishte1_id,
+        average_annual_staff=2.0,
+        folklore_groups=2,
+        dance_groups=1,
         vocal_groups=1,
-        has_pc_and_internet_services=True,
+        internet_access=1,
     )
 
-    card1_2022 = InformationCard(
-        id=2,
-        chitalishte_id=1,
+    card1_2022 = ChitalishteYearData(
+        reg_n="100",
         year=2022,
-        created_at=datetime.now(),
-        total_members_count=45,
-        employees_count=1.5,
-        subsidiary_count=1.0,
-        folklore_formations=1,
-        has_pc_and_internet_services=False,
+        chitalishte_id=chitalishte1_id,
+        average_annual_staff=1.5,
+        folklore_groups=1,
+        internet_access=0,
     )
 
-    card2_2023 = InformationCard(
-        id=3,
-        chitalishte_id=2,
+    card2_2023 = ChitalishteYearData(
+        reg_n="200",
         year=2023,
-        created_at=datetime.now(),
-        total_members_count=100,
-        employees_count=3.0,
-        subsidiary_count=2.0,
-        theatre_formations=2,
+        chitalishte_id=chitalishte2_id,
+        average_annual_staff=3.0,
+        dance_groups=2,
         vocal_groups=2,
-        has_pc_and_internet_services=True,
+        internet_access=1,
     )
 
-    card3_2023 = InformationCard(
-        id=4,
-        chitalishte_id=3,
+    card3_2023 = ChitalishteYearData(
+        reg_n="300",
         year=2023,
-        created_at=datetime.now(),
-        total_members_count=30,
-        employees_count=1.0,
-        subsidiary_count=0.5,
-        has_pc_and_internet_services=False,
+        chitalishte_id=chitalishte3_id,
+        average_annual_staff=1.0,
+        internet_access=0,
     )
 
     test_db_session.add_all([card1_2023, card1_2022, card2_2023, card3_2023])
     test_db_session.commit()
 
     return {
-        "chitalishte_ids": [1, 2, 3],
+        "chitalishte_ids": [chitalishte1_id, chitalishte2_id, chitalishte3_id],
+        "chitalishte_reg_ns": ["100", "200", "300"],
         "years": [2022, 2023],
-        "regions": ["Пловдив", "София"],
-        "statuses": ["Действащо", "Закрито"],
+        "municipalities": ["Пловдив", "София"],
+        "municipality_ids": [municipality1_id, municipality2_id],
     }
 
 
@@ -189,54 +193,25 @@ def test_app(test_db_session: Session):
     from fastapi.testclient import TestClient
 
     from app.api.ingestion import router as ingestion_router
+    from app.core.auth import CurrentUser, require_administrator
 
     def override_get_db():
         try:
             yield test_db_session
         finally:
             pass  # Session cleanup handled by fixture
+
+    # Mock administrator user for tests
+    async def override_require_administrator():
+        return CurrentUser(username="test_admin", role="administrator")
 
     app = FastAPI()
     app.include_router(ingestion_router)
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[require_administrator] = override_require_administrator
 
     return TestClient(app)
 
 
-@pytest.fixture
-def test_indexing_app(test_db_session: Session, test_chroma_vector_store):
-    """Create test FastAPI app for indexing endpoints with test Chroma."""
-    from fastapi import FastAPI
-    from fastapi.testclient import TestClient
-
-    from app.api.indexing import router as indexing_router
-    from app.rag.embeddings import OpenAIEmbeddingService
-    from app.rag.indexing import IndexingService
-
-    def override_get_db():
-        try:
-            yield test_db_session
-        finally:
-            pass  # Session cleanup handled by fixture
-
-    # Create indexing service with test vector store and OpenAI embeddings
-    embedding_service = OpenAIEmbeddingService()
-    indexing_service = IndexingService(
-        vector_store=test_chroma_vector_store,
-        embedding_service=embedding_service,
-    )
-
-    def get_indexing_service():
-        return indexing_service
-
-    app = FastAPI()
-    app.include_router(indexing_router)
-    app.dependency_overrides[get_db] = override_get_db
-
-    # Override IndexingService dependency
-    from app.api.indexing import IndexingService as IndexingServiceType
-
-    app.dependency_overrides[IndexingServiceType] = get_indexing_service
-
-    return TestClient(app)
-
+# Note: test_indexing_app fixture is defined in tests/test_indexing.py
+# to avoid conflicts and allow proper test isolation

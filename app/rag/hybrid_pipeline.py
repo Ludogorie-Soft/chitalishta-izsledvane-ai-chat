@@ -14,6 +14,7 @@ from app.rag.hallucination_control import (
     PromptEnhancer,
     get_default_hallucination_config,
 )
+from app.services.reply_certainty import get_reply_certainty_service
 
 logger = structlog.get_logger(__name__)
 
@@ -142,6 +143,9 @@ class HybridPipelineService:
         # Create synthesis chain for combining SQL and RAG results
         self.synthesis_chain = self._create_synthesis_chain()
 
+        # Initialize reply certainty service
+        self.reply_certainty_service = get_reply_certainty_service()
+
     def _create_synthesis_chain(self):
         """Create LangChain chain for synthesizing SQL and RAG results with hallucination control."""
         base_system_prompt = (
@@ -154,7 +158,7 @@ class HybridPipelineService:
             "2. Използвай RAG контекста за обяснения, история и допълнителна информация.\n"
             "3. Не повтаряй информация - комбинирай я логично.\n"
             "4. Ако има противоречия, приоритизирай SQL резултатите за фактически данни.\n"
-            "5. Отговорът трябва да бъде естествен и четим на български език.\n"
+            "5. КРИТИЧНО ВАЖНО - ВИНАГИ отговаряй на БЪЛГАРСКИ ЕЗИК. Всички обяснения, числа, изчисления, формули и текст трябва да са на български.\n"
             "6. Структурирай отговора ясно: първо числа/статистика, после обяснения.\n"
             "\n"
             "SQL Резултати:\n"
@@ -270,6 +274,35 @@ class HybridPipelineService:
             response["rag_metadata"] = rag_result.get("metadata", {})
         else:
             response["rag_executed"] = False
+
+        # Step 4: Calculate reply certainty
+        try:
+            reply_certainty, certainty_breakdown = self.reply_certainty_service.calculate(
+                intent=intent,
+                answer=final_answer,
+                sql_result=sql_result,
+                rag_result=rag_result,
+                sql_query=sql_result.get("sql_query") if sql_result else None,
+            )
+            response["reply_certainty"] = reply_certainty
+            response["certainty_breakdown"] = certainty_breakdown
+
+            logger.info(
+                "reply_certainty_calculated",
+                intent=intent.value,
+                reply_certainty=reply_certainty,
+                routing_confidence=routing_result.confidence,
+            )
+        except Exception as e:
+            logger.error(
+                "reply_certainty_calculation_failed",
+                error=str(e),
+                intent=intent.value,
+                exc_info=True,
+            )
+            # Fallback to conservative certainty
+            response["reply_certainty"] = 0.5
+            response["certainty_breakdown"] = {"error": str(e)}
 
         return response
 

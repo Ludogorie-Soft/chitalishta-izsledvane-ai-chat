@@ -1,4 +1,5 @@
 """Data extraction service for RAG ingestion pipeline."""
+
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -17,12 +18,12 @@ class DataExtractionService:
             db: Database session
         """
         self.db = db
-        self.chitalishte_repo = ChitalishteRepository(db)
-        self.card_repo = InformationCardRepository(db)
+        self.chitalishta_repo = ChitalishteRepository(db)
+        self.year_data_repo = InformationCardRepository(db)
 
-    def extract_chitalishte_data(
+    def extract_chitalishta_data(
         self,
-        region: Optional[str] = None,
+        municipality_id: Optional[str] = None,
         town: Optional[str] = None,
         status: Optional[str] = None,
         year: Optional[int] = None,
@@ -30,21 +31,21 @@ class DataExtractionService:
         offset: int = 0,
     ) -> list[dict]:
         """
-        Extract Chitalishte data as dictionaries.
+        Extract Chitalishta data as dictionaries.
 
         Args:
-            region: Optional filter by region
+            municipality_id: Optional filter by municipality ID (UUID)
             town: Optional filter by town
             status: Optional filter by status
-            year: Optional filter by year (via InformationCard)
+            year: Optional filter by year (via ChitalishteYearData)
             limit: Optional limit on number of results
             offset: Number of results to skip
 
         Returns:
-            List of dictionaries containing Chitalishte data
+            List of dictionaries containing Chitalishta data
         """
-        chitalishte_list = self.chitalishte_repo.get_all(
-            region=region,
+        chitalishta_list = self.chitalishta_repo.get_all(
+            municipality_id=municipality_id,
             town=town,
             status=status,
             year=year,
@@ -52,69 +53,67 @@ class DataExtractionService:
             offset=offset,
         )
 
-        return [self._chitalishte_to_dict(chitalishte) for chitalishte in chitalishte_list]
+        return [self._chitalishta_to_dict(ch) for ch in chitalishta_list]
 
-    def extract_information_card_data(
+    def extract_chitalishte_year_data(
         self,
-        chitalishte_id: Optional[int] = None,
+        chitalishta_id: Optional[str] = None,
         year: Optional[int] = None,
         limit: Optional[int] = None,
         offset: int = 0,
     ) -> list[dict]:
         """
-        Extract InformationCard data as dictionaries.
+        Extract ChitalishteYearData as dictionaries.
 
         Args:
-            chitalishte_id: Optional filter by Chitalishte ID
+            chitalishta_id: Optional filter by Chitalishta ID (UUID)
             year: Optional filter by year
             limit: Optional limit on number of results
             offset: Number of results to skip
 
         Returns:
-            List of dictionaries containing InformationCard data
+            List of dictionaries containing ChitalishteYearData
         """
-        cards = self.card_repo.get_all(
-            chitalishte_id=chitalishte_id,
+        year_data_list = self.year_data_repo.get_all(
+            chitalishta_id=chitalishta_id,
             year=year,
             limit=limit,
             offset=offset,
         )
 
-        return [self._information_card_to_dict(card) for card in cards]
+        return [self._chitalishte_year_data_to_dict(yd) for yd in year_data_list]
 
-    def extract_chitalishte_with_cards(
+    def extract_chitalishta_with_year_data(
         self,
-        chitalishte_id: int,
+        chitalishta_id: str,
         year: Optional[int] = None,
     ) -> Optional[dict]:
         """
-        Extract a Chitalishte with its related InformationCards.
+        Extract a Chitalishta with its related ChitalishteYearData.
 
         Args:
-            chitalishte_id: The Chitalishte ID
-            year: Optional filter for InformationCards by year
+            chitalishta_id: The Chitalishta ID (UUID)
+            year: Optional filter for ChitalishteYearData by year
 
         Returns:
-            Dictionary containing Chitalishte data with related InformationCards,
+            Dictionary containing Chitalishta data with related ChitalishteYearData,
             or None if not found
         """
-        chitalishte = self.chitalishte_repo.get_by_id_with_cards(
-            chitalishte_id, year=year
-        )
+        chitalishta = self.chitalishta_repo.get_by_id_with_year_data(chitalishta_id, year=year)
 
-        if not chitalishte:
+        if not chitalishta:
             return None
 
-        result = self._chitalishte_to_dict(chitalishte)
-        result["information_cards"] = [
-            self._information_card_to_dict(card) for card in chitalishte.information_cards
+        result = self._chitalishta_to_dict(chitalishta)
+        result["chitalishte_year_data"] = [
+            self._chitalishte_year_data_to_dict(yd) for yd in chitalishta.chitalishte_year_data
         ]
 
         return result
 
-    def extract_all_chitalishte_with_cards(
+    def extract_all_chitalishta_with_year_data(
         self,
-        region: Optional[str] = None,
+        municipality_id: Optional[str] = None,
         town: Optional[str] = None,
         status: Optional[str] = None,
         year: Optional[int] = None,
@@ -122,21 +121,21 @@ class DataExtractionService:
         offset: int = 0,
     ) -> list[dict]:
         """
-        Extract all Chitalishte records with their InformationCards.
+        Extract all Chitalishta records with their ChitalishteYearData.
 
         Args:
-            region: Optional filter by region
+            municipality_id: Optional filter by municipality ID (UUID)
             town: Optional filter by town
             status: Optional filter by status
-            year: Optional filter by year (filters both Chitalishte and cards)
-            limit: Optional limit on number of Chitalishte results
-            offset: Number of Chitalishte results to skip
+            year: Optional filter by year (filters both Chitalishta and year data)
+            limit: Optional limit on number of Chitalishta results
+            offset: Number of Chitalishta results to skip
 
         Returns:
-            List of dictionaries containing Chitalishte data with related InformationCards
+            List of dictionaries containing Chitalishta data with related ChitalishteYearData
         """
-        chitalishte_list = self.chitalishte_repo.get_all(
-            region=region,
+        chitalishta_list = self.chitalishta_repo.get_all(
+            municipality_id=municipality_id,
             town=town,
             status=status,
             year=year,
@@ -145,97 +144,59 @@ class DataExtractionService:
         )
 
         results = []
-        for chitalishte in chitalishte_list:
-            # Load cards for each chitalishte
-            chitalishte_with_cards = self.chitalishte_repo.get_by_id_with_cards(
-                chitalishte.id, year=year
+        for chitalishta in chitalishta_list:
+            # Load year data for each chitalishta
+            chitalishta_with_year_data = self.chitalishta_repo.get_by_id_with_year_data(
+                chitalishta.id, year=year
             )
 
-            if chitalishte_with_cards:
-                result = self._chitalishte_to_dict(chitalishte_with_cards)
-                result["information_cards"] = [
-                    self._information_card_to_dict(card)
-                    for card in chitalishte_with_cards.information_cards
+            if chitalishta_with_year_data:
+                result = self._chitalishta_to_dict(chitalishta_with_year_data)
+                result["chitalishte_year_data"] = [
+                    self._chitalishte_year_data_to_dict(yd)
+                    for yd in chitalishta_with_year_data.chitalishte_year_data
                 ]
                 results.append(result)
 
         return results
 
-    def _chitalishte_to_dict(self, chitalishte) -> dict:
-        """Convert Chitalishte model to dictionary."""
+    def _chitalishta_to_dict(self, chitalishta) -> dict:
+        """Convert Chitalishta model to dictionary."""
         return {
-            "id": chitalishte.id,
-            "registration_number": chitalishte.registration_number,
-            "created_at": chitalishte.created_at.isoformat() if chitalishte.created_at else None,
-            "address": chitalishte.address,
-            "bulstat": chitalishte.bulstat,
-            "chairman": chitalishte.chairman,
-            "chitalishta_url": chitalishte.chitalishta_url,
-            "email": chitalishte.email,
-            "municipality": chitalishte.municipality,
-            "name": chitalishte.name,
-            "phone": chitalishte.phone,
-            "region": chitalishte.region,
-            "secretary": chitalishte.secretary,
-            "status": chitalishte.status,
-            "town": chitalishte.town,
-            "url_to_libraries_site": chitalishte.url_to_libraries_site,
+            "id": chitalishta.id,
+            "address": chitalishta.address,
+            "ekatte_code": chitalishta.ekatte_code,
+            "empl_category": chitalishta.empl_category,
+            "is_munip_center": chitalishta.is_munip_center,
+            "mayorality_code": chitalishta.mayorality_code,
+            "name": chitalishta.name,
+            "national_list": chitalishta.national_list,
+            "phone": chitalishta.phone,
+            "reg_n": chitalishta.reg_n,
+            "regional_list": chitalishta.regional_list,
+            "settlement_norm": chitalishta.settlement_norm,
+            "slug": chitalishta.slug,
+            "town": chitalishta.town,
+            "uic": chitalishta.uic,
+            "village_city": chitalishta.village_city,
+            "municipality_id": chitalishta.municipality_id,
+            "ekatte": chitalishta.ekatte,
         }
 
-    def _information_card_to_dict(self, card) -> dict:
-        """Convert InformationCard model to dictionary."""
-        return {
-            "id": card.id,
-            "chitalishte_id": card.chitalishte_id,
-            "year": card.year,
-            "created_at": card.created_at.isoformat() if card.created_at else None,
-            "administrative_positions": card.administrative_positions,
-            "amateur_arts": card.amateur_arts,
-            "dancing_groups": card.dancing_groups,
-            "disabilities_and_volunteers": card.disabilities_and_volunteers,
-            "employees_count": card.employees_count,
-            "employees_specialized": card.employees_specialized,
-            "employees_with_higher_education": card.employees_with_higher_education,
-            "folklore_formations": card.folklore_formations,
-            "has_pc_and_internet_services": card.has_pc_and_internet_services,
-            "kraeznanie_clubs": card.kraeznanie_clubs,
-            "language_courses": card.language_courses,
-            "library_activity": card.library_activity,
-            "membership_applications": card.membership_applications,
-            "modern_ballet": card.modern_ballet,
-            "museum_collections": card.museum_collections,
-            "new_members": card.new_members,
-            "other_activities": card.other_activities,
-            "other_clubs": card.other_clubs,
-            "participation_in_events": card.participation_in_events,
-            "participation_in_live_human_treasures_national": (
-                card.participation_in_live_human_treasures_national
-            ),
-            "participation_in_live_human_treasures_regional": (
-                card.participation_in_live_human_treasures_regional
-            ),
-            "participation_in_trainings": card.participation_in_trainings,
-            "projects_participation_leading": card.projects_participation_leading,
-            "projects_participation_partner": card.projects_participation_partner,
-            "reg_number": card.reg_number,
-            "registration_number": card.registration_number,
-            "rejected_members": card.rejected_members,
-            "subsidiary_count": card.subsidiary_count,
-            "supporting_employees": card.supporting_employees,
-            "theatre_formations": card.theatre_formations,
-            "total_members_count": card.total_members_count,
-            "town_population": card.town_population,
-            "town_users": card.town_users,
-            "vocal_groups": card.vocal_groups,
-            "workshops_clubs_arts": card.workshops_clubs_arts,
-            "bulstat": card.bulstat,
-            "email": card.email,
-            "kraeznanie_clubs_text": card.kraeznanie_clubs_text,
-            "language_courses_text": card.language_courses_text,
-            "museum_collections_text": card.museum_collections_text,
-            "sanctions_for31and33": card.sanctions_for31and33,
-            "url": card.url,
-            "webpage": card.webpage,
-            "workshops_clubs_arts_text": card.workshops_clubs_arts_text,
+    def _chitalishte_year_data_to_dict(self, year_data) -> dict:
+        """Convert ChitalishteYearData model to dictionary."""
+        # Get all attributes from the model
+        result = {
+            "reg_n": year_data.reg_n,
+            "year": year_data.year,
+            "chitalishte_id": year_data.chitalishte_id,
         }
 
+        # Add all other fields (there are many, so we'll use a more efficient approach)
+        # Get all column names from the model
+        for column in year_data.__table__.columns:
+            if column.name not in ["reg_n", "year", "chitalishte_id"]:
+                value = getattr(year_data, column.name, None)
+                result[column.name] = value
+
+        return result

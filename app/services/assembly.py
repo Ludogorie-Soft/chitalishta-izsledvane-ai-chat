@@ -1,4 +1,5 @@
 """Document assembly service - creates documents ready for embedding."""
+
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -28,50 +29,48 @@ class DocumentAssemblyService:
         self.extraction_service = DataExtractionService(db)
         self.transformation_service = SemanticTransformationService()
 
-    def assemble_document(
-        self, chitalishte_id: int, year: int
-    ) -> Optional[dict]:
+    def assemble_document(self, chitalishta_id: str, year: int) -> Optional[dict]:
         """
-        Assemble a single document for a Chitalishte and year.
+        Assemble a single document for a Chitalishta and year.
 
         Args:
-            chitalishte_id: The Chitalishte ID
-            year: The year for the InformationCard
+            chitalishta_id: The Chitalishta ID (UUID)
+            year: The year for the ChitalishteYearData
 
         Returns:
             Dictionary with 'content', 'metadata', and 'size_info', or None if not found
         """
-        # Extract Chitalishte with card for specific year
-        chitalishte_data = self.extraction_service.extract_chitalishte_with_cards(
-            chitalishte_id, year=year
+        # Extract Chitalishta with year data for specific year
+        chitalishta_data = self.extraction_service.extract_chitalishta_with_year_data(
+            chitalishta_id, year=year
         )
 
-        if not chitalishte_data:
+        if not chitalishta_data:
             return None
 
-        # Get the card for this year
-        cards = chitalishte_data.get("information_cards", [])
-        if not cards:
+        # Get the year data for this year
+        year_data_list = chitalishta_data.get("chitalishte_year_data", [])
+        if not year_data_list:
             return None
 
         # Transform to text
-        chitalishte_text = self.transformation_service.transform_chitalishte_to_text(
-            chitalishte_data
+        chitalishta_text = self.transformation_service.transform_chitalishta_to_text(
+            chitalishta_data
         )
 
-        # Transform card to text
-        card_text = self.transformation_service.transform_information_card_to_text(
-            cards[0], chitalishte_name=chitalishte_data.get("name")
+        # Transform year data to text
+        year_data_text = self.transformation_service.transform_chitalishte_year_data_to_text(
+            year_data_list[0], chitalishta_name=chitalishta_data.get("name")
         )
 
         # Combine content
-        content = f"{chitalishte_text}\n\n{card_text}"
+        content = f"{chitalishta_text}\n\n{year_data_text}"
 
         # Normalize text
         content = self.transformation_service.normalize_text(content)
 
         # Extract metadata
-        metadata = self._extract_metadata(chitalishte_data, cards[0])
+        metadata = self._extract_metadata(chitalishta_data, year_data_list[0])
 
         # Calculate size info
         size_info = self._calculate_size_info(content)
@@ -88,7 +87,7 @@ class DocumentAssemblyService:
 
     def assemble_all_documents(
         self,
-        region: Optional[str] = None,
+        municipality_id: Optional[str] = None,
         town: Optional[str] = None,
         status: Optional[str] = None,
         year: Optional[int] = None,
@@ -96,98 +95,93 @@ class DocumentAssemblyService:
         offset: int = 0,
     ) -> list[dict]:
         """
-        Assemble all documents (one per Chitalishte per year).
+        Assemble all documents (one per Chitalishta per year).
 
         Args:
-            region: Optional filter by region
+            municipality_id: Optional filter by municipality ID (UUID)
             town: Optional filter by town
             status: Optional filter by status
             year: Optional filter by year (if None, creates documents for all years)
-            limit: Optional limit on number of Chitalishte records
-            offset: Number of Chitalishte records to skip
+            limit: Optional limit on number of Chitalishta records
+            offset: Number of Chitalishta records to skip
 
         Returns:
             List of document dictionaries
         """
         documents = []
 
-        # Get all Chitalishte records
-        chitalishte_list = self.extraction_service.extract_chitalishte_data(
-            region=region,
+        # Get all Chitalishta records
+        chitalishta_list = self.extraction_service.extract_chitalishta_data(
+            municipality_id=municipality_id,
             town=town,
             status=status,
-            year=year,  # This filters Chitalishte that have cards for this year
+            year=year,  # This filters Chitalishta that have year data for this year
             limit=limit,
             offset=offset,
         )
 
-        for chitalishte_data in chitalishte_list:
-            chitalishte_id = chitalishte_data["id"]
+        for chitalishta_data in chitalishta_list:
+            chitalishta_id = chitalishta_data["id"]
 
             # If year is specified, create document for that year only
             if year is not None:
-                doc = self.assemble_document(chitalishte_id, year)
+                doc = self.assemble_document(chitalishta_id, year)
                 if doc:
                     documents.append(doc)
             else:
-                # Create documents for all years this Chitalishte has cards
-                chitalishte_with_all_cards = (
-                    self.extraction_service.extract_chitalishte_with_cards(
-                        chitalishte_id
-                    )
+                # Create documents for all years this Chitalishta has year data
+                chitalishta_with_all_year_data = (
+                    self.extraction_service.extract_chitalishta_with_year_data(chitalishta_id)
                 )
 
-                if chitalishte_with_all_cards:
-                    cards = chitalishte_with_all_cards.get("information_cards", [])
-                    for card in cards:
-                        card_year = card.get("year")
-                        if card_year:
-                            doc = self.assemble_document(chitalishte_id, card_year)
+                if chitalishta_with_all_year_data:
+                    year_data_list = chitalishta_with_all_year_data.get("chitalishte_year_data", [])
+                    for year_data in year_data_list:
+                        year_data_year = year_data.get("year")
+                        if year_data_year:
+                            doc = self.assemble_document(chitalishta_id, year_data_year)
                             if doc:
                                 documents.append(doc)
 
         return documents
 
-    def _extract_metadata(self, chitalishte_data: dict, card_data: dict) -> dict:
+    def _extract_metadata(self, chitalishta_data: dict, year_data: dict) -> dict:
         """
-        Extract metadata from Chitalishte and InformationCard data.
+        Extract metadata from Chitalishta and ChitalishteYearData.
 
         Args:
-            chitalishte_data: Chitalishte data dictionary
-            card_data: InformationCard data dictionary
+            chitalishta_data: Chitalishta data dictionary
+            year_data: ChitalishteYearData data dictionary
 
         Returns:
             Metadata dictionary
         """
         metadata = {
             "source": "database",
-            "chitalishte_id": chitalishte_data.get("id"),
-            "chitalishte_name": chitalishte_data.get("name"),
-            "registration_number": chitalishte_data.get("registration_number"),
-            "region": chitalishte_data.get("region"),
-            "municipality": chitalishte_data.get("municipality"),
-            "town": chitalishte_data.get("town"),
-            "status": chitalishte_data.get("status"),
-            "year": card_data.get("year"),
-            "information_card_id": card_data.get("id"),
+            "chitalishta_id": chitalishta_data.get("id"),
+            "chitalishta_name": chitalishta_data.get("name"),
+            "reg_n": chitalishta_data.get("reg_n"),
+            "municipality_id": chitalishta_data.get("municipality_id"),
+            "town": chitalishta_data.get("town"),
+            "status": year_data.get("status"),  # Status is in year_data, not chitalishta
+            "year": year_data.get("year"),
+            "ekatte": chitalishta_data.get("ekatte"),
         }
 
         # Add counts for filtering
         counts = {}
-        if card_data.get("total_members_count") is not None:
-            counts["total_members"] = int(card_data["total_members_count"])
-        if card_data.get("employees_count") is not None:
-            counts["employees"] = float(card_data["employees_count"])
-        if card_data.get("subsidiary_count") is not None:
-            counts["subsidiary_count"] = float(card_data["subsidiary_count"])
-        if card_data.get("folklore_formations") is not None:
-            counts["folklore_formations"] = int(card_data["folklore_formations"])
-        if card_data.get("theatre_formations") is not None:
-            counts["theatre_formations"] = int(card_data["theatre_formations"])
-        if card_data.get("vocal_groups") is not None:
-            counts["vocal_groups"] = int(card_data["vocal_groups"])
-        if card_data.get("dancing_groups") is not None:
-            counts["dancing_groups"] = int(card_data["dancing_groups"])
+        if year_data.get("total_members") is not None:
+            counts["total_members"] = int(year_data["total_members"])
+        if year_data.get("staff_count") is not None:
+            counts["staff_count"] = int(year_data["staff_count"])
+        if year_data.get("folklore_groups") is not None:
+            counts["folklore_groups"] = int(year_data["folklore_groups"])
+        if year_data.get("theater_groups") is not None:
+            counts["theater_groups"] = int(year_data["theater_groups"])
+        if year_data.get("vocal_groups") is not None:
+            counts["vocal_groups"] = int(year_data["vocal_groups"])
+        if year_data.get("dance_groups") is not None:
+            counts["dance_groups"] = int(year_data["dance_groups"])
 
         metadata["counts"] = counts
 
@@ -257,4 +251,3 @@ class DocumentAssemblyService:
             "min_size": min(sizes) if sizes else 0,
             "max_size": max(sizes) if sizes else 0,
         }
-

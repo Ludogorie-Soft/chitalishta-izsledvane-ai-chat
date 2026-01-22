@@ -80,8 +80,8 @@ class TestLangChainChromaIntegration:
         for doc in docs:
             assert "source" in doc.metadata
             assert doc.metadata["source"] == "database"
-            # We expect chitalishte_id and year from database metadata
-            assert "chitalishte_id" in doc.metadata
+            # We expect chitalishta_id and year from database metadata
+            assert "chitalishta_id" in doc.metadata
             assert "year" in doc.metadata
 
 

@@ -74,8 +74,10 @@ pytest.ini
 # Scripts (optional, keep if needed)
 scripts/
 
-# Documents (will be mounted as volume)
-documents/
+# Documents - COMMENTED OUT to include in Docker image for production
+# For production deployments, documents should be included in the image
+# Uncomment this line if you prefer to mount documents as a volume instead
+# documents/
 
 # Implementation plan
 IMPLEMENTATION_PLAN.md

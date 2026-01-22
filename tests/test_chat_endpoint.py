@@ -21,9 +21,11 @@ class TestChatEndpoint:
         for conv_id in list(memory._conversations.keys()):
             memory.delete_conversation(conv_id)
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_basic(self, mock_get_pipeline):
+    def test_chat_endpoint_basic(self, mock_get_pipeline, mock_verify_api_key):
         """Test basic chat endpoint functionality."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -57,9 +59,11 @@ class TestChatEndpoint:
         assert data["sql_executed"] is False
         assert data["rag_executed"] is True
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_with_conversation_id(self, mock_get_pipeline):
+    def test_chat_endpoint_with_conversation_id(self, mock_get_pipeline, mock_verify_api_key):
         """Test chat endpoint with existing conversation ID."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -92,9 +96,11 @@ class TestChatEndpoint:
         data = response.json()
         assert data["conversation_id"] == conv_id
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_different_modes(self, mock_get_pipeline):
+    def test_chat_endpoint_different_modes(self, mock_get_pipeline, mock_verify_api_key):
         """Test chat endpoint with different hallucination modes."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -131,9 +137,11 @@ class TestChatEndpoint:
         assert response.status_code == 200
         assert response.json()["mode"] == "high"
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_hybrid_query(self, mock_get_pipeline):
+    def test_chat_endpoint_hybrid_query(self, mock_get_pipeline, mock_verify_api_key):
         """Test chat endpoint with hybrid query (SQL + RAG)."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -172,9 +180,11 @@ class TestChatEndpoint:
 
         assert response.status_code == 422  # Validation error
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_history_management(self, mock_get_pipeline):
+    def test_chat_history_management(self, mock_get_pipeline, mock_verify_api_key):
         """Test that chat history is maintained across messages."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -221,8 +231,10 @@ class TestChatEndpoint:
         history = history_response.json()
         assert len(history["messages"]) == 4  # 2 user + 2 assistant messages
 
-    def test_get_chat_history_not_found(self):
+    @patch("app.api.chat.verify_api_key")
+    def test_get_chat_history_not_found(self, mock_verify_api_key):
         """Test getting chat history for non-existent conversation."""
+        mock_verify_api_key.return_value = True
         response = client.post(
             "/chat/history",
             json={"conversation_id": "non-existent-id"},
@@ -230,8 +242,10 @@ class TestChatEndpoint:
 
         assert response.status_code == 404
 
-    def test_delete_chat_history(self):
+    @patch("app.api.chat.verify_api_key")
+    def test_delete_chat_history(self, mock_verify_api_key):
         """Test deleting chat history."""
+        mock_verify_api_key.return_value = True
         # Create a conversation
         memory = get_chat_memory()
         conv_id = memory.create_conversation()
@@ -250,15 +264,19 @@ class TestChatEndpoint:
         )
         assert history_response.status_code == 404
 
-    def test_delete_chat_history_not_found(self):
+    @patch("app.api.chat.verify_api_key")
+    def test_delete_chat_history_not_found(self, mock_verify_api_key):
         """Test deleting non-existent chat history."""
+        mock_verify_api_key.return_value = True
         response = client.delete("/chat/history/non-existent-id")
 
         assert response.status_code == 404
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_table_format(self, mock_get_pipeline):
+    def test_chat_endpoint_table_format(self, mock_get_pipeline, mock_verify_api_key):
         """Test chat endpoint with table output format."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -289,9 +307,11 @@ class TestChatEndpoint:
         assert data["structured_output"]["format"] == "table"
         assert "formatted_answer" in data["structured_output"]
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_bullets_format(self, mock_get_pipeline):
+    def test_chat_endpoint_bullets_format(self, mock_get_pipeline, mock_verify_api_key):
         """Test chat endpoint with bullets output format."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -321,11 +341,16 @@ class TestChatEndpoint:
         assert data["structured_output"]["format"] == "bullets"
         assert "formatted_answer" in data["structured_output"]
         # Check that formatted answer contains bullet points
-        assert "-" in data["structured_output"]["formatted_answer"] or "•" in data["structured_output"]["formatted_answer"]
+        assert (
+            "-" in data["structured_output"]["formatted_answer"]
+            or "•" in data["structured_output"]["formatted_answer"]
+        )
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_statistics_format(self, mock_get_pipeline):
+    def test_chat_endpoint_statistics_format(self, mock_get_pipeline, mock_verify_api_key):
         """Test chat endpoint with statistics output format."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -356,9 +381,11 @@ class TestChatEndpoint:
         assert data["structured_output"]["format"] == "statistics"
         assert "formatted_answer" in data["structured_output"]
 
+    @patch("app.api.chat.verify_api_key")
     @patch("app.api.chat.get_hybrid_pipeline_service")
-    def test_chat_endpoint_text_format_default(self, mock_get_pipeline):
+    def test_chat_endpoint_text_format_default(self, mock_get_pipeline, mock_verify_api_key):
         """Test chat endpoint with default text format (no structured output)."""
+        mock_verify_api_key.return_value = True
         # Mock pipeline
         mock_pipeline = MagicMock()
         mock_pipeline.query = MagicMock(
@@ -386,6 +413,3 @@ class TestChatEndpoint:
         data = response.json()
         # When format is "text", structured_output should be None or not present
         assert data.get("structured_output") is None or data["structured_output"] is None
-
-
-

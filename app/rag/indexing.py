@@ -1,4 +1,5 @@
 """Indexing service for embedding and storing documents in Chroma."""
+
 import hashlib
 import json
 from typing import List, Optional
@@ -48,11 +49,11 @@ class IndexingService:
         source = metadata.get("source", "unknown")
 
         if source == "database":
-            # For DB documents: use chitalishte_id + year + information_card_id
-            chitalishte_id = metadata.get("chitalishte_id")
+            # For DB documents: use chitalishta_id + reg_n + year (composite key for ChitalishteYearData)
+            chitalishta_id = metadata.get("chitalishta_id")
+            reg_n = metadata.get("reg_n")
             year = metadata.get("year")
-            card_id = metadata.get("information_card_id")
-            unique_key = f"db_{chitalishte_id}_{year}_{card_id}"
+            unique_key = f"db_{chitalishta_id}_{reg_n}_{year}"
         elif source == "analysis_document":
             # For analysis documents: use document_name + section_index + chunk_index
             doc_name = metadata.get("document_name", "")
@@ -199,7 +200,7 @@ class IndexingService:
     def index_database_documents(
         self,
         db: Session,
-        region: Optional[str] = None,
+        municipality_id: Optional[str] = None,
         town: Optional[str] = None,
         status: Optional[str] = None,
         year: Optional[int] = None,
@@ -211,7 +212,7 @@ class IndexingService:
 
         Args:
             db: Database session
-            region: Optional filter by region
+            municipality_id: Optional filter by municipality ID (UUID)
             town: Optional filter by town
             status: Optional filter by status
             year: Optional filter by year
@@ -225,7 +226,7 @@ class IndexingService:
 
         assembly_service = DocumentAssemblyService(db)
         documents = assembly_service.assemble_all_documents(
-            region=region,
+            municipality_id=municipality_id,
             town=town,
             status=status,
             year=year,
@@ -300,4 +301,3 @@ class IndexingService:
             "total_documents": count,
             "source_distribution": sources,
         }
-

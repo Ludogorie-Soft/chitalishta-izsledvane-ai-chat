@@ -4,74 +4,81 @@ from typing import Optional
 
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.models import Chitalishte, InformationCard
+from app.db.models import Chitalishta, ChitalishteYearData
 
 
 class ChitalishteRepository:
-    """Repository for Chitalishte read-only queries."""
+    """Repository for Chitalishta read-only queries."""
 
     def __init__(self, db: Session):
         self.db = db
 
-    def get_by_id(self, chitalishte_id: int) -> Optional[Chitalishte]:
-        """Get a Chitalishte by ID."""
-        return self.db.query(Chitalishte).filter(Chitalishte.id == chitalishte_id).first()
+    def get_by_id(self, chitalishta_id: str) -> Optional[Chitalishta]:
+        """Get a Chitalishta by ID (UUID)."""
+        return self.db.query(Chitalishta).filter(Chitalishta.id == chitalishta_id).first()
 
-    def get_by_id_with_cards(
-        self, chitalishte_id: int, year: Optional[int] = None
-    ) -> Optional[Chitalishte]:
+    def get_by_reg_n(self, reg_n: str) -> Optional[Chitalishta]:
+        """Get a Chitalishta by registration number."""
+        return self.db.query(Chitalishta).filter(Chitalishta.reg_n == reg_n).first()
+
+    def get_by_id_with_year_data(
+        self, chitalishta_id: str, year: Optional[int] = None
+    ) -> Optional[Chitalishta]:
         """
-        Get a Chitalishte by ID with related InformationCards.
-        Optionally filter cards by year.
+        Get a Chitalishta by ID with related ChitalishteYearData.
+        Optionally filter year data by year.
         """
         query = (
-            self.db.query(Chitalishte)
-            .options(joinedload(Chitalishte.information_cards))
-            .filter(Chitalishte.id == chitalishte_id)
+            self.db.query(Chitalishta)
+            .options(joinedload(Chitalishta.chitalishte_year_data))
+            .filter(Chitalishta.id == chitalishta_id)
         )
-        chitalishte = query.first()
+        chitalishta = query.first()
 
-        if chitalishte and year is not None:
-            # Filter cards by year in memory (already loaded)
-            chitalishte.information_cards = [
-                card for card in chitalishte.information_cards if card.year == year
+        if chitalishta and year is not None:
+            # Filter year data by year in memory (already loaded)
+            chitalishta.chitalishte_year_data = [
+                yd for yd in chitalishta.chitalishte_year_data if yd.year == year
             ]
 
-        return chitalishte
+        return chitalishta
 
     def get_all(
         self,
-        region: Optional[str] = None,
+        municipality_id: Optional[str] = None,
         town: Optional[str] = None,
         status: Optional[str] = None,
         year: Optional[int] = None,
         limit: Optional[int] = None,
         offset: int = 0,
-    ) -> list[Chitalishte]:
+    ) -> list[Chitalishta]:
         """
-        Get all Chitalishte records with optional filters.
+        Get all Chitalishta records with optional filters.
 
         Args:
-            region: Filter by region name
+            municipality_id: Filter by municipality ID (UUID)
             town: Filter by town name
             status: Filter by status
-            year: Filter by year (requires join with InformationCard)
+            year: Filter by year (requires join with ChitalishteYearData)
             limit: Maximum number of results
             offset: Number of results to skip
         """
-        query = self.db.query(Chitalishte)
+        query = self.db.query(Chitalishta)
 
         # Apply filters
-        if region is not None:
-            query = query.filter(Chitalishte.region == region)
+        if municipality_id is not None:
+            query = query.filter(Chitalishta.municipality_id == municipality_id)
         if town is not None:
-            query = query.filter(Chitalishte.town == town)
-        if status is not None:
-            query = query.filter(Chitalishte.status == status)
+            query = query.filter(Chitalishta.town == town)
+        # Note: Chitalishta model doesn't have a status field
+        # if status is not None:
+        #     query = query.filter(Chitalishta.status == status)
 
-        # Year filter requires join with InformationCard
+        # Year filter requires join with ChitalishteYearData
         if year is not None:
-            query = query.join(InformationCard).filter(InformationCard.year == year).distinct()
+            query = (
+                query.join(ChitalishteYearData).filter(ChitalishteYearData.year == year).distinct()
+            )
 
         # Apply pagination
         if offset > 0:
@@ -83,68 +90,77 @@ class ChitalishteRepository:
 
     def count(
         self,
-        region: Optional[str] = None,
+        municipality_id: Optional[str] = None,
         town: Optional[str] = None,
         status: Optional[str] = None,
         year: Optional[int] = None,
     ) -> int:
-        """Count Chitalishte records with optional filters."""
-        query = self.db.query(Chitalishte)
+        """Count Chitalishta records with optional filters."""
+        query = self.db.query(Chitalishta)
 
-        if region is not None:
-            query = query.filter(Chitalishte.region == region)
+        if municipality_id is not None:
+            query = query.filter(Chitalishta.municipality_id == municipality_id)
         if town is not None:
-            query = query.filter(Chitalishte.town == town)
-        if status is not None:
-            query = query.filter(Chitalishte.status == status)
+            query = query.filter(Chitalishta.town == town)
+        # Note: Chitalishta model doesn't have a status field
+        # if status is not None:
+        #     query = query.filter(Chitalishta.status == status)
 
         if year is not None:
-            query = query.join(InformationCard).filter(InformationCard.year == year).distinct()
+            query = (
+                query.join(ChitalishteYearData).filter(ChitalishteYearData.year == year).distinct()
+            )
 
         return query.count()
 
 
 class InformationCardRepository:
-    """Repository for InformationCard read-only queries."""
+    """Repository for ChitalishteYearData read-only queries."""
 
     def __init__(self, db: Session):
         self.db = db
 
-    def get_by_id(self, card_id: int) -> Optional[InformationCard]:
-        """Get an InformationCard by ID."""
-        return self.db.query(InformationCard).filter(InformationCard.id == card_id).first()
-
-    def get_by_id_with_chitalishte(self, card_id: int) -> Optional[InformationCard]:
-        """Get an InformationCard by ID with related Chitalishte."""
+    def get_by_reg_n_and_year(self, reg_n: str, year: int) -> Optional[ChitalishteYearData]:
+        """Get a ChitalishteYearData by reg_n and year (composite primary key)."""
         return (
-            self.db.query(InformationCard)
-            .options(joinedload(InformationCard.chitalishte))
-            .filter(InformationCard.id == card_id)
+            self.db.query(ChitalishteYearData)
+            .filter(ChitalishteYearData.reg_n == reg_n, ChitalishteYearData.year == year)
             .first()
         )
 
-    def get_by_chitalishte_id(
+    def get_by_reg_n_and_year_with_chitalishta(
+        self, reg_n: str, year: int
+    ) -> Optional[ChitalishteYearData]:
+        """Get a ChitalishteYearData by reg_n and year with related Chitalishta."""
+        return (
+            self.db.query(ChitalishteYearData)
+            .options(joinedload(ChitalishteYearData.chitalishta))
+            .filter(ChitalishteYearData.reg_n == reg_n, ChitalishteYearData.year == year)
+            .first()
+        )
+
+    def get_by_chitalishta_id(
         self,
-        chitalishte_id: int,
+        chitalishta_id: str,
         year: Optional[int] = None,
         limit: Optional[int] = None,
         offset: int = 0,
-    ) -> list[InformationCard]:
+    ) -> list[ChitalishteYearData]:
         """
-        Get all InformationCards for a specific Chitalishte.
+        Get all ChitalishteYearData for a specific Chitalishta.
 
         Args:
-            chitalishte_id: The Chitalishte ID
+            chitalishta_id: The Chitalishta ID (UUID)
             year: Optional filter by year
             limit: Maximum number of results
             offset: Number of results to skip
         """
-        query = self.db.query(InformationCard).filter(
-            InformationCard.chitalishte_id == chitalishte_id
+        query = self.db.query(ChitalishteYearData).filter(
+            ChitalishteYearData.chitalishte_id == chitalishta_id
         )
 
         if year is not None:
-            query = query.filter(InformationCard.year == year)
+            query = query.filter(ChitalishteYearData.year == year)
 
         if offset > 0:
             query = query.offset(offset)
@@ -156,25 +172,25 @@ class InformationCardRepository:
     def get_all(
         self,
         year: Optional[int] = None,
-        chitalishte_id: Optional[int] = None,
+        chitalishta_id: Optional[str] = None,
         limit: Optional[int] = None,
         offset: int = 0,
-    ) -> list[InformationCard]:
+    ) -> list[ChitalishteYearData]:
         """
-        Get all InformationCard records with optional filters.
+        Get all ChitalishteYearData records with optional filters.
 
         Args:
             year: Filter by year
-            chitalishte_id: Filter by Chitalishte ID
+            chitalishta_id: Filter by Chitalishta ID (UUID)
             limit: Maximum number of results
             offset: Number of results to skip
         """
-        query = self.db.query(InformationCard)
+        query = self.db.query(ChitalishteYearData)
 
         if year is not None:
-            query = query.filter(InformationCard.year == year)
-        if chitalishte_id is not None:
-            query = query.filter(InformationCard.chitalishte_id == chitalishte_id)
+            query = query.filter(ChitalishteYearData.year == year)
+        if chitalishta_id is not None:
+            query = query.filter(ChitalishteYearData.chitalishte_id == chitalishta_id)
 
         if offset > 0:
             query = query.offset(offset)
@@ -186,15 +202,14 @@ class InformationCardRepository:
     def count(
         self,
         year: Optional[int] = None,
-        chitalishte_id: Optional[int] = None,
+        chitalishta_id: Optional[str] = None,
     ) -> int:
-        """Count InformationCard records with optional filters."""
-        query = self.db.query(InformationCard)
+        """Count ChitalishteYearData records with optional filters."""
+        query = self.db.query(ChitalishteYearData)
 
         if year is not None:
-            query = query.filter(InformationCard.year == year)
-        if chitalishte_id is not None:
-            query = query.filter(InformationCard.chitalishte_id == chitalishte_id)
+            query = query.filter(ChitalishteYearData.year == year)
+        if chitalishta_id is not None:
+            query = query.filter(ChitalishteYearData.chitalishte_id == chitalishta_id)
 
         return query.count()
-

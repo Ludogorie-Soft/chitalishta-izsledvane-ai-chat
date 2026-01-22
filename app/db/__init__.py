@@ -1,5 +1,15 @@
 from app.db.database import Base, SessionLocal, engine, get_db
-from app.db.models import BaselineQuery, ChatLog, Chitalishte, InformationCard, User
+from app.db.models import (
+    BaselineQuery,
+    ChatLog,
+    Chitalishta,
+    ChitalishteYearData,
+    Municipality,
+    MunicipalityMetric,
+    MunicipalityYearData,
+    Settlement,
+    User,
+)
 from app.db.repositories import ChitalishteRepository, InformationCardRepository
 
 __all__ = [
@@ -9,8 +19,12 @@ __all__ = [
     "get_db",
     "BaselineQuery",
     "ChatLog",
-    "Chitalishte",
-    "InformationCard",
+    "Chitalishta",
+    "ChitalishteYearData",
+    "Municipality",
+    "MunicipalityMetric",
+    "MunicipalityYearData",
+    "Settlement",
     "User",
     "ChitalishteRepository",
     "InformationCardRepository",

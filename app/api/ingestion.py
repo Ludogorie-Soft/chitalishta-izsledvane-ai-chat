@@ -1,4 +1,5 @@
 """API endpoints for ingestion preview."""
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends
@@ -33,7 +34,7 @@ async def preview_ingestion(
     This endpoint shows what documents would be created from the PostgreSQL database
     before actually ingesting them into the vector store.
 
-    - **region**: Optional filter by region
+    - **municipality_id**: Optional filter by municipality ID (UUID)
     - **town**: Optional filter by town
     - **status**: Optional filter by status
     - **year**: Optional filter by year (if None, creates documents for all years)
@@ -46,7 +47,7 @@ async def preview_ingestion(
 
     # Assemble documents
     documents = assembly_service.assemble_all_documents(
-        region=request.region,
+        municipality_id=request.municipality_id,
         town=request.town,
         status=request.status,
         year=request.year,
@@ -92,7 +93,7 @@ async def ingest_analysis_document(
     - Step 3: Apply light overlap (10-15% overlap between chunks)
 
     Args:
-        request: Request containing the document name (e.g., "Chitalishta_demo_ver2.docx")
+        request: Request containing the document name (e.g., "Читалищната мрежа в България – анализ през призмата на данните.docx")
 
     Returns:
         Ingestion status, chunk count, and preview of created chunks
@@ -152,4 +153,3 @@ async def ingest_analysis_document(
             chunks=[],
             statistics={},
         )
-
