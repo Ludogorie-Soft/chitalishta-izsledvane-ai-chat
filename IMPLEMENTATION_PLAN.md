@@ -770,6 +770,158 @@ poetry run pytest tests/test_evaluation.py -m ""
 
 ---
 
+## Step 10.7 – RAG Debug Table (Separate Debug Logging)
+- [ ] Create `rag_debug_logs` database table with schema:
+  - `id` (primary key)
+  - `request_id` (foreign key to chat_logs.request_id, unique - one debug log per request)
+  - `conversation_id` (VARCHAR, for easy filtering by conversation)
+  - `user_query` (TEXT - the original user question)
+  - `retrieved_documents` (JSONB - array of retrieved documents with **summaries** and metadata)
+    - Each document entry: `{content_summary: str (first 500 chars), full_length: int, metadata: dict, source: str}`
+  - `formatted_context` (TEXT - the complete formatted context sent to LLM, stored in full)
+  - `prompt_template_used` (TEXT - the prompt template that was used)
+  - `retrieval_metadata` (JSONB - retrieval scores, document counts, sources, etc.)
+  - `db_doc_count` (INTEGER - number of documents from database source)
+  - `analysis_doc_count` (INTEGER - number of documents from analysis document source)
+  - `retrieval_duration_ms` (NUMERIC - time taken for retrieval)
+  - `llm_prompt_sent` (TEXT - the actual prompt sent to LLM, including context)
+  - `llm_response_received` (TEXT - the raw LLM response before any post-processing)
+  - `fallback_llm_used` (BOOLEAN - whether fallback LLM was used)
+  - `created_at` (timestamp)
+- [ ] Create `RagDebugLog` SQLAlchemy model
+- [ ] Create database migration script for `rag_debug_logs` table
+- [ ] Add indexes: `request_id` (unique), `conversation_id`, `created_at`
+- [ ] Create `RagDebugLogger` service to capture RAG-specific details
+- [ ] Implement **async/background logging** to avoid slowing down requests:
+  - Use FastAPI background tasks or async queue (e.g., `asyncio.create_task()`)
+  - Logging should not block the response to the user
+  - Handle logging errors gracefully (log to application logs, don't fail request)
+- [ ] Integrate RAG debug logging into RAG chain execution:
+  - Capture retrieved documents (summaries + metadata) from `ContextAssembler`
+  - Capture formatted context from `ContextAssembler.format_context()`
+  - Capture prompt template from RAG chain
+  - Capture actual prompt sent to LLM (from LangChain callbacks or chain execution)
+  - Capture LLM response before post-processing
+  - Capture retrieval metadata (counts, sources, duration)
+- [ ] Add configuration option to enable/disable RAG debug logging:
+  - Environment variable `RAG_DEBUG_LOGGING_ENABLED` (default: true)
+  - Always log when `rag_executed=True` (no per-request toggle needed based on requirements)
+- [ ] Integrate debug logging into `POST /chat` endpoint:
+  - Only log when `rag_executed=True` in the response
+  - Link debug log to chat log via `request_id`
+  - Use async background task for logging (non-blocking)
+- [ ] Create admin endpoints:
+  - `GET /admin/rag-debug/{request_id}` - Returns **full debug log** for a specific request
+  - `GET /admin/rag-debug` - List endpoint with query parameters:
+    - `conversation_id` (optional) - filter by conversation
+    - `limit` (default: 50) - pagination
+    - `offset` (default: 0) - pagination
+    - `start_date` (optional) - filter by date range
+    - `end_date` (optional) - filter by date range
+  - Returns list of debug logs with summary fields (request_id, conversation_id, user_query, created_at)
+- [ ] **No automatic cleanup** - logs are kept indefinitely as requested
+
+**Definition of Done**
+- RAG debug logs are stored in separate table for all RAG/hybrid requests
+- Document summaries (not full content) are stored to optimize storage
+- Full context and prompts are stored for debugging
+- Debug logging is async/background (non-blocking)
+- Admin can query debug logs via SQL or admin API endpoints
+- Debug logs are linked to chat logs via request_id
+- Storage is optimized with proper indexes
+- Logs are kept indefinitely (no automatic cleanup)
+
+---
+
+## Step 10.8 – LangSmith Integration (External Observability)
+- [ ] Sign up for LangSmith account (if not already done)
+- [ ] Obtain LangSmith API key from LangSmith dashboard
+- [ ] Add LangSmith configuration to environment variables:
+  - `LANGCHAIN_TRACING_V2` (boolean, default: **true** - enabled by default)
+  - `LANGCHAIN_API_KEY` (string - LangSmith API key)
+  - `LANGCHAIN_PROJECT` (string - project name: "chitalishta-rag")
+  - `LANGCHAIN_ENDPOINT` (string, optional - defaults to LangSmith cloud)
+  - `LANGCHAIN_ENVIRONMENT` (string - "dev" or "prod" for tagging traces)
+- [ ] Install LangSmith SDK (if not already included in langchain dependencies)
+- [ ] Configure LangChain to use LangSmith tracing:
+  - Set up tracing in application startup (main.py or config)
+  - **Trace all LangChain operations** (see list below)
+  - Configure project name and environment tags
+  - Add environment tag to all traces (from `LANGCHAIN_ENVIRONMENT`)
+- [ ] **Trace LangChain operations (excluding SQL agent):**
+  - **RAG Chain operations:**
+    - Document retrieval (retriever operations)
+    - Context assembly (custom logic, but capture via callbacks)
+    - Prompt template application
+    - LLM calls for RAG generation
+    - Fallback LLM calls (if used)
+  - **Hybrid Pipeline operations:**
+    - Intent classification (LLM-based)
+    - RAG chain execution (if used)
+    - Synthesis chain (combining SQL + RAG results)
+    - LLM calls for synthesis
+    - **Note:** SQL agent execution is NOT traced (SQL queries are already logged in database)
+  - **Intent Classification operations:**
+    - LLM-based intent classification calls
+    - Structured output parsing
+- [ ] **Decision: Exclude SQL agent operations from LangSmith**
+  - **Rationale:** SQL queries are already logged in `chat_logs` table with full visibility
+  - **Pros:** Reduced trace volume, SQL debugging done via database logs, cleaner LangSmith dashboard
+  - **Cons:** Can't see SQL agent reasoning in LangSmith (but can see in database logs)
+  - **Implementation:** Configure LangSmith to only trace RAG and hybrid operations, skip SQL agent chain
+- [ ] Test LangSmith integration:
+  - Verify traces appear in LangSmith dashboard
+  - Verify all chain operations are captured (retrieval, LLM calls, tool calls)
+  - Verify request correlation (request_id should appear in trace metadata)
+  - Verify environment tags are applied correctly
+- [ ] Add request_id to LangSmith trace metadata:
+  - Include request_id in all LangChain run metadata
+  - This allows correlation between LangSmith traces and chat_logs table
+  - Use `metadata={"request_id": request_id}` in all chain invocations
+- [ ] Document LangSmith usage:
+  - Add instructions for accessing LangSmith dashboard
+  - Document how to filter traces by request_id
+  - Document how to filter traces by environment (dev/prod)
+  - Document how to analyze RAG-specific traces
+  - Document how to analyze SQL agent traces
+- [ ] Note on data privacy:
+  - Document that user queries and responses are sent to LangSmith (external service)
+  - User has confirmed no GDPR/compliance concerns
+  - LangSmith free tier limits should be monitored
+
+**Definition of Done**
+- LangSmith tracing is configured and working
+- RAG and hybrid pipeline operations are traced in LangSmith
+- SQL agent operations are **excluded** from LangSmith (SQL queries logged in database instead)
+- Intent classification is traced in LangSmith
+- Request IDs are included in trace metadata for correlation
+- Environment tags (dev/prod) are applied to all traces
+- Traces are visible in LangSmith dashboard
+- Single LangSmith project is used (free tier compatible)
+- Configuration allows enabling/disabling tracing globally
+- Documentation explains how to use LangSmith for debugging RAG operations
+- Documentation notes that SQL debugging should use database logs (`chat_logs` table)
+
+**LangSmith Configuration Decision:**
+- **Default:** Enabled (`LANGCHAIN_TRACING_V2=true`)
+  - **Pros:** Always available for debugging, no need to restart to enable, catch issues immediately
+  - **Cons:** Sends all data to external service, uses free tier quota
+- **Alternative:** Disabled by default, enable when debugging
+  - **Pros:** More control, only send data when needed, preserve free tier quota
+  - **Cons:** Need to restart app to enable, might miss issues that happen when disabled
+- **Recommendation:** Enabled by default (as user prefers), can be disabled via env var if needed
+
+**Per-Request Toggle Decision:**
+- **Global configuration only (recommended):**
+  - **Pros:** Simpler implementation, consistent behavior, easier to manage
+  - **Cons:** Can't selectively trace individual requests
+- **Per-request toggle (via header/query param):**
+  - **Pros:** Fine-grained control, can trace specific problematic requests
+  - **Cons:** More complex implementation, requires passing toggle through all layers
+- **Recommendation:** Global configuration only (simpler, sufficient for post-analysis debugging)
+
+---
+
 # Phase 11 – Administrator Features
 
 ## Step 11.1 – User management
