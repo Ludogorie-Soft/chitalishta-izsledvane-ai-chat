@@ -4,6 +4,16 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
+try:
+    from langsmith import traceable
+except ImportError:
+    # No-op decorator if langsmith is not installed
+    def traceable(*args, **kwargs):
+        if len(args) == 1 and callable(args[0]):
+            return args[0]
+        return lambda func: func
+
+
 
 class QueryIntent(str, Enum):
     """Query intent types."""
@@ -212,6 +222,7 @@ class RuleBasedIntentClassifier:
         self.sql_keywords_lower = [kw.lower() for kw in self.sql_keywords]
         self.rag_keywords_lower = [kw.lower() for kw in self.RAG_KEYWORDS]
 
+    @traceable(run_type="tool", name="RuleBasedIntentClassifier")
     def classify(self, query: str) -> IntentClassificationResult:
         """
         Classify query intent based on keyword matching.
@@ -398,6 +409,7 @@ class RuleBasedIntentClassifier:
                         break
         return matched
 
+    @traceable(run_type="tool", name="ComputeConfidenceScore")
     def _compute_score(self, matches: int, query_length: int) -> float:
         """
         Compute confidence score based on matches and query length.

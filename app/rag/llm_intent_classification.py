@@ -3,8 +3,9 @@
 import json
 import logging
 import re
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
+from langchain_core.callbacks import BaseCallbackHandler
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
@@ -182,12 +183,19 @@ class LLMIntentClassifier:
 
         return LLMIntentSchema(intent=intent, confidence=confidence, reason=reason)
 
-    def classify(self, query: str) -> IntentClassificationResult:
+    def classify(
+        self,
+        query: str,
+        callbacks: Optional[list[BaseCallbackHandler]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> IntentClassificationResult:
         """
         Classify query intent using the LLM.
 
         Args:
             query: User query in Bulgarian.
+            callbacks: Optional callbacks for observability (e.g. LangSmith).
+            metadata: Optional metadata to pass to the chain (e.g. request_id).
 
         Returns:
             IntentClassificationResult compatible with the rule-based classifier.
@@ -201,7 +209,13 @@ class LLMIntentClassifier:
                 explanation="Празна заявка - използва се RAG по подразбиране (LLM класификатор).",
             )
 
-        result: LLMIntentSchema = self.chain.invoke({"query": query})
+        config = {}
+        if callbacks:
+            config["callbacks"] = callbacks
+        if metadata:
+            config["metadata"] = metadata
+
+        result: LLMIntentSchema = self.chain.invoke({"query": query}, config=config)
 
         # Ensure confidence is within [0.0, 1.0]
         confidence = max(0.0, min(float(result.confidence), 1.0))
@@ -359,7 +373,12 @@ def get_llm_intent_classifier(
                 Implements the same interface as LLMIntentClassifier.
                 """
 
-                def classify(self, query: str) -> IntentClassificationResult:
+                def classify(
+                    self,
+                    query: str,
+                    callbacks: Optional[list[BaseCallbackHandler]] = None,
+                    metadata: Optional[dict[str, Any]] = None,
+                ) -> IntentClassificationResult:
                     """Classify query using rule-based classifier as fallback."""
                     result = rule_classifier.classify(query)
                     # Update explanation to indicate fallback

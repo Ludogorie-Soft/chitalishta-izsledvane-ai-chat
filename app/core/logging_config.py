@@ -39,6 +39,18 @@ def configure_logging(
         level=numeric_level,
     )
 
+    # Set external libraries to warning/error by default to reduce noise
+    # unless we are in DEBUG mode, then let them chat
+    if numeric_level > logging.DEBUG:
+        logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+        logging.getLogger("uvicorn.error").setLevel(logging.WARNING)
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
+    else:
+        # Enable verbose logging for LangSmith debugging when in DEBUG mode
+        logging.getLogger("langsmith").setLevel(logging.DEBUG)
+        logging.getLogger("urllib3").setLevel(logging.DEBUG)
+
     # Configure processors based on format
     processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,  # Merge context variables

@@ -771,7 +771,7 @@ poetry run pytest tests/test_evaluation.py -m ""
 ---
 
 ## Step 10.7 – RAG Debug Table (Separate Debug Logging)
-- [ ] Create `rag_debug_logs` database table with schema:
+- [x] Create `rag_debug_logs` database table with schema:
   - `id` (primary key)
   - `request_id` (foreign key to chat_logs.request_id, unique - one debug log per request)
   - `conversation_id` (VARCHAR, for easy filtering by conversation)
@@ -788,29 +788,29 @@ poetry run pytest tests/test_evaluation.py -m ""
   - `llm_response_received` (TEXT - the raw LLM response before any post-processing)
   - `fallback_llm_used` (BOOLEAN - whether fallback LLM was used)
   - `created_at` (timestamp)
-- [ ] Create `RagDebugLog` SQLAlchemy model
-- [ ] Create database migration script for `rag_debug_logs` table
-- [ ] Add indexes: `request_id` (unique), `conversation_id`, `created_at`
-- [ ] Create `RagDebugLogger` service to capture RAG-specific details
-- [ ] Implement **async/background logging** to avoid slowing down requests:
+- [x] Create `RagDebugLog` SQLAlchemy model
+- [x] Create database migration script for `rag_debug_logs` table
+- [x] Add indexes: `request_id` (unique), `conversation_id`, `created_at`
+- [x] Create `RagDebugLogger` service to capture RAG-specific details
+- [x] Implement **async/background logging** to avoid slowing down requests:
   - Use FastAPI background tasks or async queue (e.g., `asyncio.create_task()`)
   - Logging should not block the response to the user
   - Handle logging errors gracefully (log to application logs, don't fail request)
-- [ ] Integrate RAG debug logging into RAG chain execution:
+- [x] Integrate RAG debug logging into RAG chain execution:
   - Capture retrieved documents (summaries + metadata) from `ContextAssembler`
   - Capture formatted context from `ContextAssembler.format_context()`
   - Capture prompt template from RAG chain
   - Capture actual prompt sent to LLM (from LangChain callbacks or chain execution)
   - Capture LLM response before post-processing
   - Capture retrieval metadata (counts, sources, duration)
-- [ ] Add configuration option to enable/disable RAG debug logging:
+- [x] Add configuration option to enable/disable RAG debug logging:
   - Environment variable `RAG_DEBUG_LOGGING_ENABLED` (default: true)
   - Always log when `rag_executed=True` (no per-request toggle needed based on requirements)
-- [ ] Integrate debug logging into `POST /chat` endpoint:
+- [x] Integrate debug logging into `POST /chat` endpoint:
   - Only log when `rag_executed=True` in the response
   - Link debug log to chat log via `request_id`
   - Use async background task for logging (non-blocking)
-- [ ] Create admin endpoints:
+- [x] Create admin endpoints:
   - `GET /admin/rag-debug/{request_id}` - Returns **full debug log** for a specific request
   - `GET /admin/rag-debug` - List endpoint with query parameters:
     - `conversation_id` (optional) - filter by conversation
@@ -819,7 +819,7 @@ poetry run pytest tests/test_evaluation.py -m ""
     - `start_date` (optional) - filter by date range
     - `end_date` (optional) - filter by date range
   - Returns list of debug logs with summary fields (request_id, conversation_id, user_query, created_at)
-- [ ] **No automatic cleanup** - logs are kept indefinitely as requested
+- [x] **No automatic cleanup** - logs are kept indefinitely as requested
 
 **Definition of Done**
 - RAG debug logs are stored in separate table for all RAG/hybrid requests
@@ -834,21 +834,21 @@ poetry run pytest tests/test_evaluation.py -m ""
 ---
 
 ## Step 10.8 – LangSmith Integration (External Observability)
-- [ ] Sign up for LangSmith account (if not already done)
-- [ ] Obtain LangSmith API key from LangSmith dashboard
-- [ ] Add LangSmith configuration to environment variables:
+- [x] Sign up for LangSmith account (if not already done)
+- [x] Obtain LangSmith API key from LangSmith dashboard
+- [x] Add LangSmith configuration to environment variables:
   - `LANGCHAIN_TRACING_V2` (boolean, default: **true** - enabled by default)
   - `LANGCHAIN_API_KEY` (string - LangSmith API key)
   - `LANGCHAIN_PROJECT` (string - project name: "chitalishta-rag")
   - `LANGCHAIN_ENDPOINT` (string, optional - defaults to LangSmith cloud)
   - `LANGCHAIN_ENVIRONMENT` (string - "dev" or "prod" for tagging traces)
-- [ ] Install LangSmith SDK (if not already included in langchain dependencies)
-- [ ] Configure LangChain to use LangSmith tracing:
+- [x] Install LangSmith SDK (if not already included in langchain dependencies)
+- [x] Configure LangChain to use LangSmith tracing:
   - Set up tracing in application startup (main.py or config)
   - **Trace all LangChain operations** (see list below)
   - Configure project name and environment tags
   - Add environment tag to all traces (from `LANGCHAIN_ENVIRONMENT`)
-- [ ] **Trace LangChain operations (excluding SQL agent):**
+- [x] **Trace LangChain operations (excluding SQL agent):**
   - **RAG Chain operations:**
     - Document retrieval (retriever operations)
     - Context assembly (custom logic, but capture via callbacks)
@@ -864,27 +864,27 @@ poetry run pytest tests/test_evaluation.py -m ""
   - **Intent Classification operations:**
     - LLM-based intent classification calls
     - Structured output parsing
-- [ ] **Decision: Exclude SQL agent operations from LangSmith**
+- [x] **Decision: Exclude SQL agent operations from LangSmith**
   - **Rationale:** SQL queries are already logged in `chat_logs` table with full visibility
   - **Pros:** Reduced trace volume, SQL debugging done via database logs, cleaner LangSmith dashboard
   - **Cons:** Can't see SQL agent reasoning in LangSmith (but can see in database logs)
   - **Implementation:** Configure LangSmith to only trace RAG and hybrid operations, skip SQL agent chain
-- [ ] Test LangSmith integration:
+- [x] Test LangSmith integration:
   - Verify traces appear in LangSmith dashboard
   - Verify all chain operations are captured (retrieval, LLM calls, tool calls)
   - Verify request correlation (request_id should appear in trace metadata)
   - Verify environment tags are applied correctly
-- [ ] Add request_id to LangSmith trace metadata:
+- [x] Add request_id to LangSmith trace metadata:
   - Include request_id in all LangChain run metadata
   - This allows correlation between LangSmith traces and chat_logs table
   - Use `metadata={"request_id": request_id}` in all chain invocations
-- [ ] Document LangSmith usage:
+- [x] Document LangSmith usage:
   - Add instructions for accessing LangSmith dashboard
   - Document how to filter traces by request_id
   - Document how to filter traces by environment (dev/prod)
   - Document how to analyze RAG-specific traces
   - Document how to analyze SQL agent traces
-- [ ] Note on data privacy:
+- [x] Note on data privacy:
   - Document that user queries and responses are sent to LangSmith (external service)
   - User has confirmed no GDPR/compliance concerns
   - LangSmith free tier limits should be monitored

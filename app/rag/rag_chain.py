@@ -350,7 +350,13 @@ class RAGChainService:
         ]
         return any(pattern in answer_lower for pattern in no_info_patterns)
 
-    def query(self, question: str, use_analysis: bool = True, enable_fallback: bool = True) -> Dict[str, any]:
+    def query(
+        self,
+        question: str,
+        use_analysis: bool = True,
+        enable_fallback: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, any]:
         """
         Query the RAG chain with optional fallback retry using more powerful LLM.
 
@@ -359,6 +365,7 @@ class RAGChainService:
             use_analysis: Whether to include analysis documents
             enable_fallback: Whether to enable fallback retry with more powerful LLM.
                            Should be True for RAG-only queries, False for hybrid queries.
+            metadata: Optional metadata for observability (e.g. request_id).
 
         Returns:
             Dictionary with answer and metadata
@@ -371,6 +378,9 @@ class RAGChainService:
         try:
             # Invoke the chain with use_analysis parameter and callbacks
             config = {"callbacks": self.callbacks} if self.callbacks else {}
+            if metadata:
+                config["metadata"] = metadata
+            
             result = self.chain.invoke(
                 {"question": question, "use_analysis": use_analysis},
                 config=config,
@@ -517,7 +527,13 @@ class RAGChainService:
             }
         return retrieve_and_format
 
-    def query_with_context(self, question: str, use_analysis: bool = True, enable_fallback: bool = True) -> Dict[str, any]:
+    def query_with_context(
+        self,
+        question: str,
+        use_analysis: bool = True,
+        enable_fallback: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, any]:
         """
         Query the RAG chain and return full context information.
 
@@ -525,12 +541,13 @@ class RAGChainService:
             question: User question in Bulgarian
             use_analysis: Whether to include analysis documents
             enable_fallback: Whether to enable fallback retry with more powerful LLM
+            metadata: Optional metadata for observability.
 
         Returns:
             Dictionary with answer, context, and metadata
         """
         # Retrieve documents
-        documents, metadata = self.context_assembler.assemble_context(
+        documents, metadata_retrieval = self.context_assembler.assemble_context(
             question, k_db=4, k_analysis=4, use_analysis=use_analysis
         )
 
@@ -538,7 +555,12 @@ class RAGChainService:
         formatted_context = self.context_assembler.format_context(documents)
 
         # Get answer using the chain
-        result = self.query(question, use_analysis=use_analysis, enable_fallback=enable_fallback)
+        result = self.query(
+            question,
+            use_analysis=use_analysis,
+            enable_fallback=enable_fallback,
+            metadata=metadata,
+        )
 
         # Add context information
         result["context"] = formatted_context

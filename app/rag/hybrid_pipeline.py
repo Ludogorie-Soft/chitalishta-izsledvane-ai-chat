@@ -1,7 +1,9 @@
 """Hybrid pipeline that combines SQL and RAG for comprehensive query answering."""
 
 import structlog
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from langchain_core.callbacks import BaseCallbackHandler
 
 from app.rag.hybrid_router import HybridIntentRouter, get_hybrid_router
 from app.rag.intent_classification import QueryIntent
@@ -37,7 +39,7 @@ class SQLResultFormatter:
     """Formatter for converting SQL results into narrative text context."""
 
     @staticmethod
-    def format_sql_result(sql_result: Dict[str, any]) -> str:
+    def format_sql_result(sql_result: dict[str, any]) -> str:
         """
         Convert SQL query result into narrative Bulgarian text.
 
@@ -64,7 +66,7 @@ class SQLResultFormatter:
         return formatted
 
     @staticmethod
-    def format_sql_results_for_rag(sql_results: List[Dict[str, any]]) -> str:
+    def format_sql_results_for_rag(sql_results: list[dict[str, any]]) -> str:
         """
         Format multiple SQL results for RAG context.
 
@@ -99,7 +101,7 @@ class HybridPipelineService:
         rag_chain: Optional[RAGChainService] = None,
         llm: Optional[BaseChatModel] = None,
         hallucination_config: Optional[HallucinationConfig] = None,
-        callbacks: Optional[List[BaseCallbackHandler]] = None,
+        callbacks: Optional[list[BaseCallbackHandler]] = None,
     ):
         """
         Initialize hybrid pipeline service.
@@ -124,17 +126,30 @@ class HybridPipelineService:
         # Store callbacks (default to structured logging callback if not provided)
         if callbacks is None:
             callbacks = [get_langchain_callback_handler()]
-        self.callbacks = callbacks
+        
+        # Split callbacks for SQL agent (exclude LangSmith tracer)
+        # We want to exclude SQL agent from LangSmith tracing to avoid sending SQL queries
+        self.all_callbacks = callbacks
+        self.sql_callbacks = []
+        
+        for cb in callbacks:
+            # Check if callback is LangSmith tracer
+            # We check by class name to avoid importing the class directly
+            if cb.__class__.__name__ == "LangChainTracer":
+                continue
+            self.sql_callbacks.append(cb)
+        
+        self.callbacks = self.all_callbacks  # Restore self.callbacks for general use
 
         self.router = router or get_hybrid_router()
         self.sql_agent = sql_agent or get_sql_agent_service(
             hallucination_config=self.hallucination_config,
-            callbacks=callbacks,
+            callbacks=self.sql_callbacks,  # Use callbacks without tracer
         )
         # Note: rag_debug_logger will be set via set_rag_debug_logger if needed
         self.rag_chain = rag_chain or get_rag_chain_service(
             hallucination_config=self.hallucination_config,
-            callbacks=callbacks,
+            callbacks=self.all_callbacks,  # Use all callbacks including tracer
         )
         self._rag_debug_logger = None  # Will be set if needed
 
@@ -205,18 +220,21 @@ class HybridPipelineService:
         chain = prompt | self.llm
         return chain
 
-    def query(self, question: str) -> Dict[str, any]:
+    def query(self, question: str, metadata: Optional[dict[str, Any]] = None) -> dict[str, any]:
         """
         Process query through hybrid pipeline.
 
         Args:
             question: User question in Bulgarian
+            metadata: Optional metadata for observability.
 
         Returns:
             Dictionary with answer, metadata, and execution details
         """
         # Step 1: Route query to determine intent
-        routing_result = self.router.route(question)
+        routing_result = self.router.route(
+            question, callbacks=self.callbacks, metadata=metadata
+        )
         intent = routing_result.intent
 
         logger.info(
@@ -237,14 +255,18 @@ class HybridPipelineService:
 
         elif intent == QueryIntent.RAG:
             # RAG-only query - enable fallback retry with more powerful LLM
-            rag_result = self.rag_chain.query(question, enable_fallback=True)
+            rag_result = self.rag_chain.query(
+                question, enable_fallback=True, metadata=metadata
+            )
             final_answer = rag_result.get("answer", "Не мога да отговоря на този въпрос.")
 
         else:  # QueryIntent.HYBRID
             # Hybrid query - execute both and combine
             # Disable fallback for RAG in hybrid queries since SQL might provide answers
             sql_result = self.sql_agent.query(question)
-            rag_result = self.rag_chain.query(question, use_analysis=True, enable_fallback=False)
+            rag_result = self.rag_chain.query(
+                question, use_analysis=True, enable_fallback=False, metadata=metadata
+            )
 
             # Combine results using synthesis chain
             sql_formatted = SQLResultFormatter.format_sql_result(sql_result)
@@ -259,6 +281,9 @@ class HybridPipelineService:
 
             # Invoke synthesis chain with callbacks
             config = {"callbacks": self.callbacks} if self.callbacks else {}
+            if metadata:
+                config["metadata"] = metadata
+            
             synthesis_output = self.synthesis_chain.invoke(synthesis_input, config=config)
 
             # Extract answer from synthesis
@@ -323,7 +348,7 @@ class HybridPipelineService:
 
         return response
 
-    def query_with_details(self, question: str) -> Dict[str, any]:
+    def query_with_details(self, question: str) -> dict[str, any]:
         """
         Process query and return detailed execution information.
 
@@ -360,7 +385,7 @@ def get_hybrid_pipeline_service(
     rag_chain: Optional[RAGChainService] = None,
     llm: Optional[BaseChatModel] = None,
     hallucination_config: Optional[HallucinationConfig] = None,
-    callbacks: Optional[List[BaseCallbackHandler]] = None,
+    callbacks: Optional[list[BaseCallbackHandler]] = None,
 ) -> HybridPipelineService:
     """
     Factory function to get a default HybridPipelineService.

@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     tgi_timeout: int = 30  # Request timeout in seconds
     tgi_enabled: bool = True  # Whether to use TGI when llm_provider="tgi"
 
+    # LangSmith configuration (External Observability)
+    langchain_tracing_v2: bool = True  # Enable LangSmith tracing (default: True)
+    langchain_api_key: str = ""  # LangSmith API Key
+    langchain_project: str = "chitalishta-rag"  # Project name
+    langchain_endpoint: str = "https://api.smith.langchain.com"  # LangSmith endpoint
+    langchain_environment: str = "dev"  # Environment tag (dev/prod)
+
     # Logging configuration
     log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     log_format: str = "json"  # "json" or "console" (human-readable)
