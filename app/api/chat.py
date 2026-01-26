@@ -30,6 +30,9 @@ from app.rag.structured_output import (
 from app.services.chat_logger import ChatLogger
 from app.services.chat_logger_callbacks import ChatLoggerCallbackHandler
 from app.services.rate_limiter import AbuseDetected, RateLimitExceeded, RateLimiter
+from app.services.rag_debug_logger import RagDebugLogger
+from app.core.config import settings
+from app.core.tracing import get_langsmith_tracer
 
 logger = structlog.get_logger(__name__)
 
@@ -170,14 +173,40 @@ async def chat(
         structured_callback = get_langchain_callback_handler()
         callbacks = [structured_callback, chat_logger_callback]
 
+        # Add LangSmith tracer if enabled
+        langsmith_tracer = get_langsmith_tracer()
+        if langsmith_tracer:
+            callbacks.append(langsmith_tracer)
+
+        # Create RAG debug logger if RAG might be executed
+        rag_debug_logger = None
+        if settings.rag_debug_logging_enabled:
+            rag_debug_logger = RagDebugLogger(db)
+            rag_debug_logger.start_debug(
+                request_id=request_id,
+                conversation_id=request.conversation_id,
+                user_query=request.message,
+            )
+
         # Get hybrid pipeline service with hallucination config and callbacks
         pipeline = get_hybrid_pipeline_service(
             hallucination_config=hallucination_config,
             callbacks=callbacks,
         )
 
+        # Set RAG debug logger if available
+        if rag_debug_logger:
+            pipeline.set_rag_debug_logger(rag_debug_logger)
+
+        # Prepare metadata for tracing
+        tracing_metadata = {
+            "request_id": request_id,
+            "conversation_id": request.conversation_id,
+            "environment": settings.langchain_environment,
+        }
+
         # Execute query
-        result = pipeline.query(query)
+        result = pipeline.query(query, metadata=tracing_metadata)
 
         # Extract answer
         answer = result.get("answer", "Не мога да отговоря на този въпрос.")
@@ -244,6 +273,12 @@ async def chat(
             metadata=result.get("metadata"),
             structured_output=structured_output,
         )
+
+        # Log RAG debug information asynchronously if RAG was executed
+        if rag_debug_logger and result.get("rag_executed", False):
+            # Use asyncio.create_task for async logging (non-blocking)
+            import asyncio
+            asyncio.create_task(rag_debug_logger.log_async())
 
         return response
 

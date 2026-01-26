@@ -29,11 +29,21 @@ class Settings(BaseSettings):
     openai_chat_model_fallback: str = "gpt-4o"  # More powerful model for fallback (e.g., gpt-4o, gpt-4-turbo)
     rag_enable_fallback: bool = True  # Enable fallback retry for RAG queries when answer is "no information"
 
+    # RAG debug logging configuration
+    rag_debug_logging_enabled: bool = True  # Enable RAG debug logging to rag_debug_logs table
+
     # TGI (Text Generation Inference) configuration (for local Docker-based LLM)
     tgi_base_url: str = "http://localhost:8080/v1"  # OpenAI-compatible API endpoint
     tgi_model_name: str = "google/gemma-2b-it"  # Model name (must match docker-compose.yml)
     tgi_timeout: int = 30  # Request timeout in seconds
     tgi_enabled: bool = True  # Whether to use TGI when llm_provider="tgi"
+
+    # LangSmith configuration (External Observability)
+    langchain_tracing_v2: bool = True  # Enable LangSmith tracing (default: True)
+    langchain_api_key: str = ""  # LangSmith API Key
+    langchain_project: str = "chitalishta-rag"  # Project name
+    langchain_endpoint: str = "https://api.smith.langchain.com"  # LangSmith endpoint
+    langchain_environment: str = "dev"  # Environment tag (dev/prod)
 
     # Logging configuration
     log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL

@@ -142,7 +142,9 @@ app.openapi = custom_openapi
 async def startup_event():
     """Verify configuration is loaded on startup."""
     # Configuration is loaded via settings object
-    pass
+    from app.core.tracing import setup_langsmith_env
+
+    setup_langsmith_env()
 
 
 @app.get("/health", tags=["System API"])

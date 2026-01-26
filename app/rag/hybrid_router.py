@@ -1,7 +1,9 @@
 """Hybrid routing logic that combines rule-based and LLM-based intent classification."""
 
 import logging
-from typing import Optional
+from typing import Any, Dict, List, Optional
+
+from langchain_core.callbacks import BaseCallbackHandler
 
 from app.rag.intent_classification import (
     IntentClassificationResult,
@@ -40,7 +42,12 @@ class HybridIntentRouter:
         self.rule_classifier = rule_classifier or RuleBasedIntentClassifier()
         self.llm_classifier = llm_classifier or get_llm_intent_classifier()
 
-    def route(self, query: str) -> IntentClassificationResult:
+    def route(
+        self,
+        query: str,
+        callbacks: Optional[list[BaseCallbackHandler]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> IntentClassificationResult:
         """
         Route a query by combining rule-based and LLM-based classification signals.
 
@@ -56,13 +63,17 @@ class HybridIntentRouter:
 
         Args:
             query: User query in Bulgarian.
+            callbacks: Optional callbacks for observability.
+            metadata: Optional metadata for observability.
 
         Returns:
             IntentClassificationResult with final intent decision and explanation.
         """
         # Run both classifiers
         rule_result = self.rule_classifier.classify(query)
-        llm_result = self.llm_classifier.classify(query)
+        llm_result = self.llm_classifier.classify(
+            query, callbacks=callbacks, metadata=metadata
+        )
 
         # Combine signals and make decision
         final_result = self._combine_signals(rule_result, llm_result, query)

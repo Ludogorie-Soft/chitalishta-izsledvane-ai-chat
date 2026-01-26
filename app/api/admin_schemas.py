@@ -164,3 +164,111 @@ class ConversationDetailResponse(BaseModel):
         }
     )
 
+
+class RagDebugLogDetail(BaseModel):
+    """RAG debug log detail for a specific request."""
+
+    id: int = Field(..., description="RAG debug log ID")
+    request_id: str = Field(..., description="Unique request identifier")
+    conversation_id: str = Field(..., description="Conversation identifier")
+    user_query: str = Field(..., description="Original user query")
+    retrieved_documents: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Retrieved documents with summaries (JSONB)"
+    )
+    formatted_context: Optional[str] = Field(
+        None, description="Formatted context sent to LLM"
+    )
+    prompt_template_used: Optional[str] = Field(
+        None, description="Prompt template that was used"
+    )
+    llm_prompt_sent: Optional[str] = Field(
+        None, description="Actual prompt sent to LLM (with context)"
+    )
+    retrieval_metadata: Optional[Dict[str, Any]] = Field(
+        None, description="Retrieval metadata (scores, sources, etc.)"
+    )
+    db_doc_count: Optional[int] = Field(None, description="Number of DB documents")
+    analysis_doc_count: Optional[int] = Field(
+        None, description="Number of analysis documents"
+    )
+    retrieval_duration_ms: Optional[float] = Field(
+        None, description="Retrieval duration in milliseconds"
+    )
+    llm_response_received: Optional[str] = Field(
+        None, description="Raw LLM response before post-processing"
+    )
+    fallback_llm_used: bool = Field(..., description="Whether fallback LLM was used")
+    created_at: datetime = Field(..., description="Timestamp when debug log was created")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "request_id": "req-123",
+                "conversation_id": "conv-456",
+                "user_query": "Какво е читалището?",
+                "db_doc_count": 3,
+                "analysis_doc_count": 1,
+                "retrieval_duration_ms": 125.5,
+                "fallback_llm_used": False,
+            }
+        }
+    )
+
+
+class RagDebugLogSummary(BaseModel):
+    """Summary of RAG debug log for list endpoint."""
+
+    id: int = Field(..., description="RAG debug log ID")
+    request_id: str = Field(..., description="Unique request identifier")
+    conversation_id: str = Field(..., description="Conversation identifier")
+    user_query: str = Field(..., description="Original user query")
+    db_doc_count: Optional[int] = Field(None, description="Number of DB documents")
+    analysis_doc_count: Optional[int] = Field(
+        None, description="Number of analysis documents"
+    )
+    created_at: datetime = Field(..., description="Timestamp when debug log was created")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "request_id": "req-123",
+                "conversation_id": "conv-456",
+                "user_query": "Какво е читалището?",
+                "db_doc_count": 3,
+                "analysis_doc_count": 1,
+            }
+        }
+    )
+
+
+class RagDebugLogListResponse(BaseModel):
+    """Response for GET /admin/rag-debug - list of RAG debug logs."""
+
+    debug_logs: List[RagDebugLogSummary] = Field(
+        ..., description="List of RAG debug log summaries"
+    )
+    total: int = Field(..., description="Total number of debug logs (before pagination)")
+    limit: int = Field(..., description="Number of results per page")
+    offset: int = Field(..., description="Number of results skipped")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "debug_logs": [
+                    {
+                        "id": 1,
+                        "request_id": "req-123",
+                        "conversation_id": "conv-456",
+                        "user_query": "Какво е читалището?",
+                        "db_doc_count": 3,
+                        "analysis_doc_count": 1,
+                    }
+                ],
+                "total": 50,
+                "limit": 20,
+                "offset": 0,
+            }
+        }
+    )
